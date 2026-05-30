@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { APP_VERSION_LABEL } from "@/lib/app-version";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Commerce Discoverability Optimizer",
+  title: `AI Commerce Discoverability Optimizer | ${APP_VERSION_LABEL}`,
   description:
     "Evidence-backed audit of how easily AI agents can discover, understand, and interact with a merchant website.",
 };

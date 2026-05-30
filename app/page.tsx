@@ -1,5 +1,6 @@
 "use client";
 
+import { APP_VERSION_LABEL } from "@/lib/app-version";
 import type {
   AuditApiResponse,
   ConfidenceLevel,
@@ -240,7 +241,7 @@ export default function Home() {
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-12 lg:px-8 lg:py-16">
         <header className="max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-blue-600">
-            Phase 1.3
+            {APP_VERSION_LABEL}
           </p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl">
             AI Commerce Discoverability Optimizer

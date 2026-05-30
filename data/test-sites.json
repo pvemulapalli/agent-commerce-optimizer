@@ -1,91 +1,109 @@
 [
   {
     "platform": "Shopify",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Gymshark",
     "url": "https://www.gymshark.com"
   },
   {
     "platform": "Shopify",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Allbirds",
     "url": "https://www.allbirds.com"
   },
   {
     "platform": "Shopify",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "SKIMS",
     "url": "https://skims.com"
   },
   {
     "platform": "BigCommerce",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Solo Stove",
     "url": "https://solostove.com"
   },
   {
     "platform": "BigCommerce",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Skullcandy",
     "url": "https://www.skullcandy.com"
   },
   {
     "platform": "BigCommerce",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Amerisleep",
     "url": "https://amerisleep.com"
   },
   {
     "platform": "Salesforce Commerce Cloud",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Adidas",
     "url": "https://www.adidas.com"
   },
   {
     "platform": "Salesforce Commerce Cloud",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Puma",
     "url": "https://us.puma.com"
   },
   {
     "platform": "Salesforce Commerce Cloud",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Under Armour",
     "url": "https://www.underarmour.com"
   },
   {
     "platform": "WooCommerce",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Xero Shoes",
     "url": "https://xeroshoes.com"
   },
   {
     "platform": "WooCommerce",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "AeroPress",
     "url": "https://aeropress.com"
   },
   {
     "platform": "WooCommerce",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Nalgene",
     "url": "https://nalgene.com"
   },
   {
     "platform": "Wix",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Pepper Home",
     "url": "https://pepper-home.com"
   },
   {
     "platform": "Wix",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Nuori",
     "url": "https://nuori.com"
   },
   {
     "platform": "Wix",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Coal and Canary",
     "url": "https://coalandcanary.com"
   },
   {
     "platform": "Squarespace",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Aer",
     "url": "https://aersf.com"
   },
   {
     "platform": "Squarespace",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Brew Tea Company",
     "url": "https://www.brewteacompany.co.uk"
   },
   {
     "platform": "Squarespace",
+    "expectedPlatformConfidence": "unverified",
     "merchant": "Tokyobike",
     "url": "https://tokyobike.us"
   }

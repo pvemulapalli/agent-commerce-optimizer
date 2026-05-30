@@ -5,9 +5,16 @@ import {
 } from "@/lib/cache";
 import { crawlSite } from "@/lib/crawler";
 import { finalizeFindings, groupFindings, runChecks } from "@/lib/checks";
+import { buildCrawlSummary, inferCrawlSummaryFromFindings } from "@/lib/crawl-quality";
+import type { CrawlSummary } from "@/lib/crawl-quality";
+
 import type { AuditApiResponse } from "@/lib/types";
 
-export async function runAudit(url: string): Promise<AuditApiResponse> {
+export interface AuditRunResult extends AuditApiResponse {
+  crawlSummary: CrawlSummary;
+}
+
+export async function runAudit(url: string): Promise<AuditRunResult> {
   if (isCacheEnabled()) {
     const cached = await readCachedAudit(url);
     if (cached) {
@@ -17,11 +24,13 @@ export async function runAudit(url: string): Promise<AuditApiResponse> {
         findings,
         grouped: groupFindings(findings),
         cacheStatus: "HIT",
+        crawlSummary: inferCrawlSummaryFromFindings(findings),
       };
     }
   }
 
   const crawlData = await crawlSite(url);
+  const crawlSummary = buildCrawlSummary(crawlData);
   const { platform, findings } = runChecks(crawlData);
   const finalizedFindings = finalizeFindings(findings, platform);
   const grouped = groupFindings(finalizedFindings);
@@ -45,5 +54,6 @@ export async function runAudit(url: string): Promise<AuditApiResponse> {
     ...result,
     cacheStatus,
     expiresAt,
+    crawlSummary,
   };
 }

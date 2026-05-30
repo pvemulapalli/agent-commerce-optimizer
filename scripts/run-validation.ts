@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import {
   buildValidationReport,
+  formatConsoleStatus,
   formatValidationMarkdown,
   loadTestSites,
   validateTestSite,
@@ -43,14 +44,8 @@ async function main() {
     const result = await validateTestSite(site);
     results.push(result);
 
-    const status = result.error
-      ? "ERROR"
-      : result.platformMatch
-        ? "PASS"
-        : "MISMATCH";
-
     console.log(
-      `  ${status} | platform ${result.detectedPlatform} (${result.platformConfidence}) | cache ${result.cacheStatus}`,
+      `  ${formatConsoleStatus(result)} | platform ${result.detectedPlatform} (${result.platformConfidence}) | expected confidence ${result.expectedPlatformConfidence} | detection ${result.detectionQuality} | crawl ${result.crawlQuality} | cache ${result.cacheStatus}`,
     );
   }
 
@@ -65,12 +60,25 @@ async function main() {
 
   console.log("\nValidation complete.");
   console.log(`Platform matches: ${report.summary.platformMatches}/${report.summary.totalSites}`);
+  console.log(
+    `Actionable platform mismatches (confirmed only): ${report.summary.actionablePlatformMismatches}`,
+  );
+  console.log(`Unverified platform reviews: ${report.summary.unverifiedPlatformReviews}`);
+  console.log(
+    `Detection quality: good ${report.summary.detectionGood}, limited ${report.summary.detectionLimited}, blocked ${report.summary.detectionBlocked}`,
+  );
+  console.log(
+    `Crawl quality: strong ${report.summary.crawlStrong}, partial ${report.summary.crawlPartial}, weak ${report.summary.crawlWeak}`,
+  );
   console.log(`Cache hits: ${report.summary.cacheHits}`);
   console.log(`Errors: ${report.summary.errors}`);
   console.log(`JSON report: ${jsonPath}`);
   console.log(`Markdown report: ${markdownPath}`);
 
-  process.exit(report.summary.errors > 0 ? 1 : 0);
+  const shouldFail =
+    report.summary.errors > 0 || report.summary.actionablePlatformMismatches > 0;
+
+  process.exit(shouldFail ? 1 : 0);
 }
 
 main().catch((error) => {

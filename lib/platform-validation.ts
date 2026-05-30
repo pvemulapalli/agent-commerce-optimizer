@@ -1,4 +1,11 @@
 import testSites from "@/data/test-sites.json";
+import {
+  assessCrawlQuality,
+  assessDetectionQuality,
+  BLOCKED_CRAWL_MESSAGE,
+  type CrawlQuality,
+  type DetectionQuality,
+} from "@/lib/crawl-quality";
 import { getCacheTtlMinutes } from "@/lib/cache";
 import { runAudit } from "@/lib/run-audit";
 import type {
@@ -10,6 +17,9 @@ import type {
   FindingStatus,
 } from "@/lib/types";
 import { z } from "zod";
+
+export type ExpectedPlatformConfidence = "confirmed" | "unverified" | "likely_outdated";
+export type ValidationOutcome = "pass" | "review" | "mismatch" | "error";
 
 const testSiteSchema = z.object({
   platform: z.enum([
@@ -23,6 +33,9 @@ const testSiteSchema = z.object({
     "CommerceTools",
     "Unknown",
   ]),
+  expectedPlatformConfidence: z
+    .enum(["confirmed", "unverified", "likely_outdated"])
+    .default("unverified"),
   merchant: z.string().min(1),
   url: z.string().url(),
 });
@@ -41,9 +54,14 @@ export interface SiteValidationResult {
   url: string;
   auditedUrl: string;
   expectedPlatform: CommercePlatform;
+  expectedPlatformConfidence: ExpectedPlatformConfidence;
   detectedPlatform: CommercePlatform;
   platformConfidence: ConfidenceLevel;
   platformMatch: boolean;
+  validationOutcome: ValidationOutcome;
+  actionablePlatformMismatch: boolean;
+  detectionQuality: DetectionQuality;
+  crawlQuality: CrawlQuality;
   cacheStatus: CacheStatus;
   crawledAt: string;
   expiresAt: string | null;
@@ -78,6 +96,14 @@ export interface ValidationReport {
     totalSites: number;
     platformMatches: number;
     platformMismatches: number;
+    actionablePlatformMismatches: number;
+    unverifiedPlatformReviews: number;
+    detectionGood: number;
+    detectionLimited: number;
+    detectionBlocked: number;
+    crawlStrong: number;
+    crawlPartial: number;
+    crawlWeak: number;
     cacheHits: number;
     cacheMisses: number;
     cacheBypasses: number;
@@ -154,6 +180,28 @@ function buildSignals(findings: Finding[]): SiteValidationResult["signals"] {
   ) as SiteValidationResult["signals"];
 }
 
+function resolveValidationOutcome(input: {
+  error?: string;
+  platformMatch: boolean;
+  expectedPlatformConfidence: ExpectedPlatformConfidence;
+}): ValidationOutcome {
+  if (input.error) return "error";
+  if (input.platformMatch) return "pass";
+
+  if (input.expectedPlatformConfidence === "confirmed") {
+    return "mismatch";
+  }
+
+  return "review";
+}
+
+function isActionablePlatformMismatch(
+  platformMatch: boolean,
+  expectedPlatformConfidence: ExpectedPlatformConfidence,
+): boolean {
+  return !platformMatch && expectedPlatformConfidence === "confirmed";
+}
+
 function detectFalsePositives(
   site: TestSite,
   audit: AuditApiResponse,
@@ -162,12 +210,13 @@ function detectFalsePositives(
   const { findings, platform } = audit;
 
   if (
+    site.expectedPlatformConfidence === "confirmed" &&
     platform.platform !== site.platform &&
     platform.platform !== "Unknown" &&
     platform.confidence !== "low"
   ) {
     falsePositives.push(
-      `Platform detected as ${platform.platform} (${platform.confidence}) but test expects ${site.platform}`,
+      `Platform detected as ${platform.platform} (${platform.confidence}) but confirmed test expects ${site.platform}`,
     );
   }
 
@@ -202,15 +251,31 @@ function detectFalsePositives(
 function detectMissedSignals(
   site: TestSite,
   audit: AuditApiResponse,
+  detectionQuality: DetectionQuality,
 ): string[] {
   const missed: string[] = [];
   const signals = buildSignals(audit.findings);
 
-  if (!audit.platform.platform || audit.platform.platform === "Unknown") {
-    missed.push(`Platform not identified; expected ${site.platform}`);
-  } else if (audit.platform.platform !== site.platform) {
+  if (detectionQuality === "blocked") {
+    missed.push(BLOCKED_CRAWL_MESSAGE);
+    return missed;
+  }
+
+  if (site.expectedPlatformConfidence === "confirmed") {
+    if (!audit.platform.platform || audit.platform.platform === "Unknown") {
+      missed.push(`Platform not identified; confirmed expectation is ${site.platform}`);
+    } else if (audit.platform.platform !== site.platform) {
+      missed.push(
+        `Confirmed expected platform ${site.platform}, detected ${audit.platform.platform} (${audit.platform.confidence})`,
+      );
+    }
+  } else if (
+    !audit.platform.platform ||
+    audit.platform.platform === "Unknown" ||
+    audit.platform.platform !== site.platform
+  ) {
     missed.push(
-      `Expected platform ${site.platform}, detected ${audit.platform.platform} (${audit.platform.confidence})`,
+      `Expected platform label is ${site.platform} (${site.expectedPlatformConfidence}); detected ${audit.platform.platform} (${audit.platform.confidence}). Expected platform source is not confirmed.`,
     );
   }
 
@@ -243,11 +308,16 @@ function detectMissedSignals(
     missed.push("No cart or checkout signal detected");
   }
 
-  if (site.platform === "Shopify" && signals.collectionCategoryPages.status === "missing") {
+  if (
+    site.expectedPlatformConfidence === "confirmed" &&
+    site.platform === "Shopify" &&
+    signals.collectionCategoryPages.status === "missing"
+  ) {
     missed.push("Collection pages not detected (common on Shopify storefronts)");
   }
 
   if (
+    site.expectedPlatformConfidence === "confirmed" &&
     site.platform === "BigCommerce" &&
     signals.collectionCategoryPages.status === "missing"
   ) {
@@ -257,11 +327,30 @@ function detectMissedSignals(
   return missed;
 }
 
-function buildNotes(site: TestSite, audit: AuditApiResponse): string[] {
+function buildNotes(
+  site: TestSite,
+  audit: AuditApiResponse,
+  detectionQuality: DetectionQuality,
+  validationOutcome: ValidationOutcome,
+): string[] {
   const notes: string[] = [];
 
   if (audit.url !== site.url && audit.url.replace(/\/$/, "") !== site.url.replace(/\/$/, "")) {
     notes.push(`Audited URL resolved to ${audit.url}`);
+  }
+
+  if (validationOutcome === "review" && audit.platform.platform !== site.platform) {
+    notes.push(
+      `Platform label mismatch is non-actionable because expected platform confidence is ${site.expectedPlatformConfidence}`,
+    );
+  }
+
+  if (site.expectedPlatformConfidence === "likely_outdated") {
+    notes.push("Expected platform label may be outdated; review against current storefront evidence");
+  }
+
+  if (detectionQuality === "blocked") {
+    notes.push(BLOCKED_CRAWL_MESSAGE);
   }
 
   if (audit.cacheStatus === "HIT") {
@@ -285,22 +374,42 @@ export async function validateTestSite(site: TestSite): Promise<SiteValidationRe
   try {
     const audit = await runAudit(site.url);
     const signals = buildSignals(audit.findings);
+    const detectionQuality = assessDetectionQuality({
+      detectedPlatform: audit.platform.platform,
+      platformConfidence: audit.platform.confidence,
+      signals,
+      crawlSummary: audit.crawlSummary,
+    });
+    const crawlQuality = assessCrawlQuality(signals);
+    const platformMatch = audit.platform.platform === site.platform;
+    const validationOutcome = resolveValidationOutcome({
+      platformMatch,
+      expectedPlatformConfidence: site.expectedPlatformConfidence,
+    });
 
     return {
       merchant: site.merchant,
       url: site.url,
       auditedUrl: audit.url,
       expectedPlatform: site.platform,
+      expectedPlatformConfidence: site.expectedPlatformConfidence,
       detectedPlatform: audit.platform.platform,
       platformConfidence: audit.platform.confidence,
-      platformMatch: audit.platform.platform === site.platform,
+      platformMatch,
+      validationOutcome,
+      actionablePlatformMismatch: isActionablePlatformMismatch(
+        platformMatch,
+        site.expectedPlatformConfidence,
+      ),
+      detectionQuality,
+      crawlQuality,
       cacheStatus: audit.cacheStatus,
       crawledAt: audit.crawledAt,
       expiresAt: audit.expiresAt,
       signals,
       falsePositives: detectFalsePositives(site, audit),
-      missedObviousSignals: detectMissedSignals(site, audit),
-      notes: buildNotes(site, audit),
+      missedObviousSignals: detectMissedSignals(site, audit, detectionQuality),
+      notes: buildNotes(site, audit, detectionQuality, validationOutcome),
     };
   } catch (error) {
     return {
@@ -308,9 +417,14 @@ export async function validateTestSite(site: TestSite): Promise<SiteValidationRe
       url: site.url,
       auditedUrl: site.url,
       expectedPlatform: site.platform,
+      expectedPlatformConfidence: site.expectedPlatformConfidence,
       detectedPlatform: "Unknown",
       platformConfidence: "low",
       platformMatch: false,
+      validationOutcome: "error",
+      actionablePlatformMismatch: false,
+      detectionQuality: "blocked",
+      crawlQuality: "weak",
       cacheStatus: getCacheTtlMinutes() > 0 ? "MISS" : "BYPASS",
       crawledAt: new Date().toISOString(),
       expiresAt: null,
@@ -333,6 +447,18 @@ export function buildValidationReport(results: SiteValidationResult[]): Validati
       platformMismatches: results.filter(
         (result) => !result.platformMatch && !result.error,
       ).length,
+      actionablePlatformMismatches: results.filter(
+        (result) => result.actionablePlatformMismatch,
+      ).length,
+      unverifiedPlatformReviews: results.filter(
+        (result) => result.validationOutcome === "review",
+      ).length,
+      detectionGood: results.filter((result) => result.detectionQuality === "good").length,
+      detectionLimited: results.filter((result) => result.detectionQuality === "limited").length,
+      detectionBlocked: results.filter((result) => result.detectionQuality === "blocked").length,
+      crawlStrong: results.filter((result) => result.crawlQuality === "strong").length,
+      crawlPartial: results.filter((result) => result.crawlQuality === "partial").length,
+      crawlWeak: results.filter((result) => result.crawlQuality === "weak").length,
       cacheHits: results.filter((result) => result.cacheStatus === "HIT").length,
       cacheMisses: results.filter((result) => result.cacheStatus === "MISS").length,
       cacheBypasses: results.filter((result) => result.cacheStatus === "BYPASS").length,
@@ -344,6 +470,19 @@ export function buildValidationReport(results: SiteValidationResult[]): Validati
 
 function statusLabel(snapshot: SignalSnapshot): string {
   return snapshot.status.replace("_", " ");
+}
+
+function outcomeLabel(outcome: ValidationOutcome): string {
+  switch (outcome) {
+    case "pass":
+      return "PASS";
+    case "review":
+      return "REVIEW";
+    case "mismatch":
+      return "MISMATCH";
+    case "error":
+      return "ERROR";
+  }
 }
 
 function markdownSignalRow(label: string, snapshot: SignalSnapshot): string {
@@ -363,7 +502,15 @@ export function formatValidationMarkdown(report: ValidationReport): string {
     "| --- | ---: |",
     `| Total sites | ${report.summary.totalSites} |`,
     `| Platform matches | ${report.summary.platformMatches} |`,
-    `| Platform mismatches | ${report.summary.platformMismatches} |`,
+    `| Platform mismatches (informational) | ${report.summary.platformMismatches} |`,
+    `| Actionable platform mismatches (confirmed only) | ${report.summary.actionablePlatformMismatches} |`,
+    `| Unverified platform reviews | ${report.summary.unverifiedPlatformReviews} |`,
+    `| Detection quality: good | ${report.summary.detectionGood} |`,
+    `| Detection quality: limited | ${report.summary.detectionLimited} |`,
+    `| Detection quality: blocked | ${report.summary.detectionBlocked} |`,
+    `| Crawl quality: strong | ${report.summary.crawlStrong} |`,
+    `| Crawl quality: partial | ${report.summary.crawlPartial} |`,
+    `| Crawl quality: weak | ${report.summary.crawlWeak} |`,
     `| Cache hits | ${report.summary.cacheHits} |`,
     `| Cache misses | ${report.summary.cacheMisses} |`,
     `| Cache bypasses | ${report.summary.cacheBypasses} |`,
@@ -371,13 +518,13 @@ export function formatValidationMarkdown(report: ValidationReport): string {
     "",
     "## Summary Table",
     "",
-    "| Merchant | Expected Platform | Detected Platform | Confidence | Platform Match | Cache | Products | Prices | FAQ/Help | Returns | Cart |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| Merchant | Expected Platform | Expected Confidence | Detected Platform | Outcome | Detection Quality | Crawl Quality | Cache | Products | Prices | FAQ/Help | Returns | Cart |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
   ];
 
   for (const site of report.sites) {
     lines.push(
-      `| ${site.merchant} | ${site.expectedPlatform} | ${site.detectedPlatform} | ${site.platformConfidence} | ${site.platformMatch ? "yes" : "no"} | ${site.cacheStatus} | ${statusLabel(site.signals.productPages)} | ${statusLabel(site.signals.productPrices)} | ${statusLabel(site.signals.faqHelpCenter)} | ${statusLabel(site.signals.returnsRefundPage)} | ${statusLabel(site.signals.cartCheckout)} |`,
+      `| ${site.merchant} | ${site.expectedPlatform} | ${site.expectedPlatformConfidence} | ${site.detectedPlatform} | ${outcomeLabel(site.validationOutcome)} | ${site.detectionQuality} | ${site.crawlQuality} | ${site.cacheStatus} | ${statusLabel(site.signals.productPages)} | ${statusLabel(site.signals.productPrices)} | ${statusLabel(site.signals.faqHelpCenter)} | ${statusLabel(site.signals.returnsRefundPage)} | ${statusLabel(site.signals.cartCheckout)} |`,
     );
   }
 
@@ -389,8 +536,12 @@ export function formatValidationMarkdown(report: ValidationReport): string {
     lines.push(`- URL: ${site.url}`);
     lines.push(`- Audited URL: ${site.auditedUrl}`);
     lines.push(`- Expected platform: ${site.expectedPlatform}`);
+    lines.push(`- Expected platform confidence: ${site.expectedPlatformConfidence}`);
     lines.push(`- Detected platform: ${site.detectedPlatform} (${site.platformConfidence})`);
-    lines.push(`- Platform match: ${site.platformMatch ? "yes" : "no"}`);
+    lines.push(`- Validation outcome: ${outcomeLabel(site.validationOutcome)}`);
+    lines.push(`- Actionable platform mismatch: ${site.actionablePlatformMismatch ? "yes" : "no"}`);
+    lines.push(`- Detection quality: ${site.detectionQuality}`);
+    lines.push(`- Crawl quality: ${site.crawlQuality}`);
     lines.push(`- Cache status: ${site.cacheStatus}`);
     lines.push(`- Crawled at: ${site.crawledAt}`);
     if (site.expiresAt) {
@@ -448,4 +599,8 @@ export function formatValidationMarkdown(report: ValidationReport): string {
   }
 
   return lines.join("\n");
+}
+
+export function formatConsoleStatus(result: SiteValidationResult): string {
+  return outcomeLabel(result.validationOutcome);
 }
