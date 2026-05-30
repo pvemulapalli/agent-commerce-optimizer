@@ -1,6 +1,11 @@
+import {
+  isCacheEnabled,
+  readCachedAudit,
+  writeCachedAudit,
+} from "@/lib/cache";
 import { crawlSite } from "@/lib/crawler";
 import { groupFindings, runChecks } from "@/lib/checks";
-import type { AuditResult } from "@/lib/types";
+import type { AuditApiResponse } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -51,11 +56,18 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (isCacheEnabled()) {
+      const cached = await readCachedAudit(parsed.data.url);
+      if (cached) {
+        return NextResponse.json(cached);
+      }
+    }
+
     const crawlData = await crawlSite(parsed.data.url);
     const { platform, findings } = runChecks(crawlData);
     const grouped = groupFindings(findings);
 
-    const result: AuditResult & { grouped: typeof grouped } = {
+    const result = {
       url: crawlData.entryUrl,
       crawledAt: crawlData.crawledAt,
       platform,
@@ -63,7 +75,20 @@ export async function POST(request: Request) {
       grouped,
     };
 
-    return NextResponse.json(result);
+    const cacheStatus = isCacheEnabled() ? ("MISS" as const) : ("BYPASS" as const);
+    let expiresAt: string | null = null;
+
+    if (isCacheEnabled()) {
+      expiresAt = await writeCachedAudit(parsed.data.url, result);
+    }
+
+    const response: AuditApiResponse = {
+      ...result,
+      cacheStatus,
+      expiresAt,
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Audit failed unexpectedly";

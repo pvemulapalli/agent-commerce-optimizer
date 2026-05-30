@@ -110,6 +110,14 @@ export interface GroupedFindings {
   needsReview: Finding[];
 }
 
+export type CacheStatus = "HIT" | "MISS" | "BYPASS";
+
+export interface AuditApiResponse extends AuditResult {
+  grouped: GroupedFindings;
+  cacheStatus: CacheStatus;
+  expiresAt: string | null;
+}
+
 export interface MerchantFixture {
   platform: CommercePlatform;
   merchant: string;

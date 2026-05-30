@@ -1,15 +1,14 @@
 "use client";
 
 import type {
-  AuditResult,
+  AuditApiResponse,
   ConfidenceLevel,
   Finding,
-  GroupedFindings,
   PlatformAnalysis,
 } from "@/lib/types";
 import { useState } from "react";
 
-type AuditResponse = AuditResult & { grouped: GroupedFindings };
+type AuditResponse = AuditApiResponse;
 
 function ConfidenceBadge({ confidence }: { confidence: ConfidenceLevel }) {
   const classes = {
@@ -241,7 +240,7 @@ export default function Home() {
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-12 lg:px-8 lg:py-16">
         <header className="max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-blue-600">
-            Phase 1.2
+            Phase 1.3
           </p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl">
             AI Commerce Discoverability Optimizer
@@ -306,11 +305,23 @@ export default function Home() {
                   <dd className="mt-1 break-all text-zinc-900">{result.url}</dd>
                 </div>
                 <div>
+                  <dt className="text-sm font-medium text-zinc-500">Cache Status</dt>
+                  <dd className="mt-1 font-medium text-zinc-900">{result.cacheStatus}</dd>
+                </div>
+                <div>
                   <dt className="text-sm font-medium text-zinc-500">Crawled At</dt>
                   <dd className="mt-1 text-zinc-900">
                     {new Date(result.crawledAt).toLocaleString()}
                   </dd>
                 </div>
+                {result.expiresAt && (
+                  <div>
+                    <dt className="text-sm font-medium text-zinc-500">Cache Expires At</dt>
+                    <dd className="mt-1 text-zinc-900">
+                      {new Date(result.expiresAt).toLocaleString()}
+                    </dd>
+                  </div>
+                )}
               </dl>
             </section>
 
