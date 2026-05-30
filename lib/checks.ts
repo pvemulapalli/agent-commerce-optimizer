@@ -860,13 +860,24 @@ function checkSearchAction(data: CrawlData): Finding {
   return missing("search-action-schema", "SearchAction schema", data.entryUrl);
 }
 
-function reconcileRelatedFindings(findings: Finding[]): Finding[] {
+function reconcileRelatedFindings(
+  findings: Finding[],
+  platform: PlatformAnalysis,
+): Finding[] {
   const byId = new Map(findings.map((finding) => [finding.id, finding]));
 
   function rank(finding: Finding): number {
     if (finding.status === "detected") return 3;
     if (finding.status === "needs_review") return 2;
     return 1;
+  }
+
+  function get(id: string): Finding | undefined {
+    return byId.get(id);
+  }
+
+  function isDetected(id: string): boolean {
+    return get(id)?.status === "detected";
   }
 
   function syncGroup(ids: string[], labels: Record<string, string>) {
@@ -901,7 +912,90 @@ function reconcileRelatedFindings(findings: Finding[]): Finding[] {
     "return-policy-page": "Return policy page",
   });
 
+  syncGroup(["pricing-information", "product-prices", "pricing-page"], {
+    "pricing-information": "Pricing information",
+    "product-prices": "Product prices",
+    "pricing-page": "Pricing page",
+  });
+
+  const faqSchema = get("faq-schema");
+  const faqPageEvidence = ["faq-page", "help-center"]
+    .map((id) => get(id))
+    .find((finding) => finding?.status === "detected");
+
+  if (faqSchema?.status === "missing" && faqPageEvidence) {
+    byId.set(
+      "faq-schema",
+      needsReview(
+        "faq-schema",
+        "FAQ schema",
+        "medium",
+        `FAQ or help content was discovered (${faqPageEvidence.label.toLowerCase()}), but FAQPage JSON-LD was not found on crawled pages`,
+        faqPageEvidence.evidenceUrls,
+        faqPageEvidence.sourceUrl,
+        faqPageEvidence.discoveredFromUrl,
+      ),
+    );
+  }
+
+  const itemListSchema = get("item-list-schema");
+  const collectionPages = get("collection-pages");
+  const catalogPages = get("catalog-pages");
+
+  if (
+    itemListSchema?.status === "missing" &&
+    (isDetected("collection-pages") || isDetected("catalog-pages"))
+  ) {
+    const pageEvidence = collectionPages?.status === "detected" ? collectionPages : catalogPages!;
+    byId.set(
+      "item-list-schema",
+      needsReview(
+        "item-list-schema",
+        "ItemList schema",
+        "medium",
+        `Collection or catalog pages were discovered, but ItemList JSON-LD was not found on crawled pages`,
+        pageEvidence.evidenceUrls,
+        pageEvidence.sourceUrl,
+        pageEvidence.discoveredFromUrl,
+      ),
+    );
+  }
+
+  const apiDocs = get("api-developer-docs");
+  const storefrontPlatforms: PlatformAnalysis["platform"][] = [
+    "Shopify",
+    "BigCommerce",
+    "WooCommerce",
+    "Wix",
+    "Squarespace",
+    "Magento",
+  ];
+
+  if (
+    apiDocs?.status === "missing" &&
+    storefrontPlatforms.includes(platform.platform)
+  ) {
+    byId.set(
+      "api-developer-docs",
+      needsReview(
+        "api-developer-docs",
+        "API or developer docs links",
+        "low",
+        `No merchant API or developer documentation links found on this ${platform.platform} storefront. Platform commerce APIs are separate from on-site merchant discoverability`,
+        [platform.sourceUrls[0] ?? apiDocs.sourceUrl],
+        apiDocs.sourceUrl,
+      ),
+    );
+  }
+
   return findings.map((finding) => byId.get(finding.id) ?? finding);
+}
+
+export function finalizeFindings(
+  findings: Finding[],
+  platform: PlatformAnalysis,
+): Finding[] {
+  return reconcileRelatedFindings(findings, platform);
 }
 
 export function runChecks(data: CrawlData): {
@@ -913,7 +1007,7 @@ export function runChecks(data: CrawlData): {
   const productPricesFinding =
     productPrices.finding ?? missing("product-prices", "Product prices", data.entryUrl);
 
-  const findings = reconcileRelatedFindings([
+  const findings = finalizeFindings([
     checkRobotsTxt(data),
     checkSitemap(data),
     checkLlmsTxt(data),
@@ -1030,7 +1124,7 @@ export function runChecks(data: CrawlData): {
       [/checkout/i, /\bcart\b/i],
       [/checkout/i, /\/cart\b/i, /\bcart\b/i],
     ),
-  ]);
+  ], platform);
 
   return { platform, findings };
 }

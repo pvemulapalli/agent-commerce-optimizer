@@ -4,7 +4,7 @@ import {
   writeCachedAudit,
 } from "@/lib/cache";
 import { crawlSite } from "@/lib/crawler";
-import { groupFindings, runChecks } from "@/lib/checks";
+import { finalizeFindings, groupFindings, runChecks } from "@/lib/checks";
 import type { AuditApiResponse } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -59,7 +59,13 @@ export async function POST(request: Request) {
     if (isCacheEnabled()) {
       const cached = await readCachedAudit(parsed.data.url);
       if (cached) {
-        return NextResponse.json(cached);
+        const findings = finalizeFindings(cached.findings, cached.platform);
+        return NextResponse.json({
+          ...cached,
+          findings,
+          grouped: groupFindings(findings),
+          cacheStatus: "HIT" as const,
+        });
       }
     }
 
