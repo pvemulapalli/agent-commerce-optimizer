@@ -1,10 +1,4 @@
-import {
-  isCacheEnabled,
-  readCachedAudit,
-  writeCachedAudit,
-} from "@/lib/cache";
-import { crawlSite } from "@/lib/crawler";
-import { finalizeFindings, groupFindings, runChecks } from "@/lib/checks";
+import { runAudit } from "@/lib/run-audit";
 import type { AuditApiResponse } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -56,44 +50,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (isCacheEnabled()) {
-      const cached = await readCachedAudit(parsed.data.url);
-      if (cached) {
-        const findings = finalizeFindings(cached.findings, cached.platform);
-        return NextResponse.json({
-          ...cached,
-          findings,
-          grouped: groupFindings(findings),
-          cacheStatus: "HIT" as const,
-        });
-      }
-    }
-
-    const crawlData = await crawlSite(parsed.data.url);
-    const { platform, findings } = runChecks(crawlData);
-    const grouped = groupFindings(findings);
-
-    const result = {
-      url: crawlData.entryUrl,
-      crawledAt: crawlData.crawledAt,
-      platform,
-      findings,
-      grouped,
-    };
-
-    const cacheStatus = isCacheEnabled() ? ("MISS" as const) : ("BYPASS" as const);
-    let expiresAt: string | null = null;
-
-    if (isCacheEnabled()) {
-      expiresAt = await writeCachedAudit(parsed.data.url, result);
-    }
-
-    const response: AuditApiResponse = {
-      ...result,
-      cacheStatus,
-      expiresAt,
-    };
-
+    const response: AuditApiResponse = await runAudit(parsed.data.url);
     return NextResponse.json(response);
   } catch (error) {
     const message =

@@ -1,0 +1,92 @@
+[
+  {
+    "platform": "Shopify",
+    "merchant": "Gymshark",
+    "url": "https://www.gymshark.com"
+  },
+  {
+    "platform": "Shopify",
+    "merchant": "Allbirds",
+    "url": "https://www.allbirds.com"
+  },
+  {
+    "platform": "Shopify",
+    "merchant": "SKIMS",
+    "url": "https://skims.com"
+  },
+  {
+    "platform": "BigCommerce",
+    "merchant": "Solo Stove",
+    "url": "https://solostove.com"
+  },
+  {
+    "platform": "BigCommerce",
+    "merchant": "Skullcandy",
+    "url": "https://www.skullcandy.com"
+  },
+  {
+    "platform": "BigCommerce",
+    "merchant": "Amerisleep",
+    "url": "https://amerisleep.com"
+  },
+  {
+    "platform": "Salesforce Commerce Cloud",
+    "merchant": "Adidas",
+    "url": "https://www.adidas.com"
+  },
+  {
+    "platform": "Salesforce Commerce Cloud",
+    "merchant": "Puma",
+    "url": "https://us.puma.com"
+  },
+  {
+    "platform": "Salesforce Commerce Cloud",
+    "merchant": "Under Armour",
+    "url": "https://www.underarmour.com"
+  },
+  {
+    "platform": "WooCommerce",
+    "merchant": "Xero Shoes",
+    "url": "https://xeroshoes.com"
+  },
+  {
+    "platform": "WooCommerce",
+    "merchant": "AeroPress",
+    "url": "https://aeropress.com"
+  },
+  {
+    "platform": "WooCommerce",
+    "merchant": "Nalgene",
+    "url": "https://nalgene.com"
+  },
+  {
+    "platform": "Wix",
+    "merchant": "Pepper Home",
+    "url": "https://pepper-home.com"
+  },
+  {
+    "platform": "Wix",
+    "merchant": "Nuori",
+    "url": "https://nuori.com"
+  },
+  {
+    "platform": "Wix",
+    "merchant": "Coal and Canary",
+    "url": "https://coalandcanary.com"
+  },
+  {
+    "platform": "Squarespace",
+    "merchant": "Aer",
+    "url": "https://aersf.com"
+  },
+  {
+    "platform": "Squarespace",
+    "merchant": "Brew Tea Company",
+    "url": "https://www.brewteacompany.co.uk"
+  },
+  {
+    "platform": "Squarespace",
+    "merchant": "Tokyobike",
+    "url": "https://tokyobike.us"
+  }
+]

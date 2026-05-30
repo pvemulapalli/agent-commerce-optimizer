@@ -37,6 +37,10 @@ yarn-error.log*
 # audit cache
 .cache/
 
+# generated validation reports (re-run validate:platforms to refresh)
+/reports/validation-results.json
+/reports/validation-results.md
+
 # vercel
 .vercel
 
