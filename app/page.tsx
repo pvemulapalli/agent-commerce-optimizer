@@ -74,6 +74,22 @@ function FindingCard({ finding }: { finding: Finding }) {
           </div>
         )}
 
+        {finding.discoveredFromUrl && (
+          <div>
+            <dt className="font-medium text-zinc-500">Discovered From URL</dt>
+            <dd className="mt-1 break-all">
+              <a
+                href={finding.discoveredFromUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                {finding.discoveredFromUrl}
+              </a>
+            </dd>
+          </div>
+        )}
+
         <div>
           <dt className="font-medium text-zinc-500">Source URL</dt>
           <dd className="mt-1 break-all">
@@ -225,7 +241,7 @@ export default function Home() {
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-12 lg:px-8 lg:py-16">
         <header className="max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-blue-600">
-            Phase 1.1
+            Phase 1.2
           </p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl">
             AI Commerce Discoverability Optimizer
@@ -268,7 +284,8 @@ export default function Home() {
           {loading && (
             <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
               Crawling discovery files, parsing sitemaps (up to 20 prioritized
-              URLs), and analyzing storefront signals…
+              URLs), following trusted support subdomains (up to 10), and
+              analyzing storefront signals…
             </div>
           )}
 

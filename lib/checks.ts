@@ -1,10 +1,14 @@
+import { linkHaystack } from "./link-extraction";
 import type {
   ConfidenceLevel,
   CrawlData,
+  DiscoveredLink,
   Finding,
   GroupedFindings,
+  LinkMatch,
   PageData,
   PlatformAnalysis,
+  ProductPriceDetection,
 } from "./types";
 import { detectPlatform } from "./platform";
 import {
@@ -21,12 +25,6 @@ import {
   uniqueUrls,
 } from "./schema-utils";
 
-interface LinkMatch {
-  href: string;
-  text: string;
-  sourceUrl: string;
-}
-
 function detected(
   id: string,
   label: string,
@@ -34,6 +32,7 @@ function detected(
   evidence: string,
   evidenceUrls: string[],
   sourceUrl: string,
+  discoveredFromUrl: string | null = null,
 ): Finding {
   return {
     id,
@@ -43,6 +42,7 @@ function detected(
     evidence,
     evidenceUrls: uniqueUrls(evidenceUrls),
     sourceUrl,
+    discoveredFromUrl,
   };
 }
 
@@ -55,6 +55,7 @@ function missing(id: string, label: string, sourceUrl: string): Finding {
     evidence: "Not Detected",
     evidenceUrls: [sourceUrl],
     sourceUrl,
+    discoveredFromUrl: null,
   };
 }
 
@@ -65,6 +66,7 @@ function needsReview(
   evidence: string,
   evidenceUrls: string[],
   sourceUrl: string,
+  discoveredFromUrl: string | null = null,
 ): Finding {
   return {
     id,
@@ -74,26 +76,43 @@ function needsReview(
     evidence,
     evidenceUrls: uniqueUrls(evidenceUrls),
     sourceUrl,
+    discoveredFromUrl,
   };
 }
 
-function findLinks(pages: PageData[], patterns: RegExp[]): LinkMatch[] {
+function collectAllLinks(pages: PageData[]): DiscoveredLink[] {
+  const byHref = new Map<string, DiscoveredLink>();
+
+  for (const page of pages) {
+    for (const link of page.discoveredLinks) {
+      if (!byHref.has(link.href)) {
+        byHref.set(link.href, link);
+      }
+    }
+  }
+
+  return [...byHref.values()];
+}
+
+function findDiscoveredLinks(
+  pages: PageData[],
+  patterns: RegExp[],
+): LinkMatch[] {
   const matches: LinkMatch[] = [];
   const seen = new Set<string>();
 
-  for (const page of pages) {
-    for (const link of page.internalLinks) {
-      const haystack = `${link.href} ${link.text}`.toLowerCase();
-      if (!patterns.some((pattern) => pattern.test(haystack))) continue;
-      if (seen.has(link.href)) continue;
+  for (const link of collectAllLinks(pages)) {
+    if (!patterns.some((pattern) => pattern.test(linkHaystack(link)))) continue;
+    if (seen.has(link.href)) continue;
 
-      seen.add(link.href);
-      matches.push({
-        href: link.href,
-        text: link.text || "(no anchor text)",
-        sourceUrl: page.url,
-      });
-    }
+    seen.add(link.href);
+    matches.push({
+      href: link.href,
+      text: link.text || link.ariaLabel || link.titleAttr || "(no anchor text)",
+      discoveredFromUrl: link.discoveredFromUrl,
+      scope: link.scope,
+      context: link.context,
+    });
   }
 
   return matches;
@@ -102,7 +121,10 @@ function findLinks(pages: PageData[], patterns: RegExp[]): LinkMatch[] {
 function formatLinkEvidence(matches: LinkMatch[]): string {
   return matches
     .slice(0, 3)
-    .map((match) => `"${match.text}" → ${match.href}`)
+    .map(
+      (match) =>
+        `"${match.text}" → ${match.href} (discovered from ${match.discoveredFromUrl})`,
+    )
     .join("; ");
 }
 
@@ -122,6 +144,7 @@ function checkSchema(
       `JSON-LD @type includes ${typeName}: ${match.types.join(", ")}`,
       [match.page.url],
       match.page.url,
+      null,
     );
   }
 
@@ -265,7 +288,14 @@ function checkPageDiscovery(
   if (urlMatches.length > 0) {
     const built = buildFindingFromPages(urlMatches, "Matching URL pattern on crawled page");
     if (built) {
-      return detected(id, label, "medium", built.evidence, built.evidenceUrls, built.sourceUrl);
+      return detected(
+        id,
+        label,
+        "medium",
+        built.evidence,
+        built.evidenceUrls,
+        built.sourceUrl,
+      );
     }
   }
 
@@ -278,19 +308,122 @@ function checkPageDiscovery(
       "Matching title, meta, or visible content on crawled page",
     );
     if (built) {
-      return detected(id, label, "medium", built.evidence, built.evidenceUrls, built.sourceUrl);
+      return detected(
+        id,
+        label,
+        "medium",
+        built.evidence,
+        built.evidenceUrls,
+        built.sourceUrl,
+      );
     }
   }
 
-  const links = findLinks(data.pages, linkPatterns);
+  const links = findDiscoveredLinks(data.pages, linkPatterns);
   if (links.length > 0) {
+    const best = links[0];
+    const confidence: ConfidenceLevel =
+      best.scope === "related-domain" ? "medium" : "low";
+
+    if (confidence === "medium") {
+      return detected(
+        id,
+        label,
+        confidence,
+        `Support or policy link discovered on merchant site: ${formatLinkEvidence(links.slice(0, 3))}`,
+        uniqueUrls(links.map((link) => link.href)),
+        best.href,
+        best.discoveredFromUrl,
+      );
+    }
+
     return needsReview(
       id,
       label,
       "low",
-      `Keyword or URL pattern match in internal links only: ${formatLinkEvidence(links)}`,
+      `Keyword or URL pattern match in links only: ${formatLinkEvidence(links.slice(0, 3))}`,
       uniqueUrls(links.map((link) => link.href)),
-      links[0].sourceUrl,
+      best.discoveredFromUrl,
+      best.discoveredFromUrl,
+    );
+  }
+
+  return missing(id, label, data.entryUrl);
+}
+
+function checkSupportSignal(
+  id: string,
+  label: string,
+  data: CrawlData,
+  urlPatterns: RegExp[],
+  linkPatterns: RegExp[],
+  contentPatterns: RegExp[] = [],
+): Finding {
+  const crawlable = getCrawlablePages(data.pages);
+  const urlMatches = pagesMatchingUrlPatterns(crawlable, urlPatterns);
+
+  if (urlMatches.length > 0) {
+    const built = buildFindingFromPages(urlMatches, "Matching support URL on crawled page");
+    if (built) {
+      const isSupportDomain = urlMatches.some((page) =>
+        /support\.|help\.|loopreturns|returns\./i.test(page.url),
+      );
+      return detected(
+        id,
+        label,
+        isSupportDomain ? "high" : "medium",
+        built.evidence,
+        built.evidenceUrls,
+        built.sourceUrl,
+      );
+    }
+  }
+
+  const contentMatches = pagesMatchingContent(crawlable, contentPatterns).filter(
+    (page) => !urlMatches.some((match) => match.url === page.url),
+  );
+  if (contentMatches.length > 0) {
+    const built = buildFindingFromPages(
+      contentMatches,
+      "Matching support content on crawled page",
+    );
+    if (built) {
+      return detected(
+        id,
+        label,
+        "medium",
+        built.evidence,
+        built.evidenceUrls,
+        built.sourceUrl,
+      );
+    }
+  }
+
+  const links = findDiscoveredLinks(data.pages, linkPatterns);
+  if (links.length > 0) {
+    const relatedLinks = links.filter((link) => link.scope === "related-domain");
+    const best = relatedLinks[0] ?? links[0];
+
+    if (relatedLinks.length > 0) {
+      return detected(
+        id,
+        label,
+        "medium",
+        `Related support domain linked from merchant site: ${formatLinkEvidence(relatedLinks.slice(0, 3))}`,
+        uniqueUrls(relatedLinks.map((link) => link.href)),
+        best.href,
+        best.discoveredFromUrl,
+      );
+    }
+
+    return needsReview(
+      id,
+      label,
+      "low",
+      `Support link discovered on merchant site: ${formatLinkEvidence(links.slice(0, 3))}`,
+      uniqueUrls(links.map((link) => link.href)),
+      best.href,
+      best.discoveredFromUrl,
     );
   }
 
@@ -299,9 +432,7 @@ function checkPageDiscovery(
 
 function checkProductPages(data: CrawlData, platform: PlatformAnalysis): Finding {
   const shopifyPatterns =
-    platform.platform === "Shopify"
-      ? [/\/products\/[^/?#]+/i]
-      : [];
+    platform.platform === "Shopify" ? [/\/products\/[^/?#]+/i] : [];
 
   return checkPageDiscovery(
     "product-pages",
@@ -328,11 +459,7 @@ function checkCollectionPages(data: CrawlData, platform: PlatformAnalysis): Find
     "collection-pages",
     "Collection pages",
     data,
-    [
-      ...shopifyPatterns,
-      /\/collections?\//i,
-      /\/collection\//i,
-    ],
+    [...shopifyPatterns, /\/collections?\//i, /\/collection\//i],
     [/collection/i, /shop all/i],
     [/collection/i, /\/collections?\//i],
   );
@@ -377,7 +504,115 @@ function checkCatalogPages(data: CrawlData, platform: PlatformAnalysis): Finding
   );
 }
 
-function checkPricingInformation(data: CrawlData): Finding {
+function detectProductPrices(data: CrawlData): ProductPriceDetection {
+  const crawlable = getCrawlablePages(data.pages);
+  const pagesWithOfferSchema: PageData[] = [];
+  const pagesWithShopifyJson: PageData[] = [];
+  const pagesWithPriceMeta: PageData[] = [];
+
+  for (const page of crawlable) {
+    if (
+      pageHasSchemaType(page, "Product") ||
+      pageHasSchemaType(page, "Offer") ||
+      pageHasSchemaField(page, ["price", "lowPrice", "highPrice"]).length > 0
+    ) {
+      pagesWithOfferSchema.push(page);
+    }
+
+    if (
+      page.htmlSnippet &&
+      (/\/products\/[^"']+\.js/i.test(page.htmlSnippet) ||
+        pageHasSchemaField(page, ["price", "lowPrice", "highPrice"]).length > 0)
+    ) {
+      pagesWithShopifyJson.push(page);
+    }
+  }
+
+  if (pagesWithOfferSchema.length > 0) {
+    const prices = pagesWithOfferSchema.flatMap((page) =>
+      pageHasSchemaField(page, ["price", "lowPrice", "highPrice"]),
+    );
+    const finding = detected(
+      "product-prices",
+      "Product prices",
+      "high",
+      `Product/Offer JSON-LD price fields: ${formatEvidenceList(prices)} on ${summarizePages(pagesWithOfferSchema, 2)}`,
+      pagesWithOfferSchema.map((page) => page.url),
+      pagesWithOfferSchema[0].url,
+    );
+    return {
+      finding,
+      evidenceUrls: finding.evidenceUrls,
+      sourceUrl: finding.sourceUrl,
+    };
+  }
+
+  if (pagesWithShopifyJson.length > 0) {
+    const finding = detected(
+      "product-prices",
+      "Product prices",
+      "high",
+      `Shopify product JSON or Offer schema detected on ${summarizePages(pagesWithShopifyJson, 2)}`,
+      pagesWithShopifyJson.map((page) => page.url),
+      pagesWithShopifyJson[0].url,
+    );
+    return {
+      finding,
+      evidenceUrls: finding.evidenceUrls,
+      sourceUrl: finding.sourceUrl,
+    };
+  }
+
+  for (const page of crawlable) {
+    const haystack = pageSearchText(page);
+    if (
+      /\/products?\//i.test(page.url) &&
+      /\$[\d,.]+|\bUSD\b|\bEUR\b|\bGBP\b|£[\d,.]+|€[\d,.]+/.test(haystack)
+    ) {
+      pagesWithPriceMeta.push(page);
+    }
+  }
+
+  if (pagesWithPriceMeta.length > 0) {
+    const built = buildFindingFromPages(
+      pagesWithPriceMeta,
+      "Currency or price pattern on product page",
+    );
+    if (built) {
+      const finding = detected(
+        "product-prices",
+        "Product prices",
+        "medium",
+        built.evidence,
+        built.evidenceUrls,
+        built.sourceUrl,
+      );
+      return {
+        finding,
+        evidenceUrls: finding.evidenceUrls,
+        sourceUrl: finding.sourceUrl,
+      };
+    }
+  }
+
+  return { finding: null, evidenceUrls: [], sourceUrl: null };
+}
+
+function checkPricingInformation(
+  data: CrawlData,
+  productPrices: ProductPriceDetection,
+): Finding {
+  if (productPrices.finding?.status === "detected") {
+    return detected(
+      "pricing-information",
+      "Pricing information",
+      productPrices.finding.confidence,
+      `Pricing information inferred from detected product prices: ${productPrices.finding.evidence}`,
+      productPrices.evidenceUrls,
+      productPrices.sourceUrl ?? data.entryUrl,
+    );
+  }
+
   const crawlable = getCrawlablePages(data.pages);
   const pricingPages = pagesMatchingUrlPatterns(crawlable, [
     /pricing/i,
@@ -399,9 +634,10 @@ function checkPricingInformation(data: CrawlData): Finding {
     }
   }
 
-  const contentPages = pagesMatchingContent(crawlable, [/pricing/i, /subscription plan/i]).filter(
-    (page) => !pricingPages.some((match) => match.url === page.url),
-  );
+  const contentPages = pagesMatchingContent(crawlable, [
+    /pricing/i,
+    /subscription plan/i,
+  ]).filter((page) => !pricingPages.some((match) => match.url === page.url));
 
   if (contentPages.length > 0) {
     const built = buildFindingFromPages(
@@ -420,71 +656,24 @@ function checkPricingInformation(data: CrawlData): Finding {
     }
   }
 
-  const links = findLinks(data.pages, [/pricing/i, /\/price(s)?\b/i, /\/plans?\b/i]);
+  const links = findDiscoveredLinks(data.pages, [
+    /pricing/i,
+    /\/price(s)?\b/i,
+    /\/plans?\b/i,
+  ]);
   if (links.length > 0) {
     return needsReview(
       "pricing-information",
       "Pricing information",
       "low",
-      `Keyword match only in internal links: ${formatLinkEvidence(links)}`,
+      `Keyword match only in links: ${formatLinkEvidence(links.slice(0, 3))}`,
       uniqueUrls(links.map((link) => link.href)),
-      links[0].sourceUrl,
+      links[0].href,
+      links[0].discoveredFromUrl,
     );
   }
 
   return missing("pricing-information", "Pricing information", data.entryUrl);
-}
-
-function checkProductPrices(data: CrawlData): Finding {
-  const crawlable = getCrawlablePages(data.pages);
-  const pagesWithOfferSchema: PageData[] = [];
-  const pagesWithPriceMeta: PageData[] = [];
-
-  for (const page of crawlable) {
-    if (pageHasSchemaType(page, "Offer") || pageHasSchemaField(page, ["price", "lowPrice", "highPrice"]).length > 0) {
-      pagesWithOfferSchema.push(page);
-    }
-  }
-
-  if (pagesWithOfferSchema.length > 0) {
-    const prices = pagesWithOfferSchema.flatMap((page) =>
-      pageHasSchemaField(page, ["price", "lowPrice", "highPrice"]),
-    );
-    return detected(
-      "product-prices",
-      "Product prices",
-      "high",
-      `Offer or price fields in JSON-LD: ${formatEvidenceList(prices)} on ${summarizePages(pagesWithOfferSchema, 2)}`,
-      pagesWithOfferSchema.map((page) => page.url),
-      pagesWithOfferSchema[0].url,
-    );
-  }
-
-  for (const page of crawlable) {
-    const haystack = pageSearchText(page);
-    if (/\$[\d,.]+|\bUSD\b|\bEUR\b|\bGBP\b|£[\d,.]+|€[\d,.]+/.test(haystack)) {
-      pagesWithPriceMeta.push(page);
-    }
-  }
-
-  if (pagesWithPriceMeta.length > 0) {
-    const built = buildFindingFromPages(
-      pagesWithPriceMeta,
-      "Currency or price pattern in page content",
-    );
-    if (built) {
-      return detected(
-        "product-prices",
-        "Product prices",
-        "low",
-        built.evidence,
-        built.evidenceUrls,
-        built.sourceUrl,
-      );
-    }
-  }
-
-  return missing("product-prices", "Product prices", data.entryUrl);
 }
 
 function checkProductAvailability(data: CrawlData): Finding {
@@ -531,17 +720,6 @@ function checkProductAvailability(data: CrawlData): Finding {
   return missing("product-availability", "Product availability", data.entryUrl);
 }
 
-function checkPolicyOrSupportPage(
-  id: string,
-  label: string,
-  data: CrawlData,
-  urlPatterns: RegExp[],
-  contentPatterns: RegExp[],
-  linkPatterns: RegExp[],
-): Finding {
-  return checkPageDiscovery(id, label, data, urlPatterns, contentPatterns, linkPatterns);
-}
-
 function checkCartCheckout(data: CrawlData, platform: PlatformAnalysis): Finding {
   const platformPatterns: RegExp[] = [];
 
@@ -571,7 +749,7 @@ function checkCartCheckout(data: CrawlData, platform: PlatformAnalysis): Finding
     }
   }
 
-  const links = findLinks(data.pages, [
+  const links = findDiscoveredLinks(data.pages, [
     /checkout/i,
     /\/cart\b/i,
     /\bcart\b/i,
@@ -595,16 +773,19 @@ function checkCartCheckout(data: CrawlData, platform: PlatformAnalysis): Finding
         `Link found and page crawled. Title: "${page.title}". ${formatLinkEvidence([crawledMatch])}`,
         [crawledMatch.href],
         crawledMatch.href,
+        crawledMatch.discoveredFromUrl,
       );
     }
 
-    return needsReview(
+    const best = links[0];
+    return detected(
       "cart-checkout-pages",
       "Cart or checkout pages",
-      "low",
-      `Checkout or cart link(s) found but target page was not successfully crawled: ${formatLinkEvidence(links)}`,
+      best.scope === "same-origin" ? "medium" : "low",
+      `Cart or checkout link discovered on merchant site: ${formatLinkEvidence(links.slice(0, 3))}`,
       uniqueUrls(links.map((link) => link.href)),
-      links[0].sourceUrl,
+      best.href,
+      best.discoveredFromUrl,
     );
   }
 
@@ -633,7 +814,7 @@ function checkApiDeveloperDocs(data: CrawlData): Finding {
     }
   }
 
-  const links = findLinks(data.pages, [
+  const links = findDiscoveredLinks(data.pages, [
     /\/api\b/i,
     /developer/i,
     /\/docs?\b/i,
@@ -645,9 +826,10 @@ function checkApiDeveloperDocs(data: CrawlData): Finding {
       "api-developer-docs",
       "API or developer docs links",
       "low",
-      `Keyword match only in internal links: ${formatLinkEvidence(links)}`,
+      `Keyword match only in links: ${formatLinkEvidence(links.slice(0, 3))}`,
       uniqueUrls(links.map((link) => link.href)),
-      links[0].sourceUrl,
+      links[0].href,
+      links[0].discoveredFromUrl,
     );
   }
 
@@ -678,13 +860,60 @@ function checkSearchAction(data: CrawlData): Finding {
   return missing("search-action-schema", "SearchAction schema", data.entryUrl);
 }
 
+function reconcileRelatedFindings(findings: Finding[]): Finding[] {
+  const byId = new Map(findings.map((finding) => [finding.id, finding]));
+
+  function rank(finding: Finding): number {
+    if (finding.status === "detected") return 3;
+    if (finding.status === "needs_review") return 2;
+    return 1;
+  }
+
+  function syncGroup(ids: string[], labels: Record<string, string>) {
+    const group = ids
+      .map((id) => byId.get(id))
+      .filter((finding): finding is Finding => Boolean(finding));
+
+    if (group.length === 0) return;
+
+    const best = group.reduce((current, candidate) =>
+      rank(candidate) > rank(current) ? candidate : current,
+    );
+
+    if (rank(best) === 1) return;
+
+    for (const id of ids) {
+      byId.set(id, {
+        ...best,
+        id,
+        label: labels[id] ?? best.label,
+      });
+    }
+  }
+
+  syncGroup(["cart-checkout-pages", "checkout-cart-links"], {
+    "cart-checkout-pages": "Cart or checkout pages",
+    "checkout-cart-links": "Checkout or cart links",
+  });
+
+  syncGroup(["returns-page", "return-policy-page"], {
+    "returns-page": "Returns page",
+    "return-policy-page": "Return policy page",
+  });
+
+  return findings.map((finding) => byId.get(finding.id) ?? finding);
+}
+
 export function runChecks(data: CrawlData): {
   platform: PlatformAnalysis;
   findings: Finding[];
 } {
   const platform = detectPlatform(data);
+  const productPrices = detectProductPrices(data);
+  const productPricesFinding =
+    productPrices.finding ?? missing("product-prices", "Product prices", data.entryUrl);
 
-  const findings: Finding[] = [
+  const findings = reconcileRelatedFindings([
     checkRobotsTxt(data),
     checkSitemap(data),
     checkLlmsTxt(data),
@@ -700,60 +929,92 @@ export function runChecks(data: CrawlData): {
     checkCollectionPages(data, platform),
     checkCategoryPages(data, platform),
     checkCatalogPages(data, platform),
-    checkPricingInformation(data),
-    checkProductPrices(data),
+    checkPricingInformation(data, productPrices),
+    productPricesFinding,
     checkProductAvailability(data),
-    checkPolicyOrSupportPage(
+    checkSupportSignal(
+      "help-center",
+      "Help center",
+      data,
+      [/support\.|help\./i, /help.?center/i, /\/help\b/i],
+      [/help.?center/i, /\bhelp\b/i, /support\./i],
+      [/help center/i, /customer support/i],
+    ),
+    checkSupportSignal(
+      "faq-page",
+      "FAQ page",
+      data,
+      [/faq/i, /\/faq\b/i, /support\./i],
+      [/faq/i, /frequently asked questions/i, /support\./i],
+      [/frequently asked questions/i, /\bfaq\b/i],
+    ),
+    checkSupportSignal(
       "shipping-page",
       "Shipping page",
       data,
-      [/shipping/i, /delivery/i, /\/ship(ping)?\b/i],
-      [/shipping policy/i, /delivery information/i, /\bshipping\b/i],
-      [/shipping/i, /delivery/i],
+      [/shipping/i, /delivery/i, /delivery-information/i, /ship(ping)?-policy/i],
+      [/shipping/i, /delivery/i, /delivery information/i],
+      [/shipping/i, /delivery/i, /delivery information/i],
     ),
-    checkPolicyOrSupportPage(
+    checkSupportSignal(
+      "delivery-information",
+      "Delivery information",
+      data,
+      [/delivery-information/i, /delivery/i, /shipping/i],
+      [/delivery information/i, /shipping policy/i],
+      [/delivery information/i, /delivery/i],
+    ),
+    checkSupportSignal(
       "returns-page",
       "Returns page",
       data,
-      [/returns?/i, /\/returns?\b/i],
+      [/returns?-policy/i, /\/returns?\b/i, /returns?\//i],
       [/return policy/i, /returns & exchanges/i],
-      [/return/i, /\/returns?\b/i],
+      [/return/i, /returns policy/i],
     ),
-    checkPolicyOrSupportPage(
+    checkSupportSignal(
+      "return-policy-page",
+      "Return policy page",
+      data,
+      [/returns?-policy/i, /return-policy/i, /\/returns?\b/i],
+      [/return policy/i, /returns policy/i],
+      [/return policy/i, /returns policy/i],
+    ),
+    checkSupportSignal(
       "refund-page",
       "Refund page",
       data,
       [/refund/i, /\/refund/i],
-      [/refund policy/i, /\brefund\b/i],
+      [/refund/i, /refund policy/i],
       [/refund/i],
     ),
-    checkPolicyOrSupportPage(
-      "faq-page",
-      "FAQ page",
+    checkSupportSignal(
+      "return-portal",
+      "Return portal",
       data,
-      [/faq/i, /\/faq\b/i, /help.?center/i],
-      [/frequently asked questions/i, /\bfaq\b/i],
-      [/faq/i, /help.?center/i],
+      [/loopreturns/i, /return-portal/i, /make-a-return/i, /returns?\./i],
+      [/loopreturns/i, /make a return/i, /start a return/i],
+      [/make a return/i, /loopreturns/i, /return portal/i],
     ),
-    checkPolicyOrSupportPage(
+    checkSupportSignal(
       "contact-page",
       "Contact page",
       data,
-      [/contact/i, /\/contact\b/i, /support/i],
-      [/contact us/i, /customer support/i],
-      [/contact/i, /support/i],
+      [/contact/i, /\/contact\b/i, /support\./i],
+      [/contact us/i, /customer support/i, /contact support/i],
+      [/contact/i, /support/i, /contact support/i],
+    ),
+    checkSupportSignal(
+      "contact-support",
+      "Contact support",
+      data,
+      [/contact/i, /support\./i, /help\./i],
+      [/contact support/i, /customer support/i],
+      [/contact support/i, /support/i],
     ),
     checkCartCheckout(data, platform),
     checkApiDeveloperDocs(data),
-    checkPolicyOrSupportPage(
-      "return-policy-page",
-      "Return policy page",
-      data,
-      [/return/i, /refund/i, /exchange/i, /\/returns?\b/i],
-      [/return policy/i, /refund policy/i],
-      [/return/i, /refund/i],
-    ),
-    checkPolicyOrSupportPage(
+    checkPageDiscovery(
       "pricing-page",
       "Pricing page",
       data,
@@ -761,7 +1022,7 @@ export function runChecks(data: CrawlData): {
       [/pricing/i, /plans & pricing/i],
       [/pricing/i, /\/price(s)?\b/i],
     ),
-    checkPolicyOrSupportPage(
+    checkPageDiscovery(
       "checkout-cart-links",
       "Checkout or cart links",
       data,
@@ -769,7 +1030,7 @@ export function runChecks(data: CrawlData): {
       [/checkout/i, /\bcart\b/i],
       [/checkout/i, /\/cart\b/i, /\bcart\b/i],
     ),
-  ];
+  ]);
 
   return { platform, findings };
 }

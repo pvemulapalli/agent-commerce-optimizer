@@ -1,16 +1,24 @@
 import * as cheerio from "cheerio";
 import pLimit from "p-limit";
+import { isSameOrigin } from "./domains";
+import {
+  extractDiscoveredLinks,
+  scoreDiscoveredLink,
+  selectRelatedDomainUrls,
+  toInternalLinks,
+} from "./link-extraction";
 import {
   prioritizeSitemapUrls,
   resolveSitemapUrls,
   SITEMAP_URL_LIMIT,
 } from "./sitemap";
-import type { CrawlData, InternalLink, PageData, ResourceFetch } from "./types";
+import type { CrawlData, PageData, ResourceFetch } from "./types";
 
 const FETCH_TIMEOUT_MS = 15_000;
 const MAX_LINK_FOLLOW_UP_PAGES = 5;
+const MAX_RELATED_DOMAIN_PAGES = 10;
 const USER_AGENT =
-  "AI-Commerce-Discoverability-Audit/1.1 (+https://github.com/agent-commerce-optimizer)";
+  "AI-Commerce-Discoverability-Audit/1.2 (+https://github.com/agent-commerce-optimizer)";
 
 const RELEVANCE_KEYWORDS = [
   "returns",
@@ -34,6 +42,8 @@ const RELEVANCE_KEYWORDS = [
   "bag",
   "shop",
   "store",
+  "track",
+  "order",
 ];
 
 function normalizeInputUrl(input: string): URL {
@@ -43,27 +53,6 @@ function normalizeInputUrl(input: string): URL {
       ? trimmed
       : `https://${trimmed}`;
   return new URL(withProtocol);
-}
-
-function resolveHref(href: string, baseUrl: string): string | null {
-  try {
-    const resolved = new URL(href, baseUrl);
-    if (!["http:", "https:"].includes(resolved.protocol)) {
-      return null;
-    }
-    resolved.hash = "";
-    return resolved.href;
-  } catch {
-    return null;
-  }
-}
-
-function isSameOrigin(url: string, origin: string): boolean {
-  try {
-    return new URL(url).origin === origin;
-  } catch {
-    return false;
-  }
 }
 
 function extractSchemaTypes(data: unknown): string[] {
@@ -127,55 +116,25 @@ function extractBodyText($: cheerio.CheerioAPI): string | null {
   return text ? text.slice(0, 4000) : null;
 }
 
-function extractInternalLinks(
-  $: cheerio.CheerioAPI,
-  pageUrl: string,
-  origin: string,
-): InternalLink[] {
-  const links: InternalLink[] = [];
-  const seen = new Set<string>();
-
-  $("a[href]").each((_, element) => {
-    const href = $(element).attr("href");
-    if (!href) return;
-
-    const resolved = resolveHref(href, pageUrl);
-    if (!resolved || !isSameOrigin(resolved, origin)) return;
-    if (seen.has(resolved)) return;
-
-    seen.add(resolved);
-    links.push({
-      href: resolved,
-      text: $(element).text().replace(/\s+/g, " ").trim(),
-    });
-  });
-
-  return links;
-}
-
-function scoreLink(link: InternalLink): number {
-  const haystack = `${link.href} ${link.text}`.toLowerCase();
-  let score = 0;
-
-  for (const keyword of RELEVANCE_KEYWORDS) {
-    if (haystack.includes(keyword)) {
-      score += 2;
-    }
-  }
-
-  return score;
-}
-
 function selectFollowUpLinks(pages: PageData[], entryUrl: string): string[] {
   const crawled = new Set(pages.map((page) => page.url));
   const candidates = new Map<string, number>();
 
   for (const page of pages) {
-    for (const link of page.internalLinks) {
+    for (const link of page.discoveredLinks) {
+      if (link.scope !== "same-origin") continue;
       if (crawled.has(link.href)) continue;
       if (link.href === entryUrl) continue;
 
-      const score = scoreLink(link);
+      const haystack = `${link.href} ${link.text}`.toLowerCase();
+      let score = scoreDiscoveredLink(link);
+
+      for (const keyword of RELEVANCE_KEYWORDS) {
+        if (haystack.includes(keyword)) {
+          score += 2;
+        }
+      }
+
       if (score <= 0) continue;
 
       const existing = candidates.get(link.href) ?? 0;
@@ -241,7 +200,11 @@ async function fetchXml(url: string): Promise<string | null> {
   return resource.status === 200 && resource.content ? resource.content : null;
 }
 
-async function fetchPage(url: string, origin: string): Promise<PageData> {
+async function fetchPage(
+  url: string,
+  entryOrigin: string,
+  entryUrl: string,
+): Promise<PageData> {
   try {
     const response = await fetchWithTimeout(url);
     const status = response.status;
@@ -255,6 +218,7 @@ async function fetchPage(url: string, origin: string): Promise<PageData> {
         htmlSnippet: null,
         jsonLdBlocks: [],
         schemaTypes: [],
+        discoveredLinks: [],
         internalLinks: [],
         status,
         error: `HTTP ${status}`,
@@ -274,6 +238,7 @@ async function fetchPage(url: string, origin: string): Promise<PageData> {
         htmlSnippet: null,
         jsonLdBlocks: [],
         schemaTypes: [],
+        discoveredLinks: [],
         internalLinks: [],
         status,
         error: `Non-HTML content type: ${contentType}`,
@@ -296,7 +261,7 @@ async function fetchPage(url: string, origin: string): Promise<PageData> {
       .filter(Boolean);
 
     const { blocks, schemaTypes } = parseJsonLdBlocks(rawJsonLd);
-    const internalLinks = extractInternalLinks($, url, origin);
+    const discoveredLinks = extractDiscoveredLinks($, url, entryOrigin, entryUrl);
     const bodyTextSnippet = extractBodyText($);
 
     return {
@@ -307,7 +272,8 @@ async function fetchPage(url: string, origin: string): Promise<PageData> {
       htmlSnippet,
       jsonLdBlocks: blocks,
       schemaTypes,
-      internalLinks,
+      discoveredLinks,
+      internalLinks: toInternalLinks(discoveredLinks),
       status,
     };
   } catch (error) {
@@ -319,6 +285,7 @@ async function fetchPage(url: string, origin: string): Promise<PageData> {
       htmlSnippet: null,
       jsonLdBlocks: [],
       schemaTypes: [],
+      discoveredLinks: [],
       internalLinks: [],
       status: null,
       error: error instanceof Error ? error.message : "Fetch failed",
@@ -368,7 +335,7 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
 
   const [entryPage, robotsTxt, sitemapXml, llmsTxt, llmsFullTxt] =
     await Promise.all([
-      fetchPage(entryUrl, origin),
+      fetchPage(entryUrl, origin, entryUrl),
       limit(() => fetchResource(resourcePaths.robotsTxt)),
       limit(() => fetchResource(resourcePaths.sitemapXml)),
       limit(() => fetchResource(resourcePaths.llmsTxt)),
@@ -406,7 +373,7 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
 
     if (selected.length > 0) {
       const sitemapPages = await Promise.all(
-        selected.map((url) => limit(() => fetchPage(url, origin))),
+        selected.map((url) => limit(() => fetchPage(url, origin, entryUrl))),
       );
       sitemapInfo.urlsCrawled = sitemapPages
         .filter((page) => page.status === 200)
@@ -421,9 +388,33 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
 
   if (followUpUrls.length > 0) {
     const followUpPages = await Promise.all(
-      followUpUrls.map((url) => limit(() => fetchPage(url, origin))),
+      followUpUrls.map((url) => limit(() => fetchPage(url, origin, entryUrl))),
     );
     pages = mergePages(pages, followUpPages);
+  }
+
+  const crawledUrls = new Set(pages.map((page) => page.url));
+  const relatedLinks = selectRelatedDomainUrls(
+    pages,
+    crawledUrls,
+    MAX_RELATED_DOMAIN_PAGES,
+  );
+
+  const relatedDomainInfo = {
+    urlsSelected: relatedLinks.map((link) => link.href),
+    urlsCrawled: [] as string[],
+  };
+
+  if (relatedLinks.length > 0) {
+    const relatedPages = await Promise.all(
+      relatedLinks.map((link) =>
+        limit(() => fetchPage(link.href, origin, entryUrl)),
+      ),
+    );
+    relatedDomainInfo.urlsCrawled = relatedPages
+      .filter((page) => page.status === 200)
+      .map((page) => page.url);
+    pages = mergePages(pages, relatedPages);
   }
 
   return {
@@ -437,6 +428,7 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
       llmsFullTxt,
     },
     sitemap: sitemapInfo,
+    relatedDomain: relatedDomainInfo,
     crawledAt: new Date().toISOString(),
   };
 }

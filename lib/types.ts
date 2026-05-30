@@ -13,6 +13,23 @@ export type CommercePlatform =
   | "CommerceTools"
   | "Unknown";
 
+export type LinkContext = "footer" | "nav" | "header" | "body";
+
+export type LinkScope = "same-origin" | "related-domain";
+
+export interface DiscoveredLink {
+  href: string;
+  text: string;
+  ariaLabel: string | null;
+  titleAttr: string | null;
+  context: LinkContext;
+  discoveredFromUrl: string;
+  scope: LinkScope;
+}
+
+/** @deprecated Use discoveredLinks — kept for compatibility during migration */
+export type InternalLink = Pick<DiscoveredLink, "href" | "text">;
+
 export interface Finding {
   id: string;
   label: string;
@@ -21,6 +38,7 @@ export interface Finding {
   evidence: string;
   evidenceUrls: string[];
   sourceUrl: string;
+  discoveredFromUrl: string | null;
 }
 
 export interface PlatformAnalysis {
@@ -28,11 +46,6 @@ export interface PlatformAnalysis {
   confidence: ConfidenceLevel;
   evidence: string[];
   sourceUrls: string[];
-}
-
-export interface InternalLink {
-  href: string;
-  text: string;
 }
 
 export interface PageData {
@@ -43,6 +56,7 @@ export interface PageData {
   htmlSnippet: string | null;
   jsonLdBlocks: unknown[];
   schemaTypes: string[];
+  discoveredLinks: DiscoveredLink[];
   internalLinks: InternalLink[];
   status: number | null;
   error?: string;
@@ -63,6 +77,11 @@ export interface SitemapCrawlInfo {
   urlsCrawled: string[];
 }
 
+export interface RelatedDomainCrawlInfo {
+  urlsSelected: string[];
+  urlsCrawled: string[];
+}
+
 export interface CrawlData {
   entryUrl: string;
   origin: string;
@@ -74,6 +93,7 @@ export interface CrawlData {
     llmsFullTxt: ResourceFetch;
   };
   sitemap: SitemapCrawlInfo;
+  relatedDomain: RelatedDomainCrawlInfo;
   crawledAt: string;
 }
 
@@ -110,4 +130,18 @@ export interface MerchantValidationResult {
     needsReview: number;
   };
   error?: string;
+}
+
+export interface LinkMatch {
+  href: string;
+  text: string;
+  discoveredFromUrl: string;
+  scope: LinkScope;
+  context: LinkContext;
+}
+
+export interface ProductPriceDetection {
+  finding: Finding | null;
+  evidenceUrls: string[];
+  sourceUrl: string | null;
 }
