@@ -1,32 +1,37 @@
 import * as cheerio from "cheerio";
 import pLimit from "p-limit";
+import {
+  prioritizeSitemapUrls,
+  resolveSitemapUrls,
+  SITEMAP_URL_LIMIT,
+} from "./sitemap";
 import type { CrawlData, InternalLink, PageData, ResourceFetch } from "./types";
 
 const FETCH_TIMEOUT_MS = 15_000;
-const MAX_FOLLOW_UP_PAGES = 5;
+const MAX_LINK_FOLLOW_UP_PAGES = 5;
 const USER_AGENT =
-  "AI-Commerce-Discoverability-Audit/1.0 (+https://github.com/agent-commerce-optimizer)";
+  "AI-Commerce-Discoverability-Audit/1.1 (+https://github.com/agent-commerce-optimizer)";
 
 const RELEVANCE_KEYWORDS = [
-  "pricing",
-  "price",
-  "plans",
-  "shipping",
-  "delivery",
-  "return",
+  "returns",
   "refund",
-  "contact",
+  "shipping",
+  "faq",
+  "help",
   "support",
+  "contact",
+  "policy",
   "cart",
   "checkout",
-  "bag",
-  "api",
-  "developer",
-  "docs",
-  "documentation",
-  "faq",
-  "about",
   "product",
+  "products",
+  "collections",
+  "catalog",
+  "pricing",
+  "price",
+  "delivery",
+  "return",
+  "bag",
   "shop",
   "store",
 ];
@@ -116,6 +121,12 @@ function parseJsonLdBlocks(rawBlocks: string[]): {
   return { blocks, schemaTypes: [...schemaTypes] };
 }
 
+function extractBodyText($: cheerio.CheerioAPI): string | null {
+  $("script, style, noscript").remove();
+  const text = $("body").text().replace(/\s+/g, " ").trim();
+  return text ? text.slice(0, 4000) : null;
+}
+
 function extractInternalLinks(
   $: cheerio.CheerioAPI,
   pageUrl: string,
@@ -152,17 +163,10 @@ function scoreLink(link: InternalLink): number {
     }
   }
 
-  if (link.href.endsWith("/")) {
-    score += 0.5;
-  }
-
   return score;
 }
 
-function selectFollowUpLinks(
-  pages: PageData[],
-  entryUrl: string,
-): string[] {
+function selectFollowUpLinks(pages: PageData[], entryUrl: string): string[] {
   const crawled = new Set(pages.map((page) => page.url));
   const candidates = new Map<string, number>();
 
@@ -181,7 +185,7 @@ function selectFollowUpLinks(
 
   return [...candidates.entries()]
     .sort((a, b) => b[1] - a[1])
-    .slice(0, MAX_FOLLOW_UP_PAGES)
+    .slice(0, MAX_LINK_FOLLOW_UP_PAGES)
     .map(([href]) => href);
 }
 
@@ -232,6 +236,11 @@ async function fetchResource(url: string): Promise<ResourceFetch> {
   }
 }
 
+async function fetchXml(url: string): Promise<string | null> {
+  const resource = await fetchResource(url);
+  return resource.status === 200 && resource.content ? resource.content : null;
+}
+
 async function fetchPage(url: string, origin: string): Promise<PageData> {
   try {
     const response = await fetchWithTimeout(url);
@@ -242,6 +251,8 @@ async function fetchPage(url: string, origin: string): Promise<PageData> {
         url,
         title: null,
         metaDescription: null,
+        bodyTextSnippet: null,
+        htmlSnippet: null,
         jsonLdBlocks: [],
         schemaTypes: [],
         internalLinks: [],
@@ -251,11 +262,16 @@ async function fetchPage(url: string, origin: string): Promise<PageData> {
     }
 
     const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
+    if (
+      !contentType.includes("text/html") &&
+      !contentType.includes("application/xhtml")
+    ) {
       return {
         url,
         title: null,
         metaDescription: null,
+        bodyTextSnippet: null,
+        htmlSnippet: null,
         jsonLdBlocks: [],
         schemaTypes: [],
         internalLinks: [],
@@ -266,6 +282,7 @@ async function fetchPage(url: string, origin: string): Promise<PageData> {
 
     const html = await response.text();
     const $ = cheerio.load(html);
+    const htmlSnippet = html.slice(0, 12000);
 
     const title = $("title").first().text().replace(/\s+/g, " ").trim() || null;
     const metaDescription =
@@ -280,11 +297,14 @@ async function fetchPage(url: string, origin: string): Promise<PageData> {
 
     const { blocks, schemaTypes } = parseJsonLdBlocks(rawJsonLd);
     const internalLinks = extractInternalLinks($, url, origin);
+    const bodyTextSnippet = extractBodyText($);
 
     return {
       url,
       title,
       metaDescription,
+      bodyTextSnippet,
+      htmlSnippet,
       jsonLdBlocks: blocks,
       schemaTypes,
       internalLinks,
@@ -295,6 +315,8 @@ async function fetchPage(url: string, origin: string): Promise<PageData> {
       url,
       title: null,
       metaDescription: null,
+      bodyTextSnippet: null,
+      htmlSnippet: null,
       jsonLdBlocks: [],
       schemaTypes: [],
       internalLinks: [],
@@ -302,6 +324,32 @@ async function fetchPage(url: string, origin: string): Promise<PageData> {
       error: error instanceof Error ? error.message : "Fetch failed",
     };
   }
+}
+
+function mergePages(existing: PageData[], incoming: PageData[]): PageData[] {
+  const byUrl = new Map(existing.map((page) => [page.url, page]));
+
+  for (const page of incoming) {
+    if (!byUrl.has(page.url)) {
+      byUrl.set(page.url, page);
+    }
+  }
+
+  return [...byUrl.values()];
+}
+
+function discoverSitemapCandidates(origin: string, robotsTxt: ResourceFetch): string[] {
+  const candidates = new Set<string>([`${origin}/sitemap.xml`]);
+
+  if (robotsTxt.content) {
+    const sitemapMatches = robotsTxt.content.match(/^Sitemap:\s*(.+)$/gim) ?? [];
+    for (const match of sitemapMatches) {
+      const loc = match.replace(/^Sitemap:\s*/i, "").trim();
+      if (loc) candidates.add(loc);
+    }
+  }
+
+  return [...candidates];
 }
 
 export async function crawlSite(inputUrl: string): Promise<CrawlData> {
@@ -327,14 +375,55 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
       limit(() => fetchResource(resourcePaths.llmsFullTxt)),
     ]);
 
-  const pages: PageData[] = [entryPage];
-  const followUpUrls = selectFollowUpLinks(pages, entryUrl);
+  let pages: PageData[] = [entryPage];
+
+  const sitemapCandidates = discoverSitemapCandidates(origin, robotsTxt);
+  const initialSitemap =
+    sitemapXml.status === 200 && sitemapXml.content
+      ? sitemapXml.url
+      : sitemapCandidates[0];
+
+  let sitemapInfo = {
+    sitemapUrls: [] as string[],
+    urlsDiscovered: 0,
+    urlsSelected: [] as string[],
+    urlsCrawled: [] as string[],
+  };
+
+  if (initialSitemap) {
+    const resolved = await resolveSitemapUrls(initialSitemap, fetchXml);
+    const sameOriginUrls = resolved.pageUrls.filter((url) =>
+      isSameOrigin(url, origin),
+    );
+    const selected = prioritizeSitemapUrls(sameOriginUrls, SITEMAP_URL_LIMIT);
+
+    sitemapInfo = {
+      sitemapUrls: resolved.sitemapUrls,
+      urlsDiscovered: sameOriginUrls.length,
+      urlsSelected: selected,
+      urlsCrawled: [],
+    };
+
+    if (selected.length > 0) {
+      const sitemapPages = await Promise.all(
+        selected.map((url) => limit(() => fetchPage(url, origin))),
+      );
+      sitemapInfo.urlsCrawled = sitemapPages
+        .filter((page) => page.status === 200)
+        .map((page) => page.url);
+      pages = mergePages(pages, sitemapPages);
+    }
+  }
+
+  const followUpUrls = selectFollowUpLinks(pages, entryUrl).filter(
+    (url) => !pages.some((page) => page.url === url),
+  );
 
   if (followUpUrls.length > 0) {
     const followUpPages = await Promise.all(
       followUpUrls.map((url) => limit(() => fetchPage(url, origin))),
     );
-    pages.push(...followUpPages);
+    pages = mergePages(pages, followUpPages);
   }
 
   return {
@@ -347,6 +436,9 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
       llmsTxt,
       llmsFullTxt,
     },
+    sitemap: sitemapInfo,
     crawledAt: new Date().toISOString(),
   };
 }
+
+export { extractSchemaTypes, parseJsonLdBlocks };

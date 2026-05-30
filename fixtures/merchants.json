@@ -1,0 +1,22 @@
+[
+  {
+    "platform": "Shopify",
+    "merchant": "Gymshark",
+    "url": "https://www.gymshark.com"
+  },
+  {
+    "platform": "Shopify",
+    "merchant": "Allbirds",
+    "url": "https://www.allbirds.com"
+  },
+  {
+    "platform": "BigCommerce",
+    "merchant": "Skullcandy",
+    "url": "https://www.skullcandy.com"
+  },
+  {
+    "platform": "WooCommerce",
+    "merchant": "WooCommerce Demo",
+    "url": "https://woocommerce.com"
+  }
+]

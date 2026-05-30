@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const auditRequestSchema = z.object({
   url: z
@@ -52,12 +52,13 @@ export async function POST(request: Request) {
 
   try {
     const crawlData = await crawlSite(parsed.data.url);
-    const findings = runChecks(crawlData);
+    const { platform, findings } = runChecks(crawlData);
     const grouped = groupFindings(findings);
 
     const result: AuditResult & { grouped: typeof grouped } = {
       url: crawlData.entryUrl,
       crawledAt: crawlData.crawledAt,
+      platform,
       findings,
       grouped,
     };
