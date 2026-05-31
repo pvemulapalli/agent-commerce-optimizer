@@ -1,0 +1,431 @@
+import { normalizeSchemaType } from "./schema-utils";
+import type { GeneratedAsset, GenerationContext, GroupedFindings } from "./types";
+
+function extractJsonLdByType(
+  blocks: unknown[],
+  typeName: string,
+): Record<string, unknown> | null {
+  const normalized = typeName.toLowerCase();
+
+  function findInValue(value: unknown): Record<string, unknown> | null {
+    if (!value || typeof value !== "object") return null;
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const found = findInValue(item);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    const record = value as Record<string, unknown>;
+    const typeField = record["@type"];
+    const types = Array.isArray(typeField)
+      ? typeField
+      : typeField
+        ? [typeField]
+        : [];
+
+    if (
+      types.some(
+        (type) => normalizeSchemaType(String(type)) === normalized,
+      )
+    ) {
+      return record;
+    }
+
+    if (record["@graph"]) {
+      const found = findInValue(record["@graph"]);
+      if (found) return found;
+    }
+
+    for (const nested of Object.values(record)) {
+      if (nested && typeof nested === "object") {
+        const found = findInValue(nested);
+        if (found) return found;
+      }
+    }
+
+    return null;
+  }
+
+  for (const block of blocks) {
+    const found = findInValue(block);
+    if (found) return found;
+  }
+
+  return null;
+}
+
+function groupFindings(findings: GenerationContext["findings"]): GroupedFindings {
+  return {
+    detected: findings.filter((finding) => finding.status === "detected"),
+    missing: findings.filter((finding) => finding.status === "missing"),
+    needsReview: findings.filter((finding) => finding.status === "needs_review"),
+  };
+}
+
+function homepageTitle(context: GenerationContext): string {
+  return context.homepage?.title?.trim() || "TODO: Add merchant name from crawled homepage title";
+}
+
+function homepageDescription(context: GenerationContext): string {
+  return (
+    context.homepage?.metaDescription?.trim() ||
+    "TODO: Add a concise merchant description from crawled homepage meta description"
+  );
+}
+
+function formatFindingList(findings: GenerationContext["findings"]): string {
+  if (findings.length === 0) {
+    return "_None in this category._";
+  }
+
+  return findings
+    .map((finding) => {
+      const urls =
+        finding.evidenceUrls.length > 0
+          ? `\n  - Evidence URLs: ${finding.evidenceUrls.join(", ")}`
+          : "";
+      return `- **${finding.label}** (${finding.confidence} confidence)\n  - Evidence: ${finding.evidence}${urls}\n  - Source: ${finding.sourceUrl}`;
+    })
+    .join("\n");
+}
+
+function generateLlmsTxt(context: GenerationContext): string {
+  const title = homepageTitle(context);
+  const description = homepageDescription(context);
+  const lines: string[] = [
+    `# ${title}`,
+    `> ${description}`,
+    "",
+    "## Site",
+    `- URL: ${context.auditedUrl}`,
+    `- Platform (crawled signal): ${context.platform.platform} (${context.platform.confidence} confidence)`,
+    "",
+    "## Discovery files",
+  ];
+
+  if (context.robotsTxt.status === 200) {
+    lines.push(`- [robots.txt](${context.robotsTxt.url})`);
+  } else {
+    lines.push(`- TODO: Publish robots.txt at ${context.robotsTxt.url}`);
+  }
+
+  if (context.sitemapXml.status === 200) {
+    lines.push(`- [sitemap.xml](${context.sitemapXml.url})`);
+  } else {
+    lines.push(`- TODO: Publish sitemap.xml at ${context.sitemapXml.url}`);
+  }
+
+  if (context.llmsTxt.status === 200 && context.llmsTxt.content?.trim()) {
+    lines.push(
+      `- Existing llms.txt found at ${context.llmsTxt.url} — review and merge with this draft`,
+    );
+  }
+
+  lines.push("", "## Key pages");
+
+  if (context.homepage) {
+    lines.push(`- [Homepage](${context.homepage.url})`);
+  }
+
+  for (const url of context.productPageUrls.slice(0, 5)) {
+    lines.push(`- [Product page](${url})`);
+  }
+
+  for (const page of context.faqPages) {
+    const label = page.title?.trim() || "FAQ / help page";
+    lines.push(`- [${label}](${page.url})`);
+  }
+
+  if (context.supportLinks.length > 0) {
+    lines.push("", "## Support & policies");
+    for (const link of context.supportLinks.slice(0, 8)) {
+      lines.push(`- [${link.text}](${link.href})`);
+    }
+  }
+
+  if (context.sitemapUrls.length > 0) {
+    lines.push("", "## Sitemap URLs (sample from crawl)");
+    for (const url of context.sitemapUrls.slice(0, 8)) {
+      lines.push(`- ${url}`);
+    }
+  }
+
+  lines.push(
+    "",
+    "## Notes",
+    "- Generated from crawled evidence only. Replace TODO items with verified merchant facts.",
+    `- Generated at ${new Date().toISOString()} from audit crawl at ${context.crawledAt}`,
+  );
+
+  return `${lines.join("\n")}\n`;
+}
+
+function generateMerchantProfile(context: GenerationContext): string {
+  const lines: string[] = [
+    "# Merchant Profile",
+    "",
+    "_Generated from crawled evidence. Items marked TODO were not found during the crawl._",
+    "",
+    "## Overview",
+    "",
+    `| Field | Value |`,
+    `| --- | --- |`,
+    `| Audited URL | ${context.auditedUrl} |`,
+    `| Homepage title | ${context.homepage?.title?.trim() || "TODO: not found in crawl"} |`,
+    `| Meta description | ${context.homepage?.metaDescription?.trim() || "TODO: not found in crawl"} |`,
+    `| Commerce platform | ${context.platform.platform} (${context.platform.confidence} confidence) |`,
+    `| Crawled at | ${context.crawledAt} |`,
+    "",
+    "## Platform evidence",
+    "",
+  ];
+
+  if (context.platform.evidence.length > 0) {
+    for (const item of context.platform.evidence) {
+      lines.push(`- ${item}`);
+    }
+  } else {
+    lines.push("- TODO: No platform evidence captured");
+  }
+
+  lines.push("", "## Product catalog signals", "");
+
+  if (context.productPageUrls.length > 0) {
+    for (const url of context.productPageUrls) {
+      lines.push(`- ${url}`);
+    }
+  } else {
+    lines.push("- TODO: No product pages discovered in crawl");
+  }
+
+  lines.push("", "## Support & policy links", "");
+
+  if (context.supportLinks.length > 0) {
+    for (const link of context.supportLinks) {
+      lines.push(
+        `- [${link.text}](${link.href}) (discovered on ${link.discoveredFromUrl})`,
+      );
+    }
+  } else {
+    lines.push("- TODO: No support or policy links discovered in crawl");
+  }
+
+  lines.push("", "## FAQ / help pages", "");
+
+  if (context.faqPages.length > 0) {
+    for (const page of context.faqPages) {
+      lines.push(`- ${page.title?.trim() || "(no title)"} → ${page.url}`);
+    }
+  } else {
+    lines.push("- TODO: No FAQ or help pages discovered in crawl");
+  }
+
+  lines.push("", "## Discovery files", "");
+  lines.push(
+    `- robots.txt: ${context.robotsTxt.status === 200 ? context.robotsTxt.url : `TODO — checked ${context.robotsTxt.url}`}`,
+  );
+  lines.push(
+    `- sitemap.xml: ${context.sitemapXml.status === 200 ? context.sitemapXml.url : `TODO — checked ${context.sitemapXml.url}`}`,
+  );
+  lines.push(
+    `- llms.txt: ${context.llmsTxt.status === 200 ? context.llmsTxt.url : `TODO — checked ${context.llmsTxt.url}`}`,
+  );
+
+  return `${lines.join("\n")}\n`;
+}
+
+function generateOrganizationSchema(context: GenerationContext): string {
+  for (const page of context.pages) {
+    const existing = extractJsonLdByType(page.jsonLdBlocks, "Organization");
+    if (existing) {
+      return `${JSON.stringify(existing, null, 2)}\n`;
+    }
+  }
+
+  const template = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: context.homepage?.title?.trim() || "TODO: Organization name",
+    url: context.auditedUrl,
+    description:
+      context.homepage?.metaDescription?.trim() ||
+      "TODO: Organization description from verified merchant copy",
+    logo: "TODO: URL to organization logo image",
+    sameAs: ["TODO: Official social profile URLs"],
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      url:
+        context.supportLinks.find((link) => /contact|support|help/i.test(link.text))?.href ||
+        "TODO: Support or contact page URL",
+    },
+    _comment:
+      "Template generated from crawl evidence. Replace TODO values with verified facts.",
+  };
+
+  return `${JSON.stringify(template, null, 2)}\n`;
+}
+
+function generateProductSchemaTemplate(context: GenerationContext): string {
+  for (const page of context.pages) {
+    const existing = extractJsonLdByType(page.jsonLdBlocks, "Product");
+    if (existing) {
+      const annotated = {
+        ...existing,
+        _sourceUrl: page.url,
+        _comment:
+          "Extracted from crawled JSON-LD. Review and complete any missing fields before publishing.",
+      };
+      return `${JSON.stringify(annotated, null, 2)}\n`;
+    }
+  }
+
+  const exampleUrl = context.productPageUrls[0] || "TODO: Product page URL from crawl";
+
+  const template = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "TODO: Product name from product page title",
+    description: "TODO: Product description from product page copy",
+    url: exampleUrl,
+    sku: "TODO: Product SKU or identifier",
+    brand: {
+      "@type": "Brand",
+      name: context.homepage?.title?.trim() || "TODO: Brand name",
+    },
+    image: ["TODO: Product image URL"],
+    offers: {
+      "@type": "Offer",
+      url: exampleUrl,
+      priceCurrency: "TODO: ISO 4217 currency code",
+      price: "TODO: Price from product page",
+      availability: "https://schema.org/TODO_InventoryStatus",
+    },
+    _comment:
+      "Template generated because Product JSON-LD was not found on crawled product pages.",
+  };
+
+  return `${JSON.stringify(template, null, 2)}\n`;
+}
+
+function generateFaqSchemaTemplate(context: GenerationContext): string {
+  for (const page of context.pages) {
+    const existing = extractJsonLdByType(page.jsonLdBlocks, "FAQPage");
+    if (existing) {
+      const annotated = {
+        ...existing,
+        _sourceUrl: page.url,
+        _comment:
+          "Extracted from crawled JSON-LD. Review question/answer pairs for accuracy.",
+      };
+      return `${JSON.stringify(annotated, null, 2)}\n`;
+    }
+  }
+
+  const faqPageUrl = context.faqPages[0]?.url || "TODO: FAQ or help page URL";
+
+  const template = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "TODO: Question text from FAQ page",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "TODO: Answer text from FAQ page",
+        },
+      },
+    ],
+    _faqPageUrl: faqPageUrl,
+    _comment:
+      "Template generated because FAQPage JSON-LD was not found. Add one entry per FAQ item from crawled FAQ content.",
+  };
+
+  return `${JSON.stringify(template, null, 2)}\n`;
+}
+
+function generateAgentCommerceReadiness(context: GenerationContext): string {
+  const grouped = groupFindings(context.findings);
+  const lines: string[] = [
+    "# Agent Commerce Readiness",
+    "",
+    "_Evidence-backed audit summary for AI agent discoverability. No scores — only what the crawl found._",
+    "",
+    `**Audited URL:** ${context.auditedUrl}`,
+    `**Crawl timestamp:** ${context.crawledAt}`,
+    `**Detected platform:** ${context.platform.platform} (${context.platform.confidence} confidence)`,
+    "",
+    "## Detected signals",
+    "",
+    formatFindingList(grouped.detected),
+    "",
+    "## Missing signals",
+    "",
+    formatFindingList(grouped.missing),
+    "",
+    "## Needs review",
+    "",
+    formatFindingList(grouped.needsReview),
+    "",
+    "## Recommended next steps (from missing signals)",
+    "",
+  ];
+
+  if (grouped.missing.length === 0) {
+    lines.push("- No missing signals detected in this crawl.");
+  } else {
+    for (const finding of grouped.missing) {
+      lines.push(`- Address **${finding.label}**: ${finding.evidence}`);
+    }
+  }
+
+  lines.push(
+    "",
+    "## Asset notes",
+    "",
+    "- Use the generated `llms.txt` draft to help agents discover key URLs.",
+    "- Publish `organization-schema.json` and product/FAQ templates as JSON-LD on relevant pages.",
+    "- Replace all TODO placeholders with verified merchant facts before production use.",
+  );
+
+  return `${lines.join("\n")}\n`;
+}
+
+export function generateFixAssets(context: GenerationContext): GeneratedAsset[] {
+  return [
+    {
+      filename: "llms.txt",
+      contentType: "text/plain",
+      content: generateLlmsTxt(context),
+    },
+    {
+      filename: "merchant-profile.md",
+      contentType: "text/markdown",
+      content: generateMerchantProfile(context),
+    },
+    {
+      filename: "organization-schema.json",
+      contentType: "application/json",
+      content: generateOrganizationSchema(context),
+    },
+    {
+      filename: "product-schema-template.json",
+      contentType: "application/json",
+      content: generateProductSchemaTemplate(context),
+    },
+    {
+      filename: "faq-schema-template.json",
+      contentType: "application/json",
+      content: generateFaqSchemaTemplate(context),
+    },
+    {
+      filename: "agent-commerce-readiness.md",
+      contentType: "text/markdown",
+      content: generateAgentCommerceReadiness(context),
+    },
+  ];
+}

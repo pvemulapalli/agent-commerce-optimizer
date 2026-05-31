@@ -1,7 +1,12 @@
 import { createHash } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import type { AuditApiResponse, AuditResult, GroupedFindings } from "./types";
+import type {
+  AuditApiResponse,
+  AuditResult,
+  GenerationContext,
+  GroupedFindings,
+} from "./types";
 
 const CACHE_DIR = path.join(process.cwd(), ".cache", "audits");
 const DEFAULT_TTL_MINUTES = 120;
@@ -13,6 +18,11 @@ export interface CachedAuditPayload {
   crawledAt: string;
   expiresAt: string;
   result: AuditResult & { grouped: GroupedFindings };
+  generationContext?: GenerationContext;
+}
+
+export interface CachedAuditReadResult extends AuditApiResponse {
+  generationContext?: GenerationContext;
 }
 
 export function getCacheTtlMinutes(): number {
@@ -72,7 +82,7 @@ function isCacheEntryValid(entry: CachedAuditPayload): boolean {
 
 export async function readCachedAudit(
   inputUrl: string,
-): Promise<AuditApiResponse | null> {
+): Promise<CachedAuditReadResult | null> {
   if (!isCacheEnabled()) {
     return null;
   }
@@ -93,6 +103,7 @@ export async function readCachedAudit(
       ...entry.result,
       cacheStatus: "HIT",
       expiresAt: entry.expiresAt,
+      generationContext: entry.generationContext,
     };
   } catch {
     return null;
@@ -102,6 +113,7 @@ export async function readCachedAudit(
 export async function writeCachedAudit(
   inputUrl: string,
   result: AuditResult & { grouped: GroupedFindings },
+  generationContext?: GenerationContext,
 ): Promise<string | null> {
   const ttlMinutes = getCacheTtlMinutes();
   if (ttlMinutes <= 0) {
@@ -117,6 +129,7 @@ export async function writeCachedAudit(
     crawledAt: result.crawledAt,
     expiresAt,
     result,
+    generationContext,
   };
 
   await mkdir(CACHE_DIR, { recursive: true });

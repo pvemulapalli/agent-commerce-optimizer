@@ -5,11 +5,157 @@ import type {
   AuditApiResponse,
   ConfidenceLevel,
   Finding,
+  GeneratedAsset,
+  GenerateFixesApiResponse,
   PlatformAnalysis,
 } from "@/lib/types";
 import { useState } from "react";
 
 type AuditResponse = AuditApiResponse;
+type FixesResponse = GenerateFixesApiResponse;
+
+const PREVIEW_LINE_LIMIT = 18;
+
+function downloadAsset(asset: GeneratedAsset) {
+  const blob = new Blob([asset.content], { type: asset.contentType });
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = asset.filename;
+  anchor.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
+function AssetPreview({ content }: { content: string }) {
+  const lines = content.split("\n");
+  const preview = lines.slice(0, PREVIEW_LINE_LIMIT).join("\n");
+  const truncated = lines.length > PREVIEW_LINE_LIMIT;
+
+  return (
+    <pre className="max-h-64 overflow-auto rounded-xl border border-zinc-200 bg-zinc-950 p-4 text-xs leading-6 text-zinc-100">
+      <code>{preview}{truncated ? "\n…" : ""}</code>
+    </pre>
+  );
+}
+
+function GeneratedAssetCard({ asset }: { asset: GeneratedAsset }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(asset.content);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <article className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold text-zinc-900">{asset.filename}</h3>
+          <p className="mt-1 text-sm text-zinc-500">{asset.contentType}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+          >
+            {copied ? "Copied" : "Copy"}
+          </button>
+          <button
+            type="button"
+            onClick={() => downloadAsset(asset)}
+            className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
+          >
+            Download
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="mb-2 text-sm font-medium text-zinc-500">Preview</p>
+        <AssetPreview content={asset.content} />
+      </div>
+    </article>
+  );
+}
+
+function GeneratedFixesSection({
+  fixes,
+  loading,
+  error,
+  onRegenerate,
+}: {
+  fixes: FixesResponse | null;
+  loading: boolean;
+  error: string | null;
+  onRegenerate: () => void;
+}) {
+  if (!fixes && !loading && !error) return null;
+
+  return (
+    <section className="rounded-2xl border border-violet-200 bg-violet-50/40 p-6 shadow-sm sm:p-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold text-zinc-900">Generated Fixes</h2>
+          <p className="mt-1 text-sm text-zinc-600">
+            Practical downloadable assets derived only from crawled audit evidence.
+            TODO placeholders mark information that was not found during the crawl.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRegenerate}
+          disabled={loading}
+          className="rounded-xl border border-violet-300 bg-white px-4 py-2 text-sm font-medium text-violet-900 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? "Generating…" : "Regenerate"}
+        </button>
+      </div>
+
+      {loading && (
+        <div className="mt-6 rounded-xl border border-violet-100 bg-white px-4 py-3 text-sm text-violet-900">
+          Building llms.txt, merchant profile, schema templates, and readiness report…
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          {error}
+        </div>
+      )}
+
+      {fixes && !loading && (
+        <div className="mt-6 space-y-4">
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <dt className="text-sm font-medium text-zinc-500">Audited URL</dt>
+              <dd className="mt-1 break-all text-zinc-900">{fixes.auditedUrl}</dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-zinc-500">Generated At</dt>
+              <dd className="mt-1 text-zinc-900">
+                {new Date(fixes.generatedAt).toLocaleString()}
+              </dd>
+            </div>
+            {fixes.cacheStatus && (
+              <div>
+                <dt className="text-sm font-medium text-zinc-500">Audit Cache</dt>
+                <dd className="mt-1 font-medium text-zinc-900">{fixes.cacheStatus}</dd>
+              </div>
+            )}
+          </dl>
+
+          <div className="grid gap-4">
+            {fixes.assets.map((asset) => (
+              <GeneratedAssetCard key={asset.filename} asset={asset} />
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
 
 function ConfidenceBadge({ confidence }: { confidence: ConfidenceLevel }) {
   const classes = {
@@ -204,12 +350,47 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AuditResponse | null>(null);
+  const [fixesLoading, setFixesLoading] = useState(false);
+  const [fixesError, setFixesError] = useState<string | null>(null);
+  const [fixes, setFixes] = useState<FixesResponse | null>(null);
+
+  async function generateFixes(targetUrl: string) {
+    setFixesLoading(true);
+    setFixesError(null);
+    setFixes(null);
+
+    try {
+      const response = await fetch("/api/generate-fixes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: targetUrl }),
+      });
+
+      const data = (await response.json()) as FixesResponse & { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Fix generation failed");
+      }
+
+      setFixes(data);
+    } catch (generateError) {
+      setFixesError(
+        generateError instanceof Error
+          ? generateError.message
+          : "Something went wrong generating fixes",
+      );
+    } finally {
+      setFixesLoading(false);
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(null);
     setResult(null);
+    setFixes(null);
+    setFixesError(null);
 
     try {
       const response = await fetch("/api/audit", {
@@ -225,6 +406,7 @@ export default function Home() {
       }
 
       setResult(data);
+      await generateFixes(data.url);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -249,9 +431,9 @@ export default function Home() {
           <p className="mt-4 text-lg leading-8 text-zinc-600">
             Enter a merchant website URL to run an evidence-backed audit of how
             easily AI agents can discover, understand, and interact with the
-            business. Findings include platform detection, sitemap-driven page
-            discovery, schema signals, and confidence levels derived only from
-            crawled evidence.
+            business. After the audit, generate downloadable fix assets —
+            llms.txt, merchant profile, schema templates, and a readiness report —
+            built only from crawled evidence.
           </p>
         </header>
 
@@ -347,6 +529,13 @@ export default function Home() {
               description="Partial or ambiguous signals that may require manual verification."
               findings={result.grouped.needsReview}
               accent="amber"
+            />
+
+            <GeneratedFixesSection
+              fixes={fixes}
+              loading={fixesLoading}
+              error={fixesError}
+              onRegenerate={() => generateFixes(result.url)}
             />
           </div>
         )}

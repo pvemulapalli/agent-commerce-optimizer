@@ -153,3 +153,54 @@ export interface ProductPriceDetection {
   evidenceUrls: string[];
   sourceUrl: string | null;
 }
+
+export interface GenerationPageSnapshot {
+  url: string;
+  title: string | null;
+  metaDescription: string | null;
+  schemaTypes: string[];
+  jsonLdBlocks: unknown[];
+}
+
+export interface GenerationResourceSnapshot {
+  url: string;
+  status: number | null;
+  content: string | null;
+}
+
+export interface GenerationSupportLink {
+  href: string;
+  text: string;
+  discoveredFromUrl: string;
+}
+
+export interface GenerationContext {
+  auditedUrl: string;
+  origin: string;
+  crawledAt: string;
+  platform: PlatformAnalysis;
+  findings: Finding[];
+  pages: GenerationPageSnapshot[];
+  robotsTxt: GenerationResourceSnapshot;
+  sitemapXml: GenerationResourceSnapshot;
+  llmsTxt: GenerationResourceSnapshot;
+  llmsFullTxt: GenerationResourceSnapshot;
+  sitemapUrls: string[];
+  supportLinks: GenerationSupportLink[];
+  productPageUrls: string[];
+  homepage: GenerationPageSnapshot | null;
+  faqPages: GenerationPageSnapshot[];
+}
+
+export interface GeneratedAsset {
+  filename: string;
+  contentType: string;
+  content: string;
+}
+
+export interface GenerateFixesApiResponse {
+  auditedUrl: string;
+  generatedAt: string;
+  assets: GeneratedAsset[];
+  cacheStatus?: CacheStatus;
+}

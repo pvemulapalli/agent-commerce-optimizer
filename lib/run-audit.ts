@@ -7,11 +7,16 @@ import { crawlSite } from "@/lib/crawler";
 import { finalizeFindings, groupFindings, runChecks } from "@/lib/checks";
 import { buildCrawlSummary, inferCrawlSummaryFromFindings } from "@/lib/crawl-quality";
 import type { CrawlSummary } from "@/lib/crawl-quality";
+import {
+  buildGenerationContext,
+  buildGenerationContextFromFindings,
+} from "@/lib/generation-context";
 
-import type { AuditApiResponse } from "@/lib/types";
+import type { AuditApiResponse, GenerationContext } from "@/lib/types";
 
 export interface AuditRunResult extends AuditApiResponse {
   crawlSummary: CrawlSummary;
+  generationContext: GenerationContext;
 }
 
 export async function runAudit(url: string): Promise<AuditRunResult> {
@@ -19,12 +24,22 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
     const cached = await readCachedAudit(url);
     if (cached) {
       const findings = finalizeFindings(cached.findings, cached.platform);
+      const generationContext =
+        cached.generationContext ??
+        buildGenerationContextFromFindings(
+          cached.url,
+          cached.crawledAt,
+          cached.platform,
+          findings,
+        );
+
       return {
         ...cached,
         findings,
         grouped: groupFindings(findings),
         cacheStatus: "HIT",
         crawlSummary: inferCrawlSummaryFromFindings(findings),
+        generationContext,
       };
     }
   }
@@ -34,6 +49,11 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
   const { platform, findings } = runChecks(crawlData);
   const finalizedFindings = finalizeFindings(findings, platform);
   const grouped = groupFindings(finalizedFindings);
+  const generationContext = buildGenerationContext(
+    crawlData,
+    platform,
+    finalizedFindings,
+  );
 
   const result = {
     url: crawlData.entryUrl,
@@ -47,7 +67,7 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
   let expiresAt: string | null = null;
 
   if (isCacheEnabled()) {
-    expiresAt = await writeCachedAudit(url, result);
+    expiresAt = await writeCachedAudit(url, result, generationContext);
   }
 
   return {
@@ -55,5 +75,6 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
     cacheStatus,
     expiresAt,
     crawlSummary,
+    generationContext,
   };
 }

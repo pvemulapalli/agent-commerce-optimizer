@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Commerce Discoverability Optimizer
 
-## Getting Started
+A personal, educational tool for auditing how well merchant websites expose signals that AI agents can discover and understand. It crawls public pages and discovery files, reports evidence-backed findings, and generates downloadable fix drafts — with no LLM calls, scoring, billing, or authentication.
 
-First, run the development server:
+**Disclaimer:** This project is for personal and educational use only. It is not production-ready software and is **not affiliated with or supported by Visa**.
+
+## What it does
+
+1. **Audit** — Crawls a merchant URL (robots.txt, sitemap, up to 20 prioritized pages, related support subdomains) and reports Detected / Missing / Needs Review findings with evidence URLs.
+2. **Generate fixes** — After an audit, builds six downloadable assets from crawled evidence only:
+   - `llms.txt`
+   - `merchant-profile.md`
+   - `organization-schema.json`
+   - `product-schema-template.json`
+   - `faq-schema-template.json`
+   - `agent-commerce-readiness.md`
+
+Missing facts are marked as `TODO` — nothing is invented.
+
+## Getting started
+
+Install dependencies and start the dev server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Optional cache TTL (minutes). Default is 120; set to `0` to bypass cache:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.local.example .env.local
+# AUDIT_CACHE_TTL_MINUTES=120
+```
 
-## Learn More
+## Run an audit
 
-To learn more about Next.js, take a look at the following resources:
+**UI:** Enter a merchant URL and click **Run Audit**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**API:**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+curl -s -X POST http://localhost:3000/api/audit \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com"}' | jq .
+```
 
-## Deploy on Vercel
+The response includes platform analysis, grouped findings, and cache status (`HIT`, `MISS`, or `BYPASS`).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Generate fixes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Fix generation reuses the audit crawl and cache. Run it after an audit (the UI triggers this automatically) or call the API directly:
+
+```bash
+curl -s -X POST http://localhost:3000/api/generate-fixes \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com"}' | jq .
+```
+
+Example response shape:
+
+```json
+{
+  "auditedUrl": "https://example.com",
+  "generatedAt": "2026-05-30T12:00:00.000Z",
+  "assets": [
+    {
+      "filename": "llms.txt",
+      "contentType": "text/plain",
+      "content": "..."
+    }
+  ]
+}
+```
+
+In the UI, each asset shows a preview plus **Copy** and **Download** buttons.
+
+## Other scripts
+
+```bash
+npm run validate:platforms   # Batch platform detection validation against test merchants
+npm run build
+npm run lint
+```
+
+## License
+
+See repository license if present. Use at your own risk.
