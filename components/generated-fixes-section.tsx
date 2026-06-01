@@ -193,12 +193,12 @@ function GeneratedAssetCard({ asset }: { asset: GeneratedAsset }) {
           </dl>
         </div>
 
-        <div className="flex shrink-0 flex-wrap gap-2">
+        <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
           <button
             type="button"
             onClick={() => void handleCopy()}
             aria-label={`Copy ${asset.filename}`}
-            className="rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-violet-900 transition hover:bg-violet-50"
+            className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-violet-900 transition hover:bg-violet-50 sm:w-auto"
           >
             {copied ? "Copied" : "Copy"}
           </button>
@@ -206,7 +206,7 @@ function GeneratedAssetCard({ asset }: { asset: GeneratedAsset }) {
             type="button"
             onClick={() => downloadAsset(asset)}
             aria-label={`Download ${asset.filename}`}
-            className="rounded-lg bg-violet-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-800"
+            className="w-full rounded-lg bg-violet-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-800 sm:w-auto"
           >
             Download
           </button>

@@ -1,3 +1,5 @@
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { APP_VERSION_LABEL } from "@/lib/app-version";
@@ -14,9 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: `AI Commerce Discoverability Optimizer | ${APP_VERSION_LABEL}`,
+  title: {
+    default: "AI Commerce Discoverability Optimizer",
+    template: `%s | ${APP_VERSION_LABEL}`,
+  },
   description:
-    "Evidence-backed audit of how easily AI agents can discover, understand, and interact with a merchant website.",
+    "Will AI agents find your products? Audit your ecommerce site and discover how easily AI systems can understand your catalog, policies, and merchant information.",
 };
 
 export default function RootLayout({
@@ -29,7 +34,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col bg-zinc-50 font-sans text-zinc-900">
+        <SiteHeader />
+        <div className="flex-1">{children}</div>
+        <SiteFooter />
+      </body>
     </html>
   );
 }
