@@ -3,6 +3,8 @@
 import { AuditHero } from "@/components/audit-hero";
 import { AuditResultsSection } from "@/components/audit-results";
 import { MarketingSections } from "@/components/marketing-sections";
+import { RecentAuditsPreview } from "@/components/recent-audits";
+import { useAuditHistory } from "@/hooks/use-audit-history";
 import type { AuditApiResponse, GenerateFixesApiResponse } from "@/lib/types";
 import { useRef, useState } from "react";
 
@@ -18,6 +20,7 @@ export default function Home() {
   const [fixesError, setFixesError] = useState<string | null>(null);
   const [fixes, setFixes] = useState<FixesResponse | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const { history, totalCount, hydrated, recordAudit } = useAuditHistory();
 
   async function generateFixes(targetUrl: string) {
     setFixesLoading(true);
@@ -70,6 +73,8 @@ export default function Home() {
       }
 
       setResult(data);
+      recordAudit(data);
+
       window.setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
@@ -97,7 +102,7 @@ export default function Home() {
   }
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-6xl space-y-16 px-6 py-10 lg:px-8 lg:py-14">
+    <div className="mx-auto w-full min-w-0 max-w-6xl space-y-12 px-6 py-10 lg:px-8 lg:py-14">
       <AuditHero
         url={url}
         loading={loading}
@@ -105,6 +110,12 @@ export default function Home() {
         onUrlChange={setUrl}
         onSubmit={handleSubmit}
         onExampleSelect={handleExampleSelect}
+      />
+
+      <RecentAuditsPreview
+        entries={history}
+        totalCount={totalCount}
+        hydrated={hydrated}
       />
 
       {result && (
