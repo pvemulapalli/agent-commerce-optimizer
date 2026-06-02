@@ -1,8 +1,9 @@
-# AI Commerce Discoverability Optimizer
+# Commerce Optimizer
+![Next.js](https://img.shields.io/badge/Next.js-15-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![License](https://img.shields.io/badge/License-Apache%202.0-green)
 
-Audit ecommerce websites and identify how easily AI systems, shopping agents, and large language models can discover, understand, and interact with merchant content.
-
-Generate machine-readable assets such as:
+Audit ecommerce websites and generate AI-ready commerce assets such as:
 
 * llms.txt
 * Merchant profiles
@@ -13,25 +14,95 @@ Generate machine-readable assets such as:
 
 ---
 
-## Why I Built This
+## Architecture
+
+![Architecture](public/screenshots/architecture-diagram.png)
+
+Commerce Optimizer crawls merchant websites, analyzes AI discoverability signals, identifies ecommerce platform characteristics, and generates machine-readable assets that help improve AI commerce readiness.
+
+---
+
+## The Challenge
 
 AI-powered commerce experiences are becoming increasingly common.
 
 Consumers are beginning to discover products through ChatGPT, Claude, Perplexity, Gemini, and emerging shopping agents rather than traditional search engines.
 
-Many merchant websites contain the information AI systems need, but that information is often difficult to discover, poorly structured, or missing entirely.
+Many merchant websites already contain the information AI systems need, but that information is often difficult to discover, poorly structured, or missing entirely.
 
-This project helps merchants understand:
+As a result, AI systems may struggle to:
 
-* Can AI systems discover my products?
-* Can AI systems understand my business?
-* Are my policies easy to find?
-* Is my catalog machine-readable?
-* What structured assets are missing?
+- Discover products
+- Understand merchant policies
+- Identify catalog structure
+- Locate support information
+- Interpret merchant metadata
 
-The goal is not SEO.
+Commerce Optimizer helps merchants understand:
+
+- Can AI systems discover my products?
+- Can AI systems understand my business?
+- Are my policies easy to find?
+- Is my catalog machine-readable?
+- What structured assets are missing?
+
+This project focuses on AI Commerce Discoverability rather than traditional search engine optimization or SEO.
 
 The goal is improving AI Commerce Discoverability.
+
+---
+
+## Why I Built This
+
+I work in payments and commerce infrastructure and have been exploring how AI agents may interact with merchants, catalogs, APIs, and commerce systems.
+
+While there is growing discussion around AI-powered shopping and agentic commerce, there are relatively few practical tools that help merchants understand how discoverable and understandable their websites are to AI systems today.
+
+I built Commerce Optimizer as a personal project to explore this space and to provide a practical way to audit merchant websites, identify discoverability gaps, and generate machine-readable assets from real storefront data.
+
+This project is intended for educational and experimentation purposes and is not affiliated with, endorsed by, or supported by any employer, company, or organization.
+
+---
+
+## Product Walkthrough
+
+### 1. Audit a Store
+
+Enter any ecommerce website and analyze how easily AI systems can discover and understand merchant content.
+
+![Homepage](public/screenshots/hero-audit-page.png)
+
+---
+
+### 2. Analyze Platform & Commerce Signals
+
+Identify platform fingerprints, catalog structure, policies, and machine-readable commerce signals.
+
+![Platform Detection](public/screenshots/audit-results-platform-detection.png)
+
+---
+
+### 3. Generate AI-Ready Assets
+
+Generate downloadable assets including llms.txt, merchant profiles, schema templates, and AI commerce readiness reports.
+
+![Generated Assets](public/screenshots/generated-fixes-downloads.png)
+
+---
+
+### 4. Explore Recent Audits
+
+Review recently analyzed merchants and monitor platform activity.
+
+![Recent Audits](public/screenshots/recent-audits-dashboard.png)
+
+---
+
+## Live Demo
+
+Coming Soon
+
+A public Vercel deployment URL will be published here.
 
 ---
 
@@ -75,12 +146,6 @@ Generate:
 * product-schema-template.json
 * faq-schema-template.json
 * agent-commerce-readiness.md
-
----
-
-## Screenshots
-
-(Add screenshots here)
 
 ---
 
@@ -230,7 +295,7 @@ Request:
 * OpenAPI specification
 * x402 compatibility
 * Merchant endpoint integration
-* Visa CLI onboarding exploration
+* Evaluate publishing audit capabilities as x402 / Visa CLI compatible endpoints
 
 ---
 
