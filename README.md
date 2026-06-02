@@ -1,113 +1,264 @@
 # AI Commerce Discoverability Optimizer
 
-A personal, educational tool for auditing how well merchant websites expose signals that AI agents can discover and understand. It crawls public pages and discovery files, reports evidence-backed findings, and generates downloadable fix drafts — with no LLM calls, scoring, billing, or authentication.
+Audit ecommerce websites and identify how easily AI systems, shopping agents, and large language models can discover, understand, and interact with merchant content.
 
-**Disclaimer:** Personal educational project. Not affiliated with, endorsed by, or supported by any company or firm.
+Generate machine-readable assets such as:
 
-## What it does
+* llms.txt
+* Merchant profiles
+* Organization schema
+* Product schema templates
+* FAQ schema templates
+* AI Commerce Readiness reports
 
-1. **Audit** — Crawls a merchant URL (robots.txt, sitemap, up to 20 prioritized pages, related support subdomains) and reports Detected / Missing / Needs Review findings with evidence URLs.
-2. **Generate fixes** — After an audit, builds six downloadable assets from crawled evidence only:
-   - `llms.txt`
-   - `merchant-profile.md`
-   - `organization-schema.json`
-   - `product-schema-template.json`
-   - `faq-schema-template.json`
-   - `agent-commerce-readiness.md`
+---
 
-Missing facts are marked as `TODO` — nothing is invented.
+## Why I Built This
 
-## Getting started
+AI-powered commerce experiences are becoming increasingly common.
 
-Install dependencies and start the dev server:
+Consumers are beginning to discover products through ChatGPT, Claude, Perplexity, Gemini, and emerging shopping agents rather than traditional search engines.
+
+Many merchant websites contain the information AI systems need, but that information is often difficult to discover, poorly structured, or missing entirely.
+
+This project helps merchants understand:
+
+* Can AI systems discover my products?
+* Can AI systems understand my business?
+* Are my policies easy to find?
+* Is my catalog machine-readable?
+* What structured assets are missing?
+
+The goal is not SEO.
+
+The goal is improving AI Commerce Discoverability.
+
+---
+
+## Features
+
+### Ecommerce Audit
+
+Analyze merchant websites for:
+
+* Product discovery
+* Catalog discovery
+* Product pricing
+* Product availability
+* FAQ pages
+* Shipping policies
+* Return policies
+* Contact information
+* Structured data
+* AI-readable assets
+
+### Platform Detection
+
+Detect major commerce platforms including:
+
+* Shopify
+* BigCommerce
+* Salesforce Commerce Cloud
+* WooCommerce
+* Wix
+* Squarespace
+* Magento
+* CommerceTools
+
+### Generated Assets
+
+Generate:
+
+* llms.txt
+* merchant-profile.md
+* organization-schema.json
+* product-schema-template.json
+* faq-schema-template.json
+* agent-commerce-readiness.md
+
+---
+
+## Screenshots
+
+(Add screenshots here)
+
+---
+
+## Local Development
+
+### Prerequisites
+
+* Node.js 20+
+* npm
+
+### Install
 
 ```bash
+git clone https://github.com/pvemulapalli/agent-commerce-optimizer.git
+
+cd agent-commerce-optimizer
+
 npm install
+```
+
+### Run
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open:
 
-Optional cache TTL (minutes). Default is 120; set to `0` to bypass cache:
-
-```bash
-cp .env.local.example .env.local
-# AUDIT_CACHE_TTL_MINUTES=120
+```text
+http://localhost:3000
 ```
 
-Production/shared activity settings (Upstash Redis, rate limits, optional Turnstile):
+---
+
+## Environment Variables
+
+Create:
 
 ```bash
+.env.local
+```
+
+Example:
+
+```bash
+AUDIT_CACHE_TTL_MINUTES=120
+
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
+
 SCAN_RATE_LIMIT_PER_HOUR=10
+
 ENABLE_TURNSTILE=false
-NEXT_PUBLIC_ENABLE_TURNSTILE=false
+
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 TURNSTILE_SECRET_KEY=
 ```
 
-Without Upstash credentials, scan activity falls back to in-process memory (local dev only). Rate limiting uses the same fallback locally.
+---
 
-Live scan toast (homepage):
+## Upstash Redis Setup
 
-```bash
-NEXT_PUBLIC_SCAN_ACTIVITY_TOAST_ENABLED=false
-NEXT_PUBLIC_SCAN_ACTIVITY_POLL_SECONDS=60
-```
+Create a free Redis database:
 
-When toast is enabled, the homepage polls `/api/recent-scans` at that interval and shows a notification for new scans from other users. When disabled (default), recent scans load once on page load only.
-
-## Run an audit
-
-**UI:** Enter a merchant URL and click **Run Audit**.
-
-**API:**
+1. Sign in at https://upstash.com
+2. Create a Redis database
+3. Copy:
 
 ```bash
-curl -s -X POST http://localhost:3000/api/audit \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://example.com"}' | jq .
+UPSTASH_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN
 ```
 
-The response includes platform analysis, grouped findings, and cache status (`HIT`, `MISS`, or `BYPASS`).
+4. Add to .env.local
 
-## Generate fixes
+Redis is used for:
 
-Fix generation reuses the audit crawl and cache. Run it after an audit (the UI triggers this automatically) or call the API directly:
+* Global scan counter
+* Recent scans
+* Rate limiting
+* Shared activity feed
+
+---
+
+## Cloudflare Turnstile Setup
+
+Turnstile is optional.
+
+1. Create a Turnstile widget in Cloudflare.
+2. Copy:
 
 ```bash
-curl -s -X POST http://localhost:3000/api/generate-fixes \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://example.com"}' | jq .
+NEXT_PUBLIC_TURNSTILE_SITE_KEY
+TURNSTILE_SECRET_KEY
 ```
 
-Example response shape:
+3. Set:
+
+```bash
+ENABLE_TURNSTILE=true
+```
+
+Turnstile helps prevent automated abuse while keeping the experience frictionless for legitimate users.
+
+---
+
+## API
+
+### Audit Website
+
+POST
+
+```text
+/api/audit
+```
+
+Request:
 
 ```json
 {
-  "auditedUrl": "https://example.com",
-  "generatedAt": "2026-05-30T12:00:00.000Z",
-  "assets": [
-    {
-      "filename": "llms.txt",
-      "contentType": "text/plain",
-      "content": "..."
-    }
-  ]
+  "url": "https://www.gymshark.com"
 }
 ```
 
-In the UI, each asset shows a preview plus **Copy** and **Download** buttons.
+### Generate Assets
 
-## Other scripts
+POST
 
-```bash
-npm run validate:platforms   # Batch platform detection validation against test merchants
-npm run build
-npm run lint
+```text
+/api/generate-fixes
 ```
+
+Request:
+
+```json
+{
+  "url": "https://www.gymshark.com"
+}
+```
+
+---
+
+## Roadmap
+
+* Improved ecommerce discovery
+* Merchant recommendations
+* OpenAPI specification
+* x402 compatibility
+* Merchant endpoint integration
+* Visa CLI onboarding exploration
+
+---
+
+## Disclaimer
+
+This is a personal educational project created by Praveen Vemulapalli.
+
+This project is not affiliated with, endorsed by, supported by, or representative of any employer, company, organization, or payment network.
+
+Any opinions, code, demonstrations, examples, or workflows are personal and provided for educational purposes only.
+
+---
+
+## Contact
+
+Praveen Vemulapalli
+
+LinkedIn:
+https://www.linkedin.com/in/praveenvemulapalli/
+
+X:
+https://x.com/PraveenVem
+
+GitHub:
+https://github.com/pvemulapalli
+
+---
 
 ## License
 
-See repository license if present. Use at your own risk.
+Apache License 2.0
