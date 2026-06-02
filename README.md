@@ -100,9 +100,7 @@ Review recently analyzed merchants and monitor platform activity.
 
 ## Live Demo
 
-Coming Soon
-
-A public Vercel deployment URL will be published here.
+https://agent-commerce-optimizer.vercel.app
 
 ---
 
