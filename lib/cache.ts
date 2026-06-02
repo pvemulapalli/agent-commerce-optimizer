@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import { getRedis, isRedisConfigured } from "./redis";
 import type {
   AuditApiResponse,
   AuditResult,
@@ -8,7 +9,19 @@ import type {
   GroupedFindings,
 } from "./types";
 
+/**
+ * Audit cache storage strategy:
+ *
+ * - Vercel serverless runs on a read-only filesystem at /var/task (except /tmp).
+ *   Writing to process.cwd()/.cache fails in production with ENOENT/EACCES.
+ * - Production should use Upstash Redis when UPSTASH_REDIS_REST_* is configured.
+ * - Local file cache under process.cwd()/.cache is used only in development.
+ * - If production has no Redis, cache is skipped gracefully (audit still runs).
+ * - Cache read/write failures never fail the audit — errors are swallowed.
+ */
+
 const CACHE_DIR = path.join(process.cwd(), ".cache", "audits");
+const REDIS_AUDIT_PREFIX = "aco:audit:";
 const DEFAULT_TTL_MINUTES = 120;
 
 export type CacheStatus = AuditApiResponse["cacheStatus"];
@@ -40,8 +53,20 @@ export function getCacheTtlMinutes(): number {
   return parsed;
 }
 
+function isDevelopmentEnvironment(): boolean {
+  return process.env.NODE_ENV === "development";
+}
+
+function shouldUseFileCache(): boolean {
+  return isDevelopmentEnvironment() && getCacheTtlMinutes() > 0;
+}
+
+function shouldUseRedisCache(): boolean {
+  return !isDevelopmentEnvironment() && isRedisConfigured() && getCacheTtlMinutes() > 0;
+}
+
 export function isCacheEnabled(): boolean {
-  return getCacheTtlMinutes() > 0;
+  return shouldUseFileCache() || shouldUseRedisCache();
 }
 
 export function normalizeAuditUrl(input: string): string {
@@ -76,8 +101,63 @@ function getCacheFilePath(cacheKey: string): string {
   return path.join(CACHE_DIR, `${cacheKey}.json`);
 }
 
+function getRedisAuditKey(cacheKey: string): string {
+  return `${REDIS_AUDIT_PREFIX}${cacheKey}`;
+}
+
 function isCacheEntryValid(entry: CachedAuditPayload): boolean {
   return Date.parse(entry.expiresAt) > Date.now();
+}
+
+function payloadFromCacheRead(raw: unknown): CachedAuditPayload | null {
+  if (!raw) {
+    return null;
+  }
+
+  if (typeof raw === "string") {
+    return JSON.parse(raw) as CachedAuditPayload;
+  }
+
+  return raw as CachedAuditPayload;
+}
+
+function toCachedAuditReadResult(
+  entry: CachedAuditPayload,
+): CachedAuditReadResult {
+  return {
+    ...entry.result,
+    cacheStatus: "HIT",
+    expiresAt: entry.expiresAt,
+    generationContext: entry.generationContext,
+  };
+}
+
+async function readFileCachedAudit(
+  cacheKey: string,
+): Promise<CachedAuditReadResult | null> {
+  const filePath = getCacheFilePath(cacheKey);
+  const raw = await readFile(filePath, "utf8");
+  const entry = JSON.parse(raw) as CachedAuditPayload;
+
+  if (!isCacheEntryValid(entry)) {
+    return null;
+  }
+
+  return toCachedAuditReadResult(entry);
+}
+
+async function readRedisCachedAudit(
+  cacheKey: string,
+): Promise<CachedAuditReadResult | null> {
+  const redis = getRedis();
+  const raw = await redis.get(getRedisAuditKey(cacheKey));
+  const entry = payloadFromCacheRead(raw);
+
+  if (!entry || !isCacheEntryValid(entry)) {
+    return null;
+  }
+
+  return toCachedAuditReadResult(entry);
 }
 
 export async function readCachedAudit(
@@ -87,27 +167,50 @@ export async function readCachedAudit(
     return null;
   }
 
-  const normalizedUrl = normalizeAuditUrl(inputUrl);
-  const cacheKey = getCacheKey(normalizedUrl);
-  const filePath = getCacheFilePath(cacheKey);
+  const cacheKey = getCacheKey(normalizeAuditUrl(inputUrl));
 
   try {
-    const raw = await readFile(filePath, "utf8");
-    const entry = JSON.parse(raw) as CachedAuditPayload;
-
-    if (!isCacheEntryValid(entry)) {
-      return null;
+    if (shouldUseRedisCache()) {
+      return await readRedisCachedAudit(cacheKey);
     }
 
-    return {
-      ...entry.result,
-      cacheStatus: "HIT",
-      expiresAt: entry.expiresAt,
-      generationContext: entry.generationContext,
-    };
-  } catch {
-    return null;
+    if (shouldUseFileCache()) {
+      return await readFileCachedAudit(cacheKey);
+    }
+  } catch (error) {
+    console.error("[audit-cache] read failed:", error);
   }
+
+  return null;
+}
+
+async function writeFileCachedAudit(
+  cacheKey: string,
+  entry: CachedAuditPayload,
+): Promise<string> {
+  await mkdir(CACHE_DIR, { recursive: true });
+  await writeFile(
+    getCacheFilePath(cacheKey),
+    JSON.stringify(entry, null, 2),
+    "utf8",
+  );
+
+  return entry.expiresAt;
+}
+
+async function writeRedisCachedAudit(
+  cacheKey: string,
+  entry: CachedAuditPayload,
+  ttlMinutes: number,
+): Promise<string> {
+  const redis = getRedis();
+  const ttlSeconds = ttlMinutes * 60;
+
+  await redis.set(getRedisAuditKey(cacheKey), JSON.stringify(entry), {
+    ex: ttlSeconds,
+  });
+
+  return entry.expiresAt;
 }
 
 export async function writeCachedAudit(
@@ -116,7 +219,7 @@ export async function writeCachedAudit(
   generationContext?: GenerationContext,
 ): Promise<string | null> {
   const ttlMinutes = getCacheTtlMinutes();
-  if (ttlMinutes <= 0) {
+  if (ttlMinutes <= 0 || !isCacheEnabled()) {
     return null;
   }
 
@@ -132,8 +235,17 @@ export async function writeCachedAudit(
     generationContext,
   };
 
-  await mkdir(CACHE_DIR, { recursive: true });
-  await writeFile(getCacheFilePath(cacheKey), JSON.stringify(entry, null, 2), "utf8");
+  try {
+    if (shouldUseRedisCache()) {
+      return await writeRedisCachedAudit(cacheKey, entry, ttlMinutes);
+    }
 
-  return expiresAt;
+    if (shouldUseFileCache()) {
+      return await writeFileCachedAudit(cacheKey, entry);
+    }
+  } catch (error) {
+    console.error("[audit-cache] write failed:", error);
+  }
+
+  return null;
 }
