@@ -101,6 +101,43 @@ export default function DocsPage() {
               Use your deployment origin. Local development:
             </p>
             <CodeBlock>http://localhost:3000</CodeBlock>
+            <p className="mt-4 text-sm text-zinc-600">
+              Utility routes:{" "}
+              <a href="/api/health" className="font-medium text-indigo-600 hover:underline">
+                /api/health
+              </a>
+              {" · "}
+              <a href="/openapi.json" className="font-medium text-indigo-600 hover:underline">
+                /openapi.json
+              </a>
+            </p>
+          </section>
+
+          <EndpointSection
+            method="GET"
+            path="/api/health"
+            title="Health check"
+            description="Returns service status, version, timestamp, and whether Upstash Redis is configured."
+            requestExample="No request body."
+            responseExample={`{
+  "status": "ok",
+  "service": "commerce-optimizer",
+  "version": "2.5",
+  "timestamp": "2026-05-30T12:00:00.000Z",
+  "redis": "configured"
+}`}
+            curlExample="curl -s http://localhost:3000/api/health"
+          />
+
+          <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+            <h2 className="text-lg font-semibold text-zinc-900">OpenAPI specification</h2>
+            <p className="mt-2 text-sm leading-7 text-zinc-600">
+              Machine-readable API description for health, audit, and generate-fixes
+              endpoints.
+            </p>
+            <div className="mt-4 min-w-0">
+              <CodeBlock>http://localhost:3000/openapi.json</CodeBlock>
+            </div>
           </section>
 
           <EndpointSection

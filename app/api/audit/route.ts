@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ...response,
-      scanRecord,
+      ...(scanRecord ? { scanRecord } : {}),
     });
   } catch (error) {
     const message =
