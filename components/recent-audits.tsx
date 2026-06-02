@@ -1,4 +1,4 @@
-import type { AuditHistoryEntry } from "@/lib/audit-history";
+import type { RecentScanRecord } from "@/lib/scan-activity";
 import Link from "next/link";
 
 function formatTimestamp(timestamp: string): string {
@@ -10,9 +10,9 @@ function formatTimestamp(timestamp: string): string {
 
 export function RecentAuditsList({
   entries,
-  emptyMessage = "No audits recorded yet. Run your first audit from the homepage.",
+  emptyMessage = "No scans recorded yet. Run the first audit from the homepage.",
 }: {
-  entries: AuditHistoryEntry[];
+  entries: RecentScanRecord[];
   emptyMessage?: string;
 }) {
   if (entries.length === 0) {
@@ -52,9 +52,14 @@ export function RecentAuditsList({
                     {entry.url}
                   </div>
                 </td>
-                <td className="px-4 py-4 text-slate-800">{entry.platform}</td>
+                <td className="px-4 py-4 text-slate-800">
+                  <div>{entry.platform}</div>
+                  <div className="mt-1 text-xs capitalize text-slate-500">
+                    {entry.confidence} confidence · {entry.cacheStatus}
+                  </div>
+                </td>
                 <td className="px-4 py-4 whitespace-nowrap text-slate-700">
-                  {formatTimestamp(entry.timestamp)}
+                  {formatTimestamp(entry.scannedAt)}
                 </td>
                 <td className="px-4 py-4 text-slate-700">{entry.summary}</td>
               </tr>
@@ -69,21 +74,21 @@ export function RecentAuditsList({
 export function RecentAuditsPreview({
   entries,
   totalCount,
-  hydrated,
+  loading,
 }: {
-  entries: AuditHistoryEntry[];
+  entries: RecentScanRecord[];
   totalCount: number;
-  hydrated: boolean;
+  loading: boolean;
 }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
-            Activity
+            Global activity
           </p>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">
-            Recent audits
+            Recent scans
           </h2>
         </div>
         <Link
@@ -97,10 +102,10 @@ export function RecentAuditsPreview({
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Total audits run
+            Total scans
           </p>
           <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900">
-            {hydrated ? totalCount : "—"}
+            {loading ? "—" : totalCount.toLocaleString()}
           </p>
         </div>
 
@@ -108,27 +113,27 @@ export function RecentAuditsPreview({
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
             Latest scan
           </p>
-          {hydrated && entries[0] ? (
+          {!loading && entries[0] ? (
             <div className="mt-2 min-w-0">
               <p className="font-medium text-slate-900">{entries[0].merchant}</p>
               <p className="mt-1 text-sm text-slate-600">
                 {entries[0].platform} · {entries[0].summary}
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                {formatTimestamp(entries[0].timestamp)}
+                {formatTimestamp(entries[0].scannedAt)}
               </p>
             </div>
           ) : (
             <p className="mt-2 text-sm text-slate-600">
-              {hydrated
-                ? "No audits yet. Run your first scan above."
-                : "Loading local history…"}
+              {loading
+                ? "Loading scan activity…"
+                : "No scans yet. Run the first audit above."}
             </p>
           )}
         </div>
       </div>
 
-      {hydrated && entries.length > 0 && (
+      {!loading && entries.length > 0 && (
         <ul className="mt-6 divide-y divide-slate-100 rounded-xl border border-slate-200">
           {entries.slice(0, 5).map((entry) => (
             <li
@@ -142,7 +147,7 @@ export function RecentAuditsPreview({
               <div className="shrink-0 text-sm text-slate-600 sm:text-right">
                 <p>{entry.platform}</p>
                 <p className="mt-1 text-xs text-slate-500">
-                  {formatTimestamp(entry.timestamp)}
+                  {formatTimestamp(entry.scannedAt)}
                 </p>
               </div>
               <p className="text-sm text-slate-700 sm:max-w-xs sm:text-right">

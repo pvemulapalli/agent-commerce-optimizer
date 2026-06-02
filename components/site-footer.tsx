@@ -1,3 +1,4 @@
+import { PROJECT_DISCLAIMER } from "@/lib/disclaimer";
 import Link from "next/link";
 import { Logo } from "./logo";
 
@@ -6,6 +7,15 @@ const FOOTER_LINKS = [
   { href: "/recent", label: "Recent Audits" },
   { href: "/docs", label: "API Docs" },
   { href: "/contact", label: "Contact" },
+];
+
+const ATTRIBUTION_LINKS = [
+  {
+    href: "https://www.linkedin.com/in/praveenvemulapalli/",
+    label: "Praveen Vemulapalli",
+  },
+  { href: "https://x.com/PraveenVem", label: "X" },
+  { href: "https://github.com/pvemulapalli", label: "GitHub" },
 ];
 
 export function SiteFooter() {
@@ -34,9 +44,22 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        <p className="mt-8 max-w-3xl border-t border-slate-100 pt-8 text-sm leading-7 text-slate-500">
-          Personal educational project. Not affiliated with or endorsed by Visa.
-          May simulate future workflows.
+        <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-100 pt-8 text-sm">
+          {ATTRIBUTION_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-blue-900 hover:underline"
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+
+        <p className="mt-6 max-w-3xl text-sm leading-7 text-slate-500">
+          {PROJECT_DISCLAIMER}
         </p>
       </div>
     </footer>

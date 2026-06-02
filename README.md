@@ -2,7 +2,7 @@
 
 A personal, educational tool for auditing how well merchant websites expose signals that AI agents can discover and understand. It crawls public pages and discovery files, reports evidence-backed findings, and generates downloadable fix drafts — with no LLM calls, scoring, billing, or authentication.
 
-**Disclaimer:** This project is for personal and educational use only. It is not production-ready software and is **not affiliated with or supported by Visa**.
+**Disclaimer:** Personal educational project. Not affiliated with, endorsed by, or supported by any company or firm.
 
 ## What it does
 
@@ -34,6 +34,29 @@ Optional cache TTL (minutes). Default is 120; set to `0` to bypass cache:
 cp .env.local.example .env.local
 # AUDIT_CACHE_TTL_MINUTES=120
 ```
+
+Production/shared activity settings (Upstash Redis, rate limits, optional Turnstile):
+
+```bash
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+SCAN_RATE_LIMIT_PER_HOUR=10
+ENABLE_TURNSTILE=false
+NEXT_PUBLIC_ENABLE_TURNSTILE=false
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+```
+
+Without Upstash credentials, scan activity falls back to in-process memory (local dev only). Rate limiting uses the same fallback locally.
+
+Live scan toast (homepage):
+
+```bash
+NEXT_PUBLIC_SCAN_ACTIVITY_TOAST_ENABLED=false
+NEXT_PUBLIC_SCAN_ACTIVITY_POLL_SECONDS=60
+```
+
+When toast is enabled, the homepage polls `/api/recent-scans` at that interval and shows a notification for new scans from other users. When disabled (default), recent scans load once on page load only.
 
 ## Run an audit
 

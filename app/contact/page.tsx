@@ -1,9 +1,10 @@
+import { PROJECT_DISCLAIMER } from "@/lib/disclaimer";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contact the creator of the AI Commerce Discoverability Optimizer.",
+  description: "Contact Praveen Vemulapalli, creator of the AI Commerce Discoverability Optimizer.",
 };
 
 export default function ContactPage() {
@@ -17,11 +18,29 @@ export default function ContactPage() {
       </h1>
       <p className="mt-4 text-base leading-7 text-slate-600">
         Questions, feedback, or ideas about AI commerce discoverability — reach
-        out through the links below.
+        out to{" "}
+        <a
+          href="https://www.linkedin.com/in/praveenvemulapalli/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-blue-900 hover:underline"
+        >
+          Praveen Vemulapalli
+        </a>
+        .
       </p>
 
       <section className="mt-10 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h2 className="text-xl font-semibold text-slate-900">Praveen Vemulapalli</h2>
+        <h2 className="text-xl font-semibold text-slate-900">
+          <a
+            href="https://www.linkedin.com/in/praveenvemulapalli/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            Praveen Vemulapalli
+          </a>
+        </h2>
 
         <dl className="mt-6 space-y-5 text-sm">
           <div>
@@ -69,8 +88,7 @@ export default function ContactPage() {
       </section>
 
       <p className="mt-8 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-600">
-        Personal educational project. Not affiliated with, endorsed by, or
-        supported by Visa.
+        {PROJECT_DISCLAIMER}
       </p>
 
       <p className="mt-8">

@@ -4,11 +4,16 @@ import { AuditHero } from "@/components/audit-hero";
 import { AuditResultsSection } from "@/components/audit-results";
 import { MarketingSections } from "@/components/marketing-sections";
 import { RecentAuditsPreview } from "@/components/recent-audits";
-import { useAuditHistory } from "@/hooks/use-audit-history";
+import { ScanActivityToast } from "@/components/scan-activity-toast";
+import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
+import { useRecentScans } from "@/hooks/use-recent-scans";
+import { isScanActivityToastEnabled } from "@/lib/scan-activity-config";
 import type { AuditApiResponse, GenerateFixesApiResponse } from "@/lib/types";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
-type AuditResponse = AuditApiResponse;
+type AuditResponse = AuditApiResponse & {
+  scanRecord?: { id: string; hostname: string };
+};
 type FixesResponse = GenerateFixesApiResponse;
 
 export default function Home() {
@@ -19,19 +24,38 @@ export default function Home() {
   const [fixesLoading, setFixesLoading] = useState(false);
   const [fixesError, setFixesError] = useState<string | null>(null);
   const [fixes, setFixes] = useState<FixesResponse | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [toastHostname, setToastHostname] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
-  const { history, totalCount, hydrated, recordAudit } = useAuditHistory();
 
-  async function generateFixes(targetUrl: string) {
+  const scanActivityToastEnabled = isScanActivityToastEnabled();
+
+  const handleNewScan = useCallback((hostname: string) => {
+    setToastHostname(hostname);
+  }, []);
+
+  const { activity, loading: activityLoading, refresh, markOwnScan } =
+    useRecentScans({
+      limit: 5,
+      poll: scanActivityToastEnabled,
+      onNewScan: scanActivityToastEnabled ? handleNewScan : undefined,
+    });
+
+  async function generateFixes(targetUrl: string, token: string | null) {
     setFixesLoading(true);
     setFixesError(null);
     setFixes(null);
 
     try {
+      const payload: { url: string; turnstileToken?: string } = { url: targetUrl };
+      if (token) {
+        payload.turnstileToken = token;
+      }
+
       const response = await fetch("/api/generate-fixes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: targetUrl }),
+        body: JSON.stringify(payload),
       });
 
       const data = (await response.json()) as FixesResponse & { error?: string };
@@ -53,6 +77,11 @@ export default function Home() {
   }
 
   async function runAudit(targetUrl: string) {
+    if (shouldShowTurnstileWidget() && !turnstileToken) {
+      setError("Complete the Turnstile check before running a scan.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
@@ -60,10 +89,15 @@ export default function Home() {
     setFixesError(null);
 
     try {
+      const payload: { url: string; turnstileToken?: string } = { url: targetUrl };
+      if (turnstileToken) {
+        payload.turnstileToken = turnstileToken;
+      }
+
       const response = await fetch("/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: targetUrl }),
+        body: JSON.stringify(payload),
       });
 
       const data = (await response.json()) as AuditResponse & { error?: string };
@@ -73,13 +107,14 @@ export default function Home() {
       }
 
       setResult(data);
-      recordAudit(data);
+      markOwnScan(data.scanRecord?.id);
+      void refresh();
 
       window.setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
 
-      await generateFixes(data.url);
+      await generateFixes(data.url, turnstileToken);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -102,35 +137,46 @@ export default function Home() {
   }
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-6xl space-y-12 px-6 py-10 lg:px-8 lg:py-14">
-      <AuditHero
-        url={url}
-        loading={loading}
-        error={error}
-        onUrlChange={setUrl}
-        onSubmit={handleSubmit}
-        onExampleSelect={handleExampleSelect}
-      />
+    <>
+      <div className="mx-auto w-full min-w-0 max-w-6xl space-y-12 px-6 py-10 lg:px-8 lg:py-14">
+        <AuditHero
+          url={url}
+          loading={loading}
+          error={error}
+          turnstileToken={turnstileToken}
+          onUrlChange={setUrl}
+          onSubmit={handleSubmit}
+          onExampleSelect={handleExampleSelect}
+          onTurnstileTokenChange={setTurnstileToken}
+        />
 
-      <RecentAuditsPreview
-        entries={history}
-        totalCount={totalCount}
-        hydrated={hydrated}
-      />
+        <RecentAuditsPreview
+          entries={activity.recentScans}
+          totalCount={activity.totalScans}
+          loading={activityLoading}
+        />
 
-      {result && (
-        <div ref={resultsRef} className="scroll-mt-24">
-          <AuditResultsSection
-            result={result}
-            fixes={fixes}
-            fixesLoading={fixesLoading}
-            fixesError={fixesError}
-            onRegenerateFixes={() => generateFixes(result.url)}
-          />
-        </div>
+        {result && (
+          <div ref={resultsRef} className="scroll-mt-24">
+            <AuditResultsSection
+              result={result}
+              fixes={fixes}
+              fixesLoading={fixesLoading}
+              fixesError={fixesError}
+              onRegenerateFixes={() => generateFixes(result.url, turnstileToken)}
+            />
+          </div>
+        )}
+
+        {!result && <MarketingSections />}
+      </div>
+
+      {scanActivityToastEnabled && (
+        <ScanActivityToast
+          hostname={toastHostname}
+          onDismiss={() => setToastHostname(null)}
+        />
       )}
-
-      {!result && <MarketingSections />}
-    </div>
+    </>
   );
 }

@@ -1,32 +1,12 @@
 import { runAudit } from "@/lib/run-audit";
+import { enforceScanRequestGuards } from "@/lib/scan-request";
+import { scanUrlSchema } from "@/lib/scan-request-schema";
+import { recordCompletedScan } from "@/lib/scan-activity";
 import type { AuditApiResponse } from "@/lib/types";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
-
-const auditRequestSchema = z.object({
-  url: z
-    .string()
-    .trim()
-    .min(1, "URL is required")
-    .refine(
-      (value) => {
-        try {
-          const normalized =
-            value.startsWith("http://") || value.startsWith("https://")
-              ? value
-              : `https://${value}`;
-          const parsed = new URL(normalized);
-          return ["http:", "https:"].includes(parsed.protocol);
-        } catch {
-          return false;
-        }
-      },
-      { message: "Enter a valid website URL" },
-    ),
-});
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -40,7 +20,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = auditRequestSchema.safeParse(body);
+  const parsed = scanUrlSchema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -49,9 +29,23 @@ export async function POST(request: Request) {
     );
   }
 
+  const guardResponse = await enforceScanRequestGuards(
+    request,
+    parsed.data.turnstileToken,
+  );
+
+  if (guardResponse) {
+    return guardResponse;
+  }
+
   try {
     const response: AuditApiResponse = await runAudit(parsed.data.url);
-    return NextResponse.json(response);
+    const scanRecord = await recordCompletedScan(response);
+
+    return NextResponse.json({
+      ...response,
+      scanRecord,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Audit failed unexpectedly";

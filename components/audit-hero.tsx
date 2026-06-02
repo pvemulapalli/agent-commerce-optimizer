@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  TurnstileWidget,
+  shouldShowTurnstileWidget,
+  getClientTurnstileSiteKey,
+} from "@/components/turnstile-widget";
+
 const EXAMPLE_MERCHANTS = [
   { name: "Gymshark", url: "https://www.gymshark.com" },
   { name: "Allbirds", url: "https://www.allbirds.com" },
@@ -10,17 +16,27 @@ export function AuditHero({
   url,
   loading,
   error,
+  turnstileToken,
   onUrlChange,
   onSubmit,
   onExampleSelect,
+  onTurnstileTokenChange,
 }: {
   url: string;
   loading: boolean;
   error: string | null;
+  turnstileToken: string | null;
   onUrlChange: (url: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onExampleSelect: (url: string) => void;
+  onTurnstileTokenChange: (token: string | null) => void;
 }) {
+  const turnstileEnabled = shouldShowTurnstileWidget();
+  const turnstileSiteKey = getClientTurnstileSiteKey();
+  const turnstileRequired = turnstileEnabled && Boolean(turnstileSiteKey);
+  const submitDisabled =
+    loading || !url.trim() || (turnstileRequired && !turnstileToken);
+
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-100 px-6 py-4 sm:px-8">
@@ -55,12 +71,19 @@ export function AuditHero({
             />
             <button
               type="submit"
-              disabled={loading || !url.trim()}
+              disabled={submitDisabled}
               className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-900 px-8 py-3.5 text-base font-semibold text-white hover:bg-blue-950 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
               {loading ? "Running Audit…" : "Run Audit"}
             </button>
           </div>
+
+          {turnstileRequired && turnstileSiteKey && (
+            <TurnstileWidget
+              siteKey={turnstileSiteKey}
+              onTokenChange={onTurnstileTokenChange}
+            />
+          )}
         </form>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -69,7 +92,7 @@ export function AuditHero({
             <button
               key={merchant.url}
               type="button"
-              disabled={loading}
+              disabled={loading || (turnstileRequired && !turnstileToken)}
               onClick={() => onExampleSelect(merchant.url)}
               className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-white disabled:opacity-50"
             >

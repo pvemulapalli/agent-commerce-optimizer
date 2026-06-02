@@ -1,33 +1,12 @@
 import { generateFixAssets } from "@/lib/generate-assets";
 import { runAudit } from "@/lib/run-audit";
+import { enforceScanRequestGuards } from "@/lib/scan-request";
+import { scanUrlSchema } from "@/lib/scan-request-schema";
 import type { GenerateFixesApiResponse } from "@/lib/types";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
-
-const generateFixesRequestSchema = z.object({
-  url: z
-    .string()
-    .trim()
-    .min(1, "URL is required")
-    .refine(
-      (value) => {
-        try {
-          const normalized =
-            value.startsWith("http://") || value.startsWith("https://")
-              ? value
-              : `https://${value}`;
-          const parsed = new URL(normalized);
-          return ["http:", "https:"].includes(parsed.protocol);
-        } catch {
-          return false;
-        }
-      },
-      { message: "Enter a valid website URL" },
-    ),
-});
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -41,13 +20,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = generateFixesRequestSchema.safeParse(body);
+  const parsed = scanUrlSchema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? "Invalid request" },
       { status: 400 },
     );
+  }
+
+  const guardResponse = await enforceScanRequestGuards(
+    request,
+    parsed.data.turnstileToken,
+  );
+
+  if (guardResponse) {
+    return guardResponse;
   }
 
   try {
