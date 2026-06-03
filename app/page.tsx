@@ -10,12 +10,23 @@ import { useRecentScans } from "@/hooks/use-recent-scans";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
 import type { AuditApiResponse, GenerateFixesApiResponse } from "@/lib/types";
 import type { RecentScanRecord } from "@/lib/scan-activity";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type AuditResponse = AuditApiResponse & {
   scanRecord?: { id: string; hostname: string };
 };
 type FixesResponse = GenerateFixesApiResponse;
+
+function scrollToAuditOverview() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.getElementById("overview")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  });
+}
 
 export default function Home() {
   const [url, setUrl] = useState("");
@@ -27,7 +38,6 @@ export default function Home() {
   const [fixes, setFixes] = useState<FixesResponse | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [feedNotifications, setFeedNotifications] = useState<RecentScanRecord[]>([]);
-  const resultsRef = useRef<HTMLDivElement>(null);
 
   const activityFeedEnabled = isActivityFeedEnabled();
 
@@ -41,6 +51,14 @@ export default function Home() {
       poll: activityFeedEnabled,
       onNewScan: activityFeedEnabled ? handleNewScan : undefined,
     });
+
+  useEffect(() => {
+    if (!result) {
+      return;
+    }
+
+    scrollToAuditOverview();
+  }, [result?.url, result?.crawledAt]);
 
   async function generateFixes(targetUrl: string, token: string | null) {
     setFixesLoading(true);
@@ -104,11 +122,6 @@ export default function Home() {
       }
 
       setResult(data);
-
-      window.setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
-
       await generateFixes(data.url, turnstileToken);
     } catch (loadError) {
       setError(
@@ -151,13 +164,9 @@ export default function Home() {
         throw new Error(data.error ?? "Audit request failed");
       }
 
-      setResult(data);
       markOwnScan(data.scanRecord?.id);
-      void refresh();
-
-      window.setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
+      await refresh();
+      setResult(data);
 
       await generateFixes(data.url, turnstileToken);
     } catch (submitError) {
@@ -197,15 +206,13 @@ export default function Home() {
         />
 
         {result && (
-          <div ref={resultsRef} className="scroll-mt-24">
-            <AuditResultsSection
-              result={result}
-              fixes={fixes}
-              fixesLoading={fixesLoading}
-              fixesError={fixesError}
-              onRegenerateFixes={() => generateFixes(result.url, turnstileToken)}
-            />
-          </div>
+          <AuditResultsSection
+            result={result}
+            fixes={fixes}
+            fixesLoading={fixesLoading}
+            fixesError={fixesError}
+            onRegenerateFixes={() => generateFixes(result.url, turnstileToken)}
+          />
         )}
 
         {!result && <MarketingSections />}

@@ -15,10 +15,18 @@ const SCROLL_SPY_OFFSET_PX = 120;
 
 export function AuditStickyNav({
   visibleSections,
+  resetKey,
 }: {
   visibleSections: string[];
+  resetKey?: string;
 }) {
   const [activeId, setActiveId] = useState("overview");
+
+  useEffect(() => {
+    if (resetKey) {
+      setActiveId("overview");
+    }
+  }, [resetKey]);
 
   const resolveActiveSection = useCallback(() => {
     let current = visibleSections[0] ?? "overview";

@@ -126,7 +126,10 @@ export function AuditResultsSection({
 
   return (
     <div className="min-w-0 space-y-8">
-      <AuditStickyNav visibleSections={visibleSections} />
+      <AuditStickyNav
+        visibleSections={visibleSections}
+        resetKey={`${result.url}-${result.crawledAt}`}
+      />
 
       <ReadinessDashboard
         report={report}
