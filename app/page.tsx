@@ -1,16 +1,16 @@
 "use client";
 
+import { ActivityFeed } from "@/components/activity-feed";
 import { AuditHero } from "@/components/audit-hero";
 import { AuditResultsSection } from "@/components/audit-results";
 import { MarketingSections } from "@/components/marketing-sections";
 import { RecentAuditsPreview } from "@/components/recent-audits";
-import { ScanActivityToast } from "@/components/scan-activity-toast";
 import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
 import { isScanActivityToastEnabled } from "@/lib/scan-activity-config";
 import type { AuditApiResponse, GenerateFixesApiResponse } from "@/lib/types";
 import type { RecentScanRecord } from "@/lib/scan-activity";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 type AuditResponse = AuditApiResponse & {
   scanRecord?: { id: string; hostname: string };
@@ -26,20 +26,14 @@ export default function Home() {
   const [fixesError, setFixesError] = useState<string | null>(null);
   const [fixes, setFixes] = useState<FixesResponse | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [toastHostname, setToastHostname] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const scanActivityToastEnabled = isScanActivityToastEnabled();
-
-  const handleNewScan = useCallback((hostname: string) => {
-    setToastHostname(hostname);
-  }, []);
 
   const { activity, loading: activityLoading, refresh, markOwnScan } =
     useRecentScans({
       limit: 5,
       poll: scanActivityToastEnabled,
-      onNewScan: scanActivityToastEnabled ? handleNewScan : undefined,
     });
 
   async function generateFixes(targetUrl: string, token: string | null) {
@@ -217,12 +211,7 @@ export default function Home() {
         {!result && <MarketingSections />}
       </div>
 
-      {scanActivityToastEnabled && (
-        <ScanActivityToast
-          hostname={toastHostname}
-          onDismiss={() => setToastHostname(null)}
-        />
-      )}
+      <ActivityFeed entries={activity.recentScans} />
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { deleteCachedAuditsForHostname } from "./cache";
 import { normalizeHostname } from "./banned-domains";
-import { removeRecentAuditByHostname } from "./scan-activity";
+import { removeRecentAuditByHostname, getScanActivity } from "./scan-activity";
 import { getRedis, isRedisConfigured } from "./redis";
 
 const ACO_KEY_PREFIXES = [
@@ -54,6 +54,7 @@ export async function deleteAuditByDomain(domainInput: string): Promise<{
   hostname: string;
   deletedKeys: number;
   removedRecentAudit: boolean;
+  totalScans: number;
 }> {
   const hostname = parseAdminDomainInput(domainInput);
 
@@ -63,10 +64,12 @@ export async function deleteAuditByDomain(domainInput: string): Promise<{
 
   const deletedCacheKeys = await deleteCachedAuditsForHostname(hostname);
   const removedRecentAudit = await removeRecentAuditByHostname(hostname);
+  const { totalScans } = await getScanActivity(1);
 
   return {
     hostname,
     deletedKeys: deletedCacheKeys,
     removedRecentAudit,
+    totalScans,
   };
 }

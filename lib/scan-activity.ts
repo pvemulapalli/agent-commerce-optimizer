@@ -1,5 +1,6 @@
 import type { AuditApiResponse } from "./types";
 import { getRegistrableDomain } from "./domains";
+import { buildReadinessReport } from "./readiness-score";
 import { getRedis, isRedisConfigured } from "./redis";
 
 export interface RecentScanRecord {
@@ -12,6 +13,9 @@ export interface RecentScanRecord {
   scannedAt: string;
   cacheStatus: string;
   summary: string;
+  readinessScore: number;
+  grade: string;
+  topGap: string;
 }
 
 export interface ScanActivityResponse {
@@ -71,9 +75,16 @@ function parseRecentScanList(entries: unknown[]): RecentScanRecord[] {
 }
 
 function normalizeScanRecord(record: RecentScanRecord): RecentScanRecord {
+  const readinessScore = record.readinessScore ?? 0;
+  const grade = record.grade ?? "F";
+  const topGap = record.topGap ?? "Structured Data";
+
   return {
     ...record,
     id: normalizeHostname(record.hostname),
+    readinessScore,
+    grade,
+    topGap,
   };
 }
 
@@ -122,6 +133,7 @@ export function buildAuditSummary(audit: AuditApiResponse): string {
 
 export function createScanRecord(audit: AuditApiResponse): RecentScanRecord {
   const hostname = new URL(audit.url).hostname;
+  const report = buildReadinessReport(audit);
 
   return {
     id: normalizeHostname(hostname),
@@ -133,6 +145,9 @@ export function createScanRecord(audit: AuditApiResponse): RecentScanRecord {
     scannedAt: audit.crawledAt,
     cacheStatus: audit.cacheStatus,
     summary: buildAuditSummary(audit),
+    readinessScore: report.score,
+    grade: report.grade,
+    topGap: report.topGap,
   };
 }
 
@@ -191,11 +206,30 @@ export async function removeRecentAuditByHostname(
 
   if (isRedisConfigured()) {
     await replaceRecentScanList(filtered);
+    await decrementUniqueMerchantCount();
   } else {
     memoryRecentScans = filtered;
+    await decrementUniqueMerchantCount();
   }
 
   return true;
+}
+
+async function decrementUniqueMerchantCount(): Promise<void> {
+  if (isRedisConfigured()) {
+    const redis = getRedis();
+    const current = Number((await redis.get<number>(TOTAL_KEY)) ?? 0);
+
+    if (current > 0) {
+      await redis.decr(TOTAL_KEY);
+    }
+
+    return;
+  }
+
+  if (memoryTotalScans > 0) {
+    memoryTotalScans -= 1;
+  }
 }
 
 async function upsertRecentScanInRedis(record: RecentScanRecord): Promise<void> {
