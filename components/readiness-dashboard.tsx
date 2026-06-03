@@ -1,7 +1,7 @@
 "use client";
 
-import { ReadinessRadarChart } from "@/components/readiness-radar-chart";
-import type { ReadinessReport } from "@/lib/readiness-score";
+import { DimensionScoreBars } from "@/components/dimension-score-bars";
+import { SCORE_EVIDENCE_NOTE, type ReadinessReport } from "@/lib/readiness-score";
 
 function ScoreGauge({ score, grade }: { score: number; grade: string }) {
   const circumference = 2 * Math.PI * 54;
@@ -56,6 +56,21 @@ function Scorecard({
   );
 }
 
+function ScoreEvidenceNote() {
+  return (
+    <p className="flex items-start gap-2 text-sm text-slate-600">
+      <span
+        className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700"
+        title={SCORE_EVIDENCE_NOTE}
+        aria-label={SCORE_EVIDENCE_NOTE}
+      >
+        i
+      </span>
+      <span>{SCORE_EVIDENCE_NOTE}</span>
+    </p>
+  );
+}
+
 export function ReadinessDashboard({
   report,
   detectedCount,
@@ -89,10 +104,20 @@ export function ReadinessDashboard({
           </div>
           <ScoreGauge score={report.score} grade={report.grade} />
         </div>
+        <div className="mt-5">
+          <ScoreEvidenceNote />
+        </div>
       </div>
 
-      <div className="grid gap-6 px-6 py-8 sm:px-8 lg:grid-cols-[1fr_1.1fr]">
-        <ReadinessRadarChart dimensions={report.dimensions} />
+      <div className="grid gap-8 px-6 py-8 sm:px-8 lg:grid-cols-[1.2fr_0.8fr]">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Dimension scores
+          </h3>
+          <div className="mt-4">
+            <DimensionScoreBars dimensions={report.dimensions} />
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-3 content-start">
           <Scorecard label="Detected Signals" value={detectedCount} tone="emerald" />
@@ -162,7 +187,8 @@ export function RecommendationsSection({ report }: { report: ReadinessReport }) 
       </p>
       <h2 className="mt-2 text-2xl font-semibold text-slate-900">Recommendations</h2>
       <p className="mt-2 text-sm text-slate-600">
-        Prioritized actions based on your weakest readiness dimensions and missing signals.
+        Prioritized actions based on your weakest evidence-backed dimensions and missing
+        signals.
       </p>
       <ol className="mt-6 space-y-4">
         {report.recommendations.map((item, index) => (

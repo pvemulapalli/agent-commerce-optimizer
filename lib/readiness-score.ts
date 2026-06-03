@@ -10,18 +10,19 @@ export type ReadinessGrade = "A" | "B" | "C" | "D" | "F";
 export type ReadinessDimensionId =
   | "discoverability"
   | "agentAccess"
+  | "catalogReadiness"
   | "structuredData"
-  | "acp"
-  | "ucp"
-  | "infrastructure"
-  | "payments"
-  | "fulfillment"
+  | "merchantInformation"
+  | "ucpReadiness"
+  | "acpReadiness"
   | "platformReadiness";
 
 export interface ReadinessDimension {
   id: ReadinessDimensionId;
   label: string;
   score: number;
+  /** Finding labels used to compute this score — evidence traceability */
+  evidenceLabels: string[];
 }
 
 export interface ReadinessReport {
@@ -36,58 +37,55 @@ export interface ReadinessReport {
   recommendations: string[];
 }
 
+export const SCORE_EVIDENCE_NOTE =
+  "Scores are derived from evidence-backed findings collected during the audit.";
+
 const DIMENSION_LABELS: Record<ReadinessDimensionId, string> = {
   discoverability: "Discoverability",
   agentAccess: "Agent Access",
+  catalogReadiness: "Catalog Readiness",
   structuredData: "Structured Data",
-  acp: "ACP",
-  ucp: "UCP",
-  infrastructure: "Infrastructure",
-  payments: "Payments",
-  fulfillment: "Fulfillment",
+  merchantInformation: "Merchant Information",
+  ucpReadiness: "UCP Readiness",
+  acpReadiness: "ACP Readiness",
   platformReadiness: "Platform Readiness",
 };
 
-const DIMENSION_FINDINGS: Record<ReadinessDimensionId, string[]> = {
-  discoverability: [
-    "sitemap-xml",
+const DIMENSION_FINDINGS: Record<
+  Exclude<ReadinessDimensionId, "platformReadiness">,
+  string[]
+> = {
+  discoverability: ["robots-txt", "sitemap-xml"],
+  agentAccess: ["robots-txt", "llms-txt", "search-action-schema"],
+  catalogReadiness: [
     "product-pages",
     "collection-pages",
     "category-pages",
     "catalog-pages",
-    "item-list-schema",
-    "website-schema",
   ],
-  agentAccess: ["robots-txt", "llms-txt", "search-action-schema"],
   structuredData: [
     "product-schema",
     "offer-schema",
     "organization-schema",
     "faq-schema",
     "breadcrumb-schema",
-    "website-schema",
     "item-list-schema",
+    "search-action-schema",
   ],
-  acp: ["api-developer-docs", "llms-txt"],
-  ucp: ["cart-checkout-pages", "checkout-cart-links"],
-  infrastructure: ["robots-txt", "sitemap-xml", "llms-txt"],
-  payments: [
-    "product-prices",
-    "pricing-information",
-    "pricing-page",
-    "offer-schema",
-    "cart-checkout-pages",
-  ],
-  fulfillment: [
+  merchantInformation: [
     "shipping-page",
     "delivery-information",
     "returns-page",
     "return-policy-page",
     "refund-page",
     "return-portal",
-    "product-availability",
+    "help-center",
+    "faq-page",
+    "contact-page",
+    "contact-support",
   ],
-  platformReadiness: [],
+  ucpReadiness: ["cart-checkout-pages", "checkout-cart-links"],
+  acpReadiness: ["api-developer-docs", "llms-txt"],
 };
 
 const HIGH_IMPACT_FINDINGS = new Set([
@@ -97,8 +95,7 @@ const HIGH_IMPACT_FINDINGS = new Set([
   "product-pages",
   "llms-txt",
   "organization-schema",
-  "product-prices",
-  "cart-checkout-pages",
+  "faq-schema",
 ]);
 
 function scoreFinding(finding: Finding): number {
@@ -119,49 +116,60 @@ function scoreFinding(finding: Finding): number {
 
 function scorePlatform(platform: PlatformAnalysis): number {
   if (platform.platform === "Unknown") {
-    return 35;
+    return 0;
   }
 
-  if (platform.confidence === "high") return 92;
-  if (platform.confidence === "medium") return 78;
-  return 62;
+  if (platform.confidence === "high") return 100;
+  if (platform.confidence === "medium") return 80;
+  return 65;
+}
+
+function computeDimensionScore(
+  id: ReadinessDimensionId,
+  findings: Finding[],
+  platform: PlatformAnalysis,
+): ReadinessDimension | null {
+  if (id === "platformReadiness") {
+    return {
+      id,
+      label: DIMENSION_LABELS[id],
+      score: scorePlatform(platform),
+      evidenceLabels: [
+        `Platform: ${platform.platform}`,
+        `Detection confidence: ${platform.confidence}`,
+      ],
+    };
+  }
+
+  const relatedIds = DIMENSION_FINDINGS[id];
+  const relatedFindings = relatedIds
+    .map((findingId) => findings.find((finding) => finding.id === findingId))
+    .filter((finding): finding is Finding => Boolean(finding));
+
+  if (relatedFindings.length === 0) {
+    return null;
+  }
+
+  const total = relatedFindings.reduce(
+    (sum, finding) => sum + scoreFinding(finding),
+    0,
+  );
+
+  return {
+    id,
+    label: DIMENSION_LABELS[id],
+    score: Math.round(total / relatedFindings.length),
+    evidenceLabels: relatedFindings.map((finding) => finding.label),
+  };
 }
 
 function computeDimensionScores(
   findings: Finding[],
   platform: PlatformAnalysis,
 ): ReadinessDimension[] {
-  const byId = new Map(findings.map((finding) => [finding.id, finding]));
-
-  return (Object.keys(DIMENSION_LABELS) as ReadinessDimensionId[]).map((id) => {
-    if (id === "platformReadiness") {
-      return {
-        id,
-        label: DIMENSION_LABELS[id],
-        score: scorePlatform(platform),
-      };
-    }
-
-    const relatedIds = DIMENSION_FINDINGS[id];
-    const relatedFindings = relatedIds
-      .map((findingId) => byId.get(findingId))
-      .filter((finding): finding is Finding => Boolean(finding));
-
-    if (relatedFindings.length === 0) {
-      return { id, label: DIMENSION_LABELS[id], score: 50 };
-    }
-
-    const total = relatedFindings.reduce(
-      (sum, finding) => sum + scoreFinding(finding),
-      0,
-    );
-
-    return {
-      id,
-      label: DIMENSION_LABELS[id],
-      score: Math.round(total / relatedFindings.length),
-    };
-  });
+  return (Object.keys(DIMENSION_LABELS) as ReadinessDimensionId[])
+    .map((id) => computeDimensionScore(id, findings, platform))
+    .filter((dimension): dimension is ReadinessDimension => Boolean(dimension));
 }
 
 export function computeReadinessScore(grouped: GroupedFindings): number {
@@ -223,39 +231,66 @@ function buildRecommendations(
   const recommendations: string[] = [];
 
   for (const dimension of opportunities.slice(0, 3)) {
-    if (dimension.includes("Structured Data") && missingLabels.includes("Product schema")) {
-      recommendations.push("Publish structured product data with JSON-LD Product schema.");
+    if (
+      dimension.includes("Structured Data") &&
+      missingLabels.includes("Product schema")
+    ) {
+      recommendations.push(
+        "Publish structured product data with JSON-LD Product schema.",
+      );
       continue;
     }
-    if (dimension.includes("Agent Access") && missingLabels.includes("llms.txt")) {
-      recommendations.push("Publish llms.txt to guide AI crawlers to key merchant URLs.");
+    if (
+      dimension.includes("Agent Access") &&
+      missingLabels.includes("llms.txt")
+    ) {
+      recommendations.push(
+        "Publish llms.txt to guide AI crawlers to key merchant URLs.",
+      );
       continue;
     }
-    if (dimension.includes("Discoverability") && missingLabels.includes("sitemap.xml")) {
-      recommendations.push("Ensure sitemap.xml is published and referenced in robots.txt.");
+    if (
+      dimension.includes("Discoverability") &&
+      missingLabels.includes("sitemap.xml")
+    ) {
+      recommendations.push(
+        "Ensure sitemap.xml is published and referenced in robots.txt.",
+      );
       continue;
     }
-    if (dimension.includes("Payments") && missingLabels.includes("Product prices")) {
-      recommendations.push("Expose machine-readable product pricing on catalog pages.");
+    if (dimension.includes("Catalog Readiness")) {
+      recommendations.push(
+        "Improve catalog discoverability with clearer product and collection URLs.",
+      );
       continue;
     }
-    if (dimension.includes("Fulfillment")) {
-      recommendations.push("Make shipping and return policies easy to discover from the homepage.");
+    if (dimension.includes("Merchant Information")) {
+      recommendations.push(
+        "Make returns, shipping, FAQ, and contact policies easier for agents to find.",
+      );
       continue;
     }
-    recommendations.push(`Improve ${dimension.toLowerCase()} signals surfaced in the audit.`);
+    recommendations.push(
+      `Improve ${dimension.toLowerCase()} using the missing signals listed in your audit.`,
+    );
   }
 
   if (recommendations.length === 0 && missingLabels.length > 0) {
-    recommendations.push(`Address missing signals starting with ${missingLabels[0]}.`);
+    recommendations.push(
+      `Address missing signals starting with ${missingLabels[0]}.`,
+    );
   }
 
   if (recommendations.length === 0 && reviewLabels.length > 0) {
-    recommendations.push(`Review ambiguous signals starting with ${reviewLabels[0]}.`);
+    recommendations.push(
+      `Review ambiguous signals starting with ${reviewLabels[0]}.`,
+    );
   }
 
   if (recommendations.length === 0) {
-    recommendations.push("Maintain current discovery files and structured data as your catalog evolves.");
+    recommendations.push(
+      "Maintain discovery files and structured data as your catalog evolves.",
+    );
   }
 
   return recommendations.slice(0, 5);
@@ -270,27 +305,31 @@ function buildExecutiveSummaryText(
   const strengthText =
     strengths.length > 0
       ? strengths.join(", ").toLowerCase()
-      : "some baseline commerce signals";
+      : "baseline discoverability signals";
   const opportunityText =
     opportunities.length > 0
       ? opportunities.join(", ").toLowerCase()
-      : "continued structured data coverage";
+      : "structured data and catalog clarity";
 
   if (score >= 80) {
-    return `${merchant} has strong ${strengthText}. The largest opportunities are ${opportunityText}. AI shopping agents can access the site today, but machine-readable commerce metadata can still be expanded.`;
+    return `${merchant} has strong ${strengthText}. The largest opportunities are ${opportunityText}. AI shopping agents can discover the site, but machine-readable catalog and policy metadata can still be expanded.`;
   }
 
   if (score >= 60) {
-    return `${merchant} shows moderate readiness with strengths in ${strengthText}. The biggest gaps are ${opportunityText}. AI agents can reach the storefront, but product and policy understanding remains limited without stronger structured signals.`;
+    return `${merchant} shows moderate AI discoverability with strengths in ${strengthText}. The biggest gaps are ${opportunityText}. Agents can reach the storefront, but catalog and policy understanding remains limited without stronger structured signals.`;
   }
 
-  return `${merchant} has limited AI commerce readiness today. Priority gaps include ${opportunityText}. Strengthening discovery files and structured product data should be the first focus before agents can reliably recommend products.`;
+  return `${merchant} has limited AI discoverability today. Priority gaps include ${opportunityText}. Strengthen discovery files, catalog URLs, and structured data before agents can reliably understand products and policies.`;
 }
 
-export function getTopGap(grouped: GroupedFindings, dimensions: ReadinessDimension[]): string {
-  const weakest = [...dimensions]
-    .filter((dimension) => dimension.id !== "platformReadiness")
-    .sort((left, right) => left.score - right.score)[0];
+export function getTopGap(
+  grouped: GroupedFindings,
+  dimensions: ReadinessDimension[],
+): string {
+  const scored = dimensions.filter(
+    (dimension) => dimension.id !== "platformReadiness",
+  );
+  const weakest = [...scored].sort((left, right) => left.score - right.score)[0];
 
   if (weakest) {
     return weakest.label;
@@ -306,10 +345,15 @@ export function getTopGap(grouped: GroupedFindings, dimensions: ReadinessDimensi
 
 export function buildReadinessReport(audit: AuditApiResponse): ReadinessReport {
   const dimensions = computeDimensionScores(audit.findings, audit.platform);
-  const score = Math.round(
-    dimensions.reduce((sum, dimension) => sum + dimension.score, 0) /
-      dimensions.length,
-  );
+
+  const score =
+    dimensions.length === 0
+      ? 0
+      : Math.round(
+          dimensions.reduce((sum, dimension) => sum + dimension.score, 0) /
+            dimensions.length,
+        );
+
   const grade = getReadinessGrade(score);
   const summaryLabel = getReadinessSummaryLabel(score);
 

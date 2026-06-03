@@ -60,7 +60,7 @@ export function AuditHero({
         <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
           Analyze your ecommerce site and discover how easily ChatGPT, Claude, Gemini,
           Perplexity, Copilot, and AI shopping agents can understand your products,
-          catalog, policies, and checkout experience.
+          catalog, policies, and merchant information.
         </p>
 
         <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

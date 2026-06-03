@@ -16,3 +16,4 @@ export type {
   ReadinessGrade,
   ReadinessReport,
 } from "./readiness-score";
+export { SCORE_EVIDENCE_NOTE } from "./readiness-score";

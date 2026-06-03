@@ -1,33 +1,66 @@
 "use client";
 
 import type { RecentScanRecord } from "@/lib/scan-activity";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-export function ActivityFeed({ entries }: { entries: RecentScanRecord[] }) {
-  const [index, setIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
+const TOAST_VISIBLE_MS = 5000;
+const FADE_MS = 300;
+
+export function ActivityFeed({
+  notifications,
+}: {
+  notifications: RecentScanRecord[];
+}) {
+  const [queue, setQueue] = useState<RecentScanRecord[]>([]);
+  const [current, setCurrent] = useState<RecentScanRecord | null>(null);
+  const [visible, setVisible] = useState(false);
+  const enqueuedKeysRef = useRef(new Set<string>());
 
   useEffect(() => {
-    if (entries.length <= 1) {
+    setQueue((existing) => {
+      const next = [...existing];
+
+      for (const entry of notifications) {
+        const key = `${entry.id}-${entry.scannedAt}`;
+        if (enqueuedKeysRef.current.has(key)) {
+          continue;
+        }
+
+        enqueuedKeysRef.current.add(key);
+        next.push(entry);
+      }
+
+      return next;
+    });
+  }, [notifications]);
+
+  useEffect(() => {
+    if (current || queue.length === 0) {
       return;
     }
 
-    const intervalId = window.setInterval(() => {
+    const [next, ...rest] = queue;
+    setQueue(rest);
+    setCurrent(next);
+    setVisible(true);
+
+    const hideTimer = window.setTimeout(() => {
       setVisible(false);
-      window.setTimeout(() => {
-        setIndex((current) => (current + 1) % entries.length);
-        setVisible(true);
-      }, 250);
-    }, 6000);
+    }, TOAST_VISIBLE_MS);
 
-    return () => window.clearInterval(intervalId);
-  }, [entries.length]);
+    const clearTimer = window.setTimeout(() => {
+      setCurrent(null);
+    }, TOAST_VISIBLE_MS + FADE_MS);
 
-  if (entries.length === 0) {
+    return () => {
+      window.clearTimeout(hideTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [queue, current]);
+
+  if (!current) {
     return null;
   }
-
-  const entry = entries[index % entries.length];
 
   return (
     <aside
@@ -40,16 +73,16 @@ export function ActivityFeed({ entries }: { entries: RecentScanRecord[] }) {
         Live activity
       </p>
       <p className="mt-2 text-sm font-medium text-slate-900">New audit completed</p>
-      <p className="mt-1 break-all text-sm text-blue-900">{entry.hostname}</p>
+      <p className="mt-1 break-all text-sm text-blue-900">{current.hostname}</p>
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
         <span className="rounded-full bg-slate-900 px-2.5 py-1 font-semibold text-white">
-          Score {entry.readinessScore ?? "—"}
+          Score {current.readinessScore ?? "—"}
         </span>
         <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700">
-          Grade {entry.grade || "—"}
+          Grade {current.grade || "—"}
         </span>
         <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700">
-          {entry.platform}
+          {current.platform}
         </span>
       </div>
     </aside>

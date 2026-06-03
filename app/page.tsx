@@ -7,10 +7,10 @@ import { MarketingSections } from "@/components/marketing-sections";
 import { RecentAuditsPreview } from "@/components/recent-audits";
 import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
-import { isScanActivityToastEnabled } from "@/lib/scan-activity-config";
+import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
 import type { AuditApiResponse, GenerateFixesApiResponse } from "@/lib/types";
 import type { RecentScanRecord } from "@/lib/scan-activity";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 type AuditResponse = AuditApiResponse & {
   scanRecord?: { id: string; hostname: string };
@@ -26,14 +26,20 @@ export default function Home() {
   const [fixesError, setFixesError] = useState<string | null>(null);
   const [fixes, setFixes] = useState<FixesResponse | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [feedNotifications, setFeedNotifications] = useState<RecentScanRecord[]>([]);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  const scanActivityToastEnabled = isScanActivityToastEnabled();
+  const activityFeedEnabled = isActivityFeedEnabled();
+
+  const handleNewScan = useCallback((entry: RecentScanRecord) => {
+    setFeedNotifications((existing) => [...existing, entry]);
+  }, []);
 
   const { activity, loading: activityLoading, refresh, markOwnScan } =
     useRecentScans({
       limit: 5,
-      poll: scanActivityToastEnabled,
+      poll: activityFeedEnabled,
+      onNewScan: activityFeedEnabled ? handleNewScan : undefined,
     });
 
   async function generateFixes(targetUrl: string, token: string | null) {
@@ -211,7 +217,9 @@ export default function Home() {
         {!result && <MarketingSections />}
       </div>
 
-      <ActivityFeed entries={activity.recentScans} />
+      {activityFeedEnabled && (
+        <ActivityFeed notifications={feedNotifications} />
+      )}
     </>
   );
 }

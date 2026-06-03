@@ -2,21 +2,22 @@
 
 import {
   getScanActivityPollIntervalMs,
-  isScanActivityToastEnabled,
+  isActivityFeedEnabled,
+  isRecentActivityEvent,
 } from "@/lib/scan-activity-config";
-import type { ScanActivityResponse } from "@/lib/scan-activity";
+import type { RecentScanRecord, ScanActivityResponse } from "@/lib/scan-activity";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useRecentScans(options?: {
   limit?: number;
   poll?: boolean;
   pollIntervalMs?: number;
-  onNewScan?: (hostname: string) => void;
+  onNewScan?: (entry: RecentScanRecord) => void;
 }) {
   const limit = options?.limit ?? 5;
   const poll = options?.poll ?? false;
   const pollIntervalMs = options?.pollIntervalMs ?? getScanActivityPollIntervalMs();
-  const toastEnabled = isScanActivityToastEnabled();
+  const activityFeedEnabled = isActivityFeedEnabled();
   const onNewScanRef = useRef(options?.onNewScan);
 
   useEffect(() => {
@@ -29,9 +30,9 @@ export function useRecentScans(options?: {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const latestScanIdRef = useRef<string | null>(null);
+  const latestScanKeyRef = useRef<string | null>(null);
   const initializedRef = useRef(false);
-  const skipNextToastForScanIdRef = useRef<string | null>(null);
+  const skipNextNotificationRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,22 +64,26 @@ export function useRecentScans(options?: {
           return;
         }
 
+        const latestKey = `${latestScan.id}-${latestScan.scannedAt}`;
+
         if (!initializedRef.current) {
-          latestScanIdRef.current = latestScan.id;
+          latestScanKeyRef.current = latestKey;
           initializedRef.current = true;
           return;
         }
 
         if (
-          toastEnabled &&
-          latestScan.id !== latestScanIdRef.current &&
-          latestScan.id !== skipNextToastForScanIdRef.current
+          activityFeedEnabled &&
+          poll &&
+          latestKey !== latestScanKeyRef.current &&
+          !skipNextNotificationRef.current &&
+          isRecentActivityEvent(latestScan.scannedAt)
         ) {
-          onNewScanRef.current?.(latestScan.hostname);
+          onNewScanRef.current?.(latestScan);
         }
 
-        skipNextToastForScanIdRef.current = null;
-        latestScanIdRef.current = latestScan.id;
+        skipNextNotificationRef.current = false;
+        latestScanKeyRef.current = latestKey;
       } catch (fetchError) {
         if (cancelled) {
           return;
@@ -95,7 +100,7 @@ export function useRecentScans(options?: {
 
     void fetchActivity();
 
-    if (!poll) {
+    if (!poll || !activityFeedEnabled) {
       return () => {
         cancelled = true;
       };
@@ -109,7 +114,7 @@ export function useRecentScans(options?: {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [limit, poll, pollIntervalMs, toastEnabled]);
+  }, [limit, poll, pollIntervalMs, activityFeedEnabled]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -131,7 +136,7 @@ export function useRecentScans(options?: {
 
       const latestScan = data.recentScans[0];
       if (latestScan) {
-        latestScanIdRef.current = latestScan.id;
+        latestScanKeyRef.current = `${latestScan.id}-${latestScan.scannedAt}`;
         initializedRef.current = true;
       }
 
@@ -148,12 +153,9 @@ export function useRecentScans(options?: {
     }
   }, [limit]);
 
-  const markOwnScan = useCallback((scanId: string | undefined) => {
-    if (scanId) {
-      skipNextToastForScanIdRef.current = scanId;
-      latestScanIdRef.current = scanId;
-      initializedRef.current = true;
-    }
+  const markOwnScan = useCallback((_scanId?: string) => {
+    skipNextNotificationRef.current = true;
+    initializedRef.current = true;
   }, []);
 
   return {
