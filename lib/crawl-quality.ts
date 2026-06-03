@@ -45,12 +45,24 @@ export function inferCrawlSummaryFromFindings(findings: Finding[]): CrawlSummary
 }
 
 export function isBlockedOrBotProtected(summary: CrawlSummary): boolean {
+  const botStatuses = new Set([403, 429]);
   const coreStatuses = [summary.entryStatus, summary.robotsStatus, summary.sitemapStatus];
-  const blockedCore = coreStatuses.filter((status) => status === 403).length;
+  const blockedCore = coreStatuses.filter((status) => status !== null && botStatuses.has(status))
+    .length;
 
-  if (summary.entryStatus === 403) return true;
+  if (summary.entryStatus !== null && botStatuses.has(summary.entryStatus)) {
+    if (summary.pagesCrawled <= 1) {
+      return true;
+    }
+  }
+
   if (blockedCore >= 2) return true;
-  if (summary.robotsStatus === 403 && summary.sitemapStatus === 403) return true;
+  if (
+    summary.robotsStatus === 403 &&
+    summary.sitemapStatus === 403
+  ) {
+    return true;
+  }
 
   if (summary.pagesCrawled > 0 && summary.pages403 / summary.pagesCrawled >= 0.5) {
     return true;

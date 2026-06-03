@@ -37,7 +37,7 @@ export default function Home() {
 
   const { activity, loading: activityLoading, refresh, markOwnScan } =
     useRecentScans({
-      limit: 5,
+      limit: 6,
       poll: activityFeedEnabled,
       onNewScan: activityFeedEnabled ? handleNewScan : undefined,
     });
@@ -176,11 +176,6 @@ export default function Home() {
     await runAudit(url);
   }
 
-  function handleExampleSelect(exampleUrl: string) {
-    setUrl(exampleUrl);
-    void runAudit(exampleUrl);
-  }
-
   return (
     <>
       <div className="mx-auto w-full min-w-0 max-w-6xl space-y-12 px-6 py-10 lg:px-8 lg:py-14">
@@ -191,7 +186,6 @@ export default function Home() {
           turnstileToken={turnstileToken}
           onUrlChange={setUrl}
           onSubmit={handleSubmit}
-          onExampleSelect={handleExampleSelect}
           onTurnstileTokenChange={setTurnstileToken}
         />
 

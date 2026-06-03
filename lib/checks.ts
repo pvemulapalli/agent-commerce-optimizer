@@ -187,6 +187,7 @@ function checkRobotsTxt(data: CrawlData): Finding {
 
 function checkSitemap(data: CrawlData): Finding {
   const { sitemapXml } = data.resources;
+  const resolvedSitemapUrl = data.sitemap.sitemapUrls[0] ?? null;
 
   if (sitemapXml.status === 200 && sitemapXml.content?.trim()) {
     const crawledCount = data.sitemap.urlsCrawled.length;
@@ -203,14 +204,24 @@ function checkSitemap(data: CrawlData): Finding {
     );
   }
 
-  if (data.sitemap.urlsCrawled.length > 0) {
+  if (data.sitemap.urlsDiscovered > 0 || data.sitemap.urlsCrawled.length > 0) {
+    const crawledCount = data.sitemap.urlsCrawled.length;
+    const discoveredCount = data.sitemap.urlsDiscovered;
+    const sourceUrl = resolvedSitemapUrl ?? data.entryUrl;
+
     return detected(
       "sitemap-xml",
       "sitemap.xml",
-      "medium",
-      `Sitemap discovered via robots.txt or nested index. Crawled ${data.sitemap.urlsCrawled.length} prioritized URL(s).`,
-      uniqueUrls(data.sitemap.sitemapUrls.concat(data.sitemap.urlsCrawled)),
-      data.sitemap.sitemapUrls[0] ?? data.entryUrl,
+      crawledCount > 0 ? "high" : "medium",
+      resolvedSitemapUrl
+        ? `Sitemap resolved at ${resolvedSitemapUrl}. Parsed ${discoveredCount} URL(s); crawled ${crawledCount}.`
+        : `Sitemap discovered via robots.txt or nested index. Crawled ${crawledCount} prioritized URL(s).`,
+      uniqueUrls(
+        [sourceUrl, ...data.sitemap.sitemapUrls, ...data.sitemap.urlsCrawled].filter(
+          Boolean,
+        ),
+      ),
+      sourceUrl,
     );
   }
 

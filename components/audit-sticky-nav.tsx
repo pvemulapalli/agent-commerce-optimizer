@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
@@ -11,6 +11,8 @@ const SECTIONS = [
   { id: "recommendations", label: "Recommendations" },
 ];
 
+const SCROLL_SPY_OFFSET_PX = 120;
+
 export function AuditStickyNav({
   visibleSections,
 }: {
@@ -18,31 +20,38 @@ export function AuditStickyNav({
 }) {
   const [activeId, setActiveId] = useState("overview");
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => right.intersectionRatio - left.intersectionRatio);
+  const resolveActiveSection = useCallback(() => {
+    let current = visibleSections[0] ?? "overview";
 
-        if (visible[0]?.target.id) {
-          setActiveId(visible[0].target.id);
-        }
-      },
-      { rootMargin: "-30% 0px -55% 0px", threshold: [0.1, 0.35, 0.6] },
-    );
+    for (const sectionId of visibleSections) {
+      const element = document.getElementById(sectionId);
+      if (!element) {
+        continue;
+      }
 
-    for (const section of visibleSections) {
-      const element = document.getElementById(section);
-      if (element) {
-        observer.observe(element);
+      const { top } = element.getBoundingClientRect();
+      if (top <= SCROLL_SPY_OFFSET_PX) {
+        current = sectionId;
       }
     }
 
-    return () => observer.disconnect();
+    setActiveId(current);
   }, [visibleSections]);
 
+  useEffect(() => {
+    resolveActiveSection();
+
+    window.addEventListener("scroll", resolveActiveSection, { passive: true });
+    window.addEventListener("resize", resolveActiveSection);
+
+    return () => {
+      window.removeEventListener("scroll", resolveActiveSection);
+      window.removeEventListener("resize", resolveActiveSection);
+    };
+  }, [resolveActiveSection]);
+
   function scrollToSection(sectionId: string) {
+    setActiveId(sectionId);
     document.getElementById(sectionId)?.scrollIntoView({
       behavior: "smooth",
       block: "start",

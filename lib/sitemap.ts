@@ -39,6 +39,18 @@ export function scoreSitemapUrl(url: string): number {
   const lower = url.toLowerCase();
   let score = 0;
 
+  if (/\/p\/[^/]+\/\d+\.html/i.test(url)) {
+    score += 12;
+  }
+
+  if (/\/products\/[^/?#]+/i.test(url)) {
+    score += 12;
+  }
+
+  if (/\/product\/[^/?#]+/i.test(url)) {
+    score += 10;
+  }
+
   for (const keyword of PRIORITY_KEYWORDS) {
     if (lower.includes(keyword)) {
       score += 3;
@@ -46,6 +58,20 @@ export function scoreSitemapUrl(url: string): number {
   }
 
   return score;
+}
+
+function rankNestedSitemapFile(url: string): number {
+  const lower = url.toLowerCase();
+
+  if (/sitemap_0|product|catalog/i.test(lower)) {
+    return 0;
+  }
+
+  if (/hreflang|faceted|lang|locale/i.test(lower)) {
+    return 2;
+  }
+
+  return 1;
 }
 
 export function prioritizeSitemapUrls(urls: string[], limit = SITEMAP_URL_LIMIT): string[] {
@@ -81,7 +107,11 @@ export async function resolveSitemapUrls(
     const locations = extractLocTags(xml);
 
     if (isSitemapIndex(xml)) {
-      for (const loc of locations) {
+      const sortedLocations = [...locations].sort(
+        (left, right) => rankNestedSitemapFile(left) - rankNestedSitemapFile(right),
+      );
+
+      for (const loc of sortedLocations) {
         if (!visitedSitemaps.has(loc)) {
           queue.push(loc);
         }

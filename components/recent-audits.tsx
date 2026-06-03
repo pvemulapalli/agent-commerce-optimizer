@@ -192,7 +192,7 @@ export function RecentAuditsPreview({
 
       {!loading && entries.length > 0 && (
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {entries.slice(0, 5).map((entry, index) => (
+          {entries.slice(0, 6).map((entry, index) => (
             <RecentAuditCard
               key={`${entry.id}-${entry.scannedAt}-${index}`}
               entry={entry}

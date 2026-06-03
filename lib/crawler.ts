@@ -306,7 +306,11 @@ function mergePages(existing: PageData[], incoming: PageData[]): PageData[] {
 }
 
 function discoverSitemapCandidates(origin: string, robotsTxt: ResourceFetch): string[] {
-  const candidates = new Set<string>([`${origin}/sitemap.xml`]);
+  const candidates = new Set<string>([
+    `${origin}/sitemap.xml`,
+    `${origin}/sitemap_index.xml`,
+    `${origin}/sitemap-index.xml`,
+  ]);
 
   if (robotsTxt.content) {
     const sitemapMatches = robotsTxt.content.match(/^Sitemap:\s*(.+)$/gim) ?? [];
@@ -317,6 +321,28 @@ function discoverSitemapCandidates(origin: string, robotsTxt: ResourceFetch): st
   }
 
   return [...candidates];
+}
+
+async function resolveInitialSitemapUrl(
+  candidates: string[],
+  defaultSitemap: ResourceFetch,
+  fetchXmlContent: (url: string) => Promise<string | null>,
+): Promise<string | null> {
+  const ordered = [
+    ...(defaultSitemap.status === 200 && defaultSitemap.content?.trim()
+      ? [defaultSitemap.url]
+      : []),
+    ...candidates.filter((url) => url !== defaultSitemap.url),
+  ];
+
+  for (const url of [...new Set(ordered)]) {
+    const xml = await fetchXmlContent(url);
+    if (xml?.trim()) {
+      return url;
+    }
+  }
+
+  return null;
 }
 
 export async function crawlSite(inputUrl: string): Promise<CrawlData> {
@@ -345,10 +371,11 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
   let pages: PageData[] = [entryPage];
 
   const sitemapCandidates = discoverSitemapCandidates(origin, robotsTxt);
-  const initialSitemap =
-    sitemapXml.status === 200 && sitemapXml.content
-      ? sitemapXml.url
-      : sitemapCandidates[0];
+  const initialSitemap = await resolveInitialSitemapUrl(
+    sitemapCandidates,
+    sitemapXml,
+    fetchXml,
+  );
 
   let sitemapInfo = {
     sitemapUrls: [] as string[],

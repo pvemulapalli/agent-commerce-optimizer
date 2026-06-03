@@ -149,10 +149,22 @@ function collectUrlSignals(data: CrawlData): PlatformSignal[] {
   for (const url of urls) {
     const lower = url.toLowerCase();
 
-    if (/\/products\/|\/collections\//i.test(lower)) {
+    if (/\/products\/[^/?#]+/i.test(lower)) {
       signals.push({
         platform: "Shopify",
-        label: "Shopify product or collection URL structure detected",
+        label: "Shopify product URL structure detected",
+        weight: 2,
+        sourceUrl: url,
+      });
+    }
+
+    if (
+      /\/collections\/[^/?#]+/i.test(lower) &&
+      !/\/c\/collections\//i.test(lower)
+    ) {
+      signals.push({
+        platform: "Shopify",
+        label: "Shopify collection URL structure detected",
         weight: 2,
         sourceUrl: url,
       });
@@ -181,6 +193,15 @@ function collectUrlSignals(data: CrawlData): PlatformSignal[] {
         platform: "Salesforce Commerce Cloud",
         label: "SFCC Demandware storefront URL pattern detected",
         weight: 3,
+        sourceUrl: url,
+      });
+    }
+
+    if (/\/p\/[^/]+\/\d+\.html/i.test(lower)) {
+      signals.push({
+        platform: "Salesforce Commerce Cloud",
+        label: "SFCC product permalink structure detected",
+        weight: 2,
         sourceUrl: url,
       });
     }
