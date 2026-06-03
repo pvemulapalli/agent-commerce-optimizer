@@ -1,7 +1,4 @@
-import {
-  isValidAdminToken,
-  unauthorizedJsonResponse,
-} from "@/lib/admin-auth";
+import { validateAdminRequest } from "@/lib/admin-auth";
 import { deleteAuditByDomain } from "@/lib/redis-admin";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -31,8 +28,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!isValidAdminToken(parsed.data.token)) {
-    return unauthorizedJsonResponse();
+  const authError = validateAdminRequest(request, parsed.data.token);
+  if (authError) {
+    return authError;
   }
 
   try {

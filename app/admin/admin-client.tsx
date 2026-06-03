@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const ADMIN_TOKEN_SESSION_KEY = "aco-admin-token";
 
@@ -9,27 +9,52 @@ function readStoredAdminToken(): string {
     return "";
   }
 
-  return sessionStorage.getItem(ADMIN_TOKEN_SESSION_KEY) ?? "";
+  return sessionStorage.getItem(ADMIN_TOKEN_SESSION_KEY)?.trim() ?? "";
 }
 
-function useAdminToken() {
-  const [token, setTokenState] = useState(readStoredAdminToken);
-
-  const setToken = useCallback((value: string) => {
-    setTokenState(value);
-    if (value.trim()) {
-      sessionStorage.setItem(ADMIN_TOKEN_SESSION_KEY, value.trim());
-    } else {
-      sessionStorage.removeItem(ADMIN_TOKEN_SESSION_KEY);
-    }
-  }, []);
-
-  const clearToken = useCallback(() => {
-    setTokenState("");
+function storeAdminToken(value: string): void {
+  const trimmed = value.trim();
+  if (trimmed) {
+    sessionStorage.setItem(ADMIN_TOKEN_SESSION_KEY, trimmed);
+  } else {
     sessionStorage.removeItem(ADMIN_TOKEN_SESSION_KEY);
-  }, []);
+  }
+}
 
-  return { token, setToken, clearToken };
+function adminHeaders(token: string): HeadersInit {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token.trim()}`,
+  };
+}
+
+async function verifyAdminToken(token: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const trimmed = token.trim();
+
+  if (!trimmed) {
+    return { ok: false, error: "Token is required." };
+  }
+
+  const response = await fetch("/api/admin/verify", {
+    method: "POST",
+    headers: adminHeaders(trimmed),
+    body: JSON.stringify({ token: trimmed }),
+  });
+
+  const data = (await response.json()) as { error?: string };
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error:
+        data.error ??
+        (response.status === 503
+          ? "Admin token is not configured on the server."
+          : "Unauthorized — token does not match server ADMIN_RESET_TOKEN."),
+    };
+  }
+
+  return { ok: true };
 }
 
 function StatusMessage({
@@ -54,8 +79,10 @@ function StatusMessage({
 }
 
 export default function AdminClient() {
-  const { token, setToken, clearToken } = useAdminToken();
+  const [token, setToken] = useState("");
   const [tokenInput, setTokenInput] = useState("");
+  const [checkingStoredToken, setCheckingStoredToken] = useState(true);
+  const [unlocking, setUnlocking] = useState(false);
   const [deleteDomain, setDeleteDomain] = useState("");
   const [bannedDomainsText, setBannedDomainsText] = useState("");
   const [status, setStatus] = useState<{
@@ -65,13 +92,22 @@ export default function AdminClient() {
   const [loadingBanned, setLoadingBanned] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
+  const clearToken = useCallback(() => {
+    setToken("");
+    setTokenInput("");
+    storeAdminToken("");
+    setStatus(null);
+  }, []);
+
   const loadBannedDomains = useCallback(async (adminToken: string) => {
     setLoadingBanned(true);
     setStatus(null);
 
     try {
+      const trimmed = adminToken.trim();
       const response = await fetch(
-        `/api/admin/banned-domains?token=${encodeURIComponent(adminToken)}`,
+        `/api/admin/banned-domains?token=${encodeURIComponent(trimmed)}`,
+        { headers: adminHeaders(trimmed) },
       );
       const data = (await response.json()) as {
         domains?: string[];
@@ -105,15 +141,67 @@ export default function AdminClient() {
     }
   }, []);
 
-  function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreSession() {
+      const stored = readStoredAdminToken();
+
+      if (!stored) {
+        if (!cancelled) {
+          setCheckingStoredToken(false);
+        }
+        return;
+      }
+
+      const verification = await verifyAdminToken(stored);
+
+      if (cancelled) {
+        return;
+      }
+
+      if (verification.ok) {
+        setToken(stored);
+        await loadBannedDomains(stored);
+      } else {
+        storeAdminToken("");
+        setStatus({ tone: "error", message: verification.error });
+      }
+
+      setCheckingStoredToken(false);
+    }
+
+    void restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadBannedDomains]);
+
+  async function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextToken = tokenInput.trim();
-    setToken(nextToken);
+
+    if (!nextToken) {
+      setStatus({ tone: "error", message: "Token is required." });
+      return;
+    }
+
+    setUnlocking(true);
     setStatus(null);
 
-    if (nextToken) {
-      void loadBannedDomains(nextToken);
+    const verification = await verifyAdminToken(nextToken);
+
+    if (!verification.ok) {
+      setStatus({ tone: "error", message: verification.error });
+      setUnlocking(false);
+      return;
     }
+
+    storeAdminToken(nextToken);
+    setToken(nextToken);
+    await loadBannedDomains(nextToken);
+    setUnlocking(false);
   }
 
   async function handleReset() {
@@ -135,8 +223,8 @@ export default function AdminClient() {
     try {
       const response = await fetch("/api/admin/reset", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        headers: adminHeaders(token),
+        body: JSON.stringify({ token: token.trim() }),
       });
       const data = (await response.json()) as {
         status?: string;
@@ -174,8 +262,11 @@ export default function AdminClient() {
     try {
       const response = await fetch("/api/admin/delete-audit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, domain: deleteDomain.trim() }),
+        headers: adminHeaders(token),
+        body: JSON.stringify({
+          token: token.trim(),
+          domain: deleteDomain.trim(),
+        }),
       });
       const data = (await response.json()) as {
         status?: string;
@@ -221,8 +312,8 @@ export default function AdminClient() {
     try {
       const response = await fetch("/api/admin/banned-domains", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, domains }),
+        headers: adminHeaders(token),
+        body: JSON.stringify({ token: token.trim(), domains }),
       });
       const data = (await response.json()) as {
         status?: string;
@@ -250,16 +341,24 @@ export default function AdminClient() {
     }
   }
 
+  if (checkingStoredToken) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-600">
+        Verifying admin session…
+      </div>
+    );
+  }
+
   if (!token) {
     return (
       <div className="max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <h2 className="text-lg font-semibold text-slate-900">Admin access</h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
           Enter your server-side admin token to unlock maintenance tools. The
-          token is stored in this browser session only and is never embedded in
-          client-side code.
+          token is verified on the server before any tools are shown, then stored
+          in this browser session only.
         </p>
-        <form className="mt-6 space-y-4" onSubmit={handleUnlock}>
+        <form className="mt-6 space-y-4" onSubmit={(event) => void handleUnlock(event)}>
           <label className="block text-sm font-medium text-slate-700">
             Admin token
             <input
@@ -273,11 +372,13 @@ export default function AdminClient() {
           </label>
           <button
             type="submit"
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            disabled={unlocking}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
           >
-            Unlock admin tools
+            {unlocking ? "Verifying…" : "Unlock admin tools"}
           </button>
         </form>
+        {status && <StatusMessage message={status.message} tone={status.tone} />}
       </div>
     );
   }
@@ -288,7 +389,7 @@ export default function AdminClient() {
         <div>
           <p className="text-sm font-medium text-emerald-700">Admin session active</p>
           <p className="mt-1 text-sm text-slate-600">
-            Token stored in sessionStorage for this tab only.
+            Token verified with the server and stored in sessionStorage for this tab only.
           </p>
         </div>
         <button

@@ -1,7 +1,4 @@
-import {
-  isValidAdminToken,
-  unauthorizedJsonResponse,
-} from "@/lib/admin-auth";
+import { validateAdminRequest } from "@/lib/admin-auth";
 import { getBannedDomains, saveBannedDomains } from "@/lib/banned-domains";
 import { isRedisConfigured } from "@/lib/redis";
 import { NextResponse } from "next/server";
@@ -16,9 +13,9 @@ const saveSchema = z.object({
 
 export async function GET(request: Request) {
   const token = new URL(request.url).searchParams.get("token");
-
-  if (!isValidAdminToken(token)) {
-    return unauthorizedJsonResponse();
+  const authError = validateAdminRequest(request, token);
+  if (authError) {
+    return authError;
   }
 
   const domains = await getBannedDomains();
@@ -49,8 +46,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!isValidAdminToken(parsed.data.token)) {
-    return unauthorizedJsonResponse();
+  const authError = validateAdminRequest(request, parsed.data.token);
+  if (authError) {
+    return authError;
   }
 
   try {
