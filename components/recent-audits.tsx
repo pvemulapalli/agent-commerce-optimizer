@@ -106,10 +106,12 @@ export function RecentAuditsPreview({
   entries,
   totalCount,
   loading,
+  onSelectEntry,
 }: {
   entries: RecentScanRecord[];
   totalCount: number;
   loading: boolean;
+  onSelectEntry?: (entry: RecentScanRecord) => void;
 }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -133,7 +135,7 @@ export function RecentAuditsPreview({
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Total scans
+            Unique Merchant Domains Audited
           </p>
           <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900">
             {loading ? "—" : totalCount.toLocaleString()}
@@ -166,10 +168,30 @@ export function RecentAuditsPreview({
 
       {!loading && entries.length > 0 && (
         <ul className="mt-6 divide-y divide-slate-100 rounded-xl border border-slate-200">
-          {entries.slice(0, 5).map((entry, index) => (
+          {entries.slice(0, 5).map((entry, index) => {
+            const isClickable = Boolean(onSelectEntry);
+
+            return (
             <li
               key={`${entry.id}-${entry.scannedAt}-${index}`}
-              className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+              className={`flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between ${
+                isClickable
+                  ? "cursor-pointer transition hover:bg-slate-50 focus-within:bg-slate-50"
+                  : ""
+              }`}
+              onClick={isClickable ? () => onSelectEntry?.(entry) : undefined}
+              onKeyDown={
+                isClickable
+                  ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onSelectEntry?.(entry);
+                      }
+                    }
+                  : undefined
+              }
+              tabIndex={isClickable ? 0 : undefined}
+              role={isClickable ? "button" : undefined}
             >
               <div className="min-w-0">
                 <p className="font-medium text-slate-900">{entry.merchant}</p>
@@ -185,7 +207,8 @@ export function RecentAuditsPreview({
                 {entry.summary}
               </p>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </section>

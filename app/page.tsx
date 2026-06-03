@@ -9,6 +9,7 @@ import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
 import { isScanActivityToastEnabled } from "@/lib/scan-activity-config";
 import type { AuditApiResponse, GenerateFixesApiResponse } from "@/lib/types";
+import type { RecentScanRecord } from "@/lib/scan-activity";
 import { useCallback, useRef, useState } from "react";
 
 type AuditResponse = AuditApiResponse & {
@@ -73,6 +74,50 @@ export default function Home() {
       );
     } finally {
       setFixesLoading(false);
+    }
+  }
+
+  async function loadRecentAudit(entry: RecentScanRecord) {
+    setUrl(entry.url);
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    setFixes(null);
+    setFixesError(null);
+
+    try {
+      const payload: { url: string; turnstileToken?: string } = { url: entry.url };
+      if (turnstileToken) {
+        payload.turnstileToken = turnstileToken;
+      }
+
+      const response = await fetch("/api/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = (await response.json()) as AuditResponse & { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Audit request failed");
+      }
+
+      setResult(data);
+
+      window.setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+
+      await generateFixes(data.url, turnstileToken);
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Something went wrong loading the audit",
+      );
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -154,6 +199,7 @@ export default function Home() {
           entries={activity.recentScans}
           totalCount={activity.totalScans}
           loading={activityLoading}
+          onSelectEntry={(entry) => void loadRecentAudit(entry)}
         />
 
         {result && (

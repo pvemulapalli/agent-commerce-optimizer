@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import { getRegistrableDomain } from "./domains";
 import { getRedis, isRedisConfigured } from "./redis";
 import type {
   AuditApiResponse,
@@ -21,7 +22,7 @@ import type {
  */
 
 const CACHE_DIR = path.join(process.cwd(), ".cache", "audits");
-const REDIS_AUDIT_PREFIX = "aco:audit:";
+export const REDIS_AUDIT_PREFIX = "aco:audit:";
 const DEFAULT_TTL_MINUTES = 120;
 
 export type CacheStatus = AuditApiResponse["cacheStatus"];
@@ -248,4 +249,64 @@ export async function writeCachedAudit(
   }
 
   return null;
+}
+
+function cacheKeyMatchesHostname(cacheKey: string, hostname: string): boolean {
+  const keyHostname = cacheKey.split("__")[0]?.toLowerCase() ?? "";
+  const normalizedTarget = hostname.toLowerCase().replace(/^www\./, "");
+
+  if (keyHostname === normalizedTarget) {
+    return true;
+  }
+
+  try {
+    return (
+      getRegistrableDomain(keyHostname) === getRegistrableDomain(normalizedTarget)
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteCachedAuditsForHostname(
+  hostname: string,
+): Promise<number> {
+  let deletedKeys = 0;
+
+  try {
+    if (shouldUseRedisCache()) {
+      const redis = getRedis();
+      const auditKeys = await redis.keys(`${REDIS_AUDIT_PREFIX}*`);
+      const keysToDelete = auditKeys.filter((key) => {
+        const cacheKey = key.slice(REDIS_AUDIT_PREFIX.length);
+        return cacheKeyMatchesHostname(cacheKey, hostname);
+      });
+
+      if (keysToDelete.length > 0) {
+        await redis.del(...keysToDelete);
+        deletedKeys += keysToDelete.length;
+      }
+    }
+
+    if (shouldUseFileCache()) {
+      const { readdir, unlink } = await import("fs/promises");
+      const files = await readdir(CACHE_DIR).catch(() => [] as string[]);
+
+      for (const file of files) {
+        if (!file.endsWith(".json")) {
+          continue;
+        }
+
+        const cacheKey = file.replace(/\.json$/, "");
+        if (cacheKeyMatchesHostname(cacheKey, hostname)) {
+          await unlink(getCacheFilePath(cacheKey));
+          deletedKeys += 1;
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[audit-cache] delete failed:", error);
+  }
+
+  return deletedKeys;
 }

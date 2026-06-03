@@ -256,22 +256,52 @@ Turnstile helps prevent automated abuse while keeping the experience frictionles
 
 ## Local/Admin Maintenance
 
-### Clear Redis data
+### Generate an admin token
 
-Commerce Optimizer stores scan activity, audit cache, and rate-limit state in Upstash Redis under the `aco:` prefix.
-
-To reset Redis data locally or in a deployed environment, set a strong server-only token:
+Create a strong random token locally:
 
 ```bash
-ADMIN_RESET_TOKEN=your-secret-token
+openssl rand -hex 32
 ```
 
-Then call the admin endpoint (not linked from the public UI):
+Add it to `.env.local` and your Vercel project settings:
+
+```bash
+ADMIN_RESET_TOKEN=your-generated-token
+```
+
+Never use a `NEXT_PUBLIC_` prefix for this value and never commit it to git.
+
+### Admin page
+
+Open `/admin` in your browser (this route is not linked from the public site).
+
+1. Enter your `ADMIN_RESET_TOKEN` in the password field.
+2. The token is stored in `sessionStorage` for the current browser session only.
+3. Use the page to reset all Redis data, delete a single audit by domain, or manage banned domains.
+
+All admin actions are verified server-side on every API request.
+
+### Banned domains source of truth
+
+- **Default:** `BANNED_SCAN_DOMAINS` in `.env.local` or Vercel environment variables (comma-separated registrable domains).
+- **Production override:** When Redis is configured, `/admin` can save a banned-domain list to Redis that takes priority over the env var.
+- The public UI and public API never expose the full banned list.
+
+Example env default:
+
+```bash
+BANNED_SCAN_DOMAINS=amazon.com,walmart.com,target.com,homedepot.com,etsy.com
+```
+
+### Clear Redis data (API or script)
+
+Commerce Optimizer stores scan activity, audit cache, rate-limit state, and admin overrides in Upstash Redis under the `aco:` prefix.
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/reset \
   -H "Content-Type: application/json" \
-  -d '{"token":"your-secret-token"}'
+  -d '{"token":"your-generated-token"}'
 ```
 
 Response:
@@ -290,6 +320,14 @@ npm run admin:reset
 ```
 
 If `ADMIN_RESET_TOKEN` is set, the script calls the admin API. Otherwise it deletes `aco:` keys directly when Upstash Redis env vars are configured.
+
+### Delete a single audit
+
+```bash
+curl -X POST http://localhost:3000/api/admin/delete-audit \
+  -H "Content-Type: application/json" \
+  -d '{"token":"your-generated-token","domain":"allbirds.com"}'
+```
 
 ---
 

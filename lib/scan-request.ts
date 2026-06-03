@@ -35,7 +35,7 @@ export async function validateScanRequest(
   url: string,
   turnstileToken: string | undefined,
 ): Promise<Response | null> {
-  if (isBannedScanUrl(url)) {
+  if (await isBannedScanUrl(url)) {
     return createBannedDomainResponse();
   }
 

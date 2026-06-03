@@ -1,3 +1,7 @@
+import {
+  isValidAdminToken,
+  unauthorizedJsonResponse,
+} from "@/lib/admin-auth";
 import { clearCommerceOptimizerRedisKeys } from "@/lib/redis-admin";
 import { isRedisConfigured } from "@/lib/redis";
 import { NextResponse } from "next/server";
@@ -8,11 +12,6 @@ export const runtime = "nodejs";
 const resetSchema = z.object({
   token: z.string().trim().min(1, "Token is required"),
 });
-
-function isValidAdminToken(token: string): boolean {
-  const expected = process.env.ADMIN_RESET_TOKEN?.trim();
-  return Boolean(expected) && token === expected;
-}
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -33,7 +32,7 @@ export async function POST(request: Request) {
   }
 
   if (!isValidAdminToken(parsed.data.token)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedJsonResponse();
   }
 
   if (!isRedisConfigured()) {

@@ -160,6 +160,44 @@ async function replaceRecentScanList(records: RecentScanRecord[]): Promise<void>
   );
 }
 
+export async function compactRecentScansInRedis(): Promise<void> {
+  if (!isRedisConfigured()) {
+    memoryRecentScans = dedupeRecentScans(memoryRecentScans).slice(0, MAX_RECENT);
+    return;
+  }
+
+  const redis = getRedis();
+  const recentRaw = await redis.lrange(RECENT_KEY, 0, MAX_RECENT - 1);
+  const parsed = parseRecentScanList(recentRaw ?? []);
+  const deduped = dedupeRecentScans(parsed);
+
+  if (deduped.length !== parsed.length) {
+    await replaceRecentScanList(deduped);
+  }
+}
+
+export async function removeRecentAuditByHostname(
+  hostname: string,
+): Promise<boolean> {
+  const hostKey = normalizeHostname(hostname);
+  const existing = await getExistingRecentScans();
+  const filtered = existing.filter(
+    (item) => normalizeHostname(item.hostname) !== hostKey,
+  );
+
+  if (filtered.length === existing.length) {
+    return false;
+  }
+
+  if (isRedisConfigured()) {
+    await replaceRecentScanList(filtered);
+  } else {
+    memoryRecentScans = filtered;
+  }
+
+  return true;
+}
+
 async function upsertRecentScanInRedis(record: RecentScanRecord): Promise<void> {
   const redis = getRedis();
   const recentRaw = await redis.lrange(RECENT_KEY, 0, MAX_RECENT - 1);
@@ -222,6 +260,8 @@ export async function getScanActivity(
   const safeLimit = Math.min(Math.max(limit, 1), MAX_RECENT);
 
   try {
+    await compactRecentScansInRedis();
+
     if (isRedisConfigured()) {
       const redis = getRedis();
       const [totalRaw, recentRaw] = await Promise.all([

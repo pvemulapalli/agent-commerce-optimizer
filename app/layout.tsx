@@ -23,7 +23,8 @@ export const metadata: Metadata = {
   description:
     "Will AI agents find your products? Audit your ecommerce site and discover how easily AI systems can understand your catalog, policies, and merchant information.",
   icons: {
-    icon: "/logo.svg",
+    icon: [{ url: "/favicon.ico", sizes: "any" }],
+    shortcut: ["/favicon.ico"],
   },
 };
 

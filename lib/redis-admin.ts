@@ -1,6 +1,14 @@
+import { deleteCachedAuditsForHostname } from "./cache";
+import { normalizeHostname } from "./banned-domains";
+import { removeRecentAuditByHostname } from "./scan-activity";
 import { getRedis, isRedisConfigured } from "./redis";
 
-const ACO_KEY_PREFIXES = ["aco:scan:", "aco:audit:", "aco:ratelimit:"];
+const ACO_KEY_PREFIXES = [
+  "aco:scan:",
+  "aco:audit:",
+  "aco:ratelimit:",
+  "aco:admin:",
+];
 
 export async function clearCommerceOptimizerRedisKeys(): Promise<number> {
   if (!isRedisConfigured()) {
@@ -22,4 +30,43 @@ export async function clearCommerceOptimizerRedisKeys(): Promise<number> {
   }
 
   return deletedKeys;
+}
+
+export function parseAdminDomainInput(input: string): string {
+  const trimmed = input.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  try {
+    const withProtocol =
+      trimmed.startsWith("http://") || trimmed.startsWith("https://")
+        ? trimmed
+        : `https://${trimmed}`;
+    return normalizeHostname(new URL(withProtocol).hostname);
+  } catch {
+    return normalizeHostname(trimmed.replace(/^www\./, ""));
+  }
+}
+
+export async function deleteAuditByDomain(domainInput: string): Promise<{
+  hostname: string;
+  deletedKeys: number;
+  removedRecentAudit: boolean;
+}> {
+  const hostname = parseAdminDomainInput(domainInput);
+
+  if (!hostname) {
+    throw new Error("Domain is required");
+  }
+
+  const deletedCacheKeys = await deleteCachedAuditsForHostname(hostname);
+  const removedRecentAudit = await removeRecentAuditByHostname(hostname);
+
+  return {
+    hostname,
+    deletedKeys: deletedCacheKeys,
+    removedRecentAudit,
+  };
 }

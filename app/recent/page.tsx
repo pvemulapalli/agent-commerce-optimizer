@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Recent Audits",
   description:
-    "Locally stored audit history including merchant, platform, scan timestamp, and summary.",
+    "Public scan summaries for recently audited merchant domains.",
 };
 
 export { default } from "./recent-client";
