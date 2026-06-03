@@ -51,6 +51,35 @@ function parseRecentScanList(entries: unknown[]): RecentScanRecord[] {
     .filter((entry): entry is RecentScanRecord => Boolean(entry));
 }
 
+function normalizeScanRecord(record: RecentScanRecord): RecentScanRecord {
+  return {
+    ...record,
+    id: normalizeHostname(record.hostname),
+  };
+}
+
+/** Collapse legacy duplicate rows (same hostname or repeated timestamp ids). */
+export function dedupeRecentScans(records: RecentScanRecord[]): RecentScanRecord[] {
+  const byHostname = new Map<string, RecentScanRecord>();
+
+  for (const raw of records) {
+    const record = normalizeScanRecord(raw);
+    const hostKey = normalizeHostname(record.hostname);
+    const existing = byHostname.get(hostKey);
+
+    if (
+      !existing ||
+      Date.parse(record.scannedAt) >= Date.parse(existing.scannedAt)
+    ) {
+      byHostname.set(hostKey, record);
+    }
+  }
+
+  return [...byHostname.values()].sort(
+    (left, right) => Date.parse(right.scannedAt) - Date.parse(left.scannedAt),
+  );
+}
+
 export function extractMerchantName(url: string): string {
   try {
     const hostname = new URL(url).hostname.replace(/^www\./, "");
@@ -89,13 +118,13 @@ export function createScanRecord(audit: AuditApiResponse): RecentScanRecord {
 }
 
 function upsertRecentScanInMemory(record: RecentScanRecord): void {
-  memoryRecentScans = [
+  memoryRecentScans = dedupeRecentScans([
     record,
     ...memoryRecentScans.filter(
       (item) =>
         normalizeHostname(item.hostname) !== normalizeHostname(record.hostname),
     ),
-  ].slice(0, MAX_RECENT);
+  ]).slice(0, MAX_RECENT);
 }
 
 async function replaceRecentScanList(records: RecentScanRecord[]): Promise<void> {
@@ -115,14 +144,14 @@ async function replaceRecentScanList(records: RecentScanRecord[]): Promise<void>
 async function upsertRecentScanInRedis(record: RecentScanRecord): Promise<void> {
   const redis = getRedis();
   const recentRaw = await redis.lrange(RECENT_KEY, 0, MAX_RECENT - 1);
-  const existing = parseRecentScanList(recentRaw ?? []);
-  const next = [
+  const existing = dedupeRecentScans(parseRecentScanList(recentRaw ?? []));
+  const next = dedupeRecentScans([
     record,
     ...existing.filter(
       (item) =>
         normalizeHostname(item.hostname) !== normalizeHostname(record.hostname),
     ),
-  ].slice(0, MAX_RECENT);
+  ]).slice(0, MAX_RECENT);
 
   await replaceRecentScanList(next);
 }
@@ -167,12 +196,15 @@ export async function getScanActivity(
       const redis = getRedis();
       const [totalRaw, recentRaw] = await Promise.all([
         redis.get<number>(TOTAL_KEY),
-        redis.lrange(RECENT_KEY, 0, safeLimit - 1),
+        redis.lrange(RECENT_KEY, 0, MAX_RECENT - 1),
       ]);
 
       return {
         totalScans: Number(totalRaw ?? 0),
-        recentScans: parseRecentScanList(recentRaw ?? []),
+        recentScans: dedupeRecentScans(parseRecentScanList(recentRaw ?? [])).slice(
+          0,
+          safeLimit,
+        ),
       };
     }
   } catch (error) {
@@ -181,6 +213,6 @@ export async function getScanActivity(
 
   return {
     totalScans: memoryTotalScans,
-    recentScans: memoryRecentScans.slice(0, safeLimit),
+    recentScans: dedupeRecentScans(memoryRecentScans).slice(0, safeLimit),
   };
 }

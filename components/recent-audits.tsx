@@ -11,9 +11,13 @@ function formatTimestamp(timestamp: string): string {
 export function RecentAuditsList({
   entries,
   emptyMessage = "No scans recorded yet. Run the first audit from the homepage.",
+  selectedEntryId,
+  onSelectEntry,
 }: {
   entries: RecentScanRecord[];
   emptyMessage?: string;
+  selectedEntryId?: string | null;
+  onSelectEntry?: (entry: RecentScanRecord) => void;
 }) {
   if (entries.length === 0) {
     return (
@@ -44,8 +48,34 @@ export function RecentAuditsList({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {entries.map((entry) => (
-              <tr key={entry.id} className="align-top">
+            {entries.map((entry, index) => {
+              const isSelected = selectedEntryId === entry.id;
+              const isClickable = Boolean(onSelectEntry);
+
+              return (
+                <tr
+                  key={`${entry.id}-${entry.scannedAt}-${index}`}
+                  className={`align-top ${
+                    isClickable
+                      ? "cursor-pointer hover:bg-slate-50"
+                      : ""
+                  } ${isSelected ? "bg-blue-50/80" : ""}`}
+                  onClick={
+                    isClickable ? () => onSelectEntry?.(entry) : undefined
+                  }
+                  onKeyDown={
+                    isClickable
+                      ? (event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            onSelectEntry?.(entry);
+                          }
+                        }
+                      : undefined
+                  }
+                  tabIndex={isClickable ? 0 : undefined}
+                  aria-selected={isClickable ? isSelected : undefined}
+                >
                 <td className="px-4 py-4">
                   <div className="font-medium text-slate-900">{entry.merchant}</div>
                   <div className="mt-1 max-w-xs break-all text-xs text-slate-500">
@@ -62,8 +92,9 @@ export function RecentAuditsList({
                   {formatTimestamp(entry.scannedAt)}
                 </td>
                 <td className="px-4 py-4 text-slate-700">{entry.summary}</td>
-              </tr>
-            ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -135,9 +166,9 @@ export function RecentAuditsPreview({
 
       {!loading && entries.length > 0 && (
         <ul className="mt-6 divide-y divide-slate-100 rounded-xl border border-slate-200">
-          {entries.slice(0, 5).map((entry) => (
+          {entries.slice(0, 5).map((entry, index) => (
             <li
-              key={entry.id}
+              key={`${entry.id}-${entry.scannedAt}-${index}`}
               className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">

@@ -1,16 +1,29 @@
 "use client";
 
 import { GeneratedFixesSection } from "@/components/generated-fixes-section";
+import {
+  computeDiscoverabilityScore,
+  getDiscoverabilityScoreLabel,
+} from "@/lib/discoverability-score";
 import type {
   AuditApiResponse,
   ConfidenceLevel,
   Finding,
+  FindingStatus,
   GenerateFixesApiResponse,
   PlatformAnalysis,
 } from "@/lib/types";
 
 type AuditResponse = AuditApiResponse;
 type FixesResponse = GenerateFixesApiResponse;
+
+function formatStatusLabel(status: FindingStatus): string {
+  if (status === "needs_review") {
+    return "Needs Review";
+  }
+
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
 
 function ConfidenceBadge({ confidence }: { confidence: ConfidenceLevel }) {
   const classes = {
@@ -23,7 +36,23 @@ function ConfidenceBadge({ confidence }: { confidence: ConfidenceLevel }) {
     <span
       className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${classes}`}
     >
-      {confidence}
+      Confidence: {confidence}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status: FindingStatus }) {
+  return (
+    <span
+      className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+        status === "detected"
+          ? "bg-emerald-50 text-emerald-700"
+          : status === "missing"
+            ? "bg-rose-50 text-rose-700"
+            : "bg-amber-50 text-amber-700"
+      }`}
+    >
+      Status: {formatStatusLabel(status)}
     </span>
   );
 }
@@ -35,17 +64,7 @@ function FindingCard({ finding }: { finding: Finding }) {
         <h3 className="text-base font-semibold text-zinc-900">{finding.label}</h3>
         <div className="flex flex-wrap gap-2">
           <ConfidenceBadge confidence={finding.confidence} />
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-medium uppercase tracking-wide ${
-              finding.status === "detected"
-                ? "bg-emerald-50 text-emerald-700"
-                : finding.status === "missing"
-                  ? "bg-rose-50 text-rose-700"
-                  : "bg-amber-50 text-amber-700"
-            }`}
-          >
-            {finding.status.replace("_", " ")}
-          </span>
+          <StatusBadge status={finding.status} />
         </div>
       </div>
 
@@ -109,6 +128,107 @@ function FindingCard({ finding }: { finding: Finding }) {
   );
 }
 
+function ExecutiveSummary({ result }: { result: AuditResponse }) {
+  const detectedCount = result.grouped.detected.length;
+  const missingCount = result.grouped.missing.length;
+  const needsReviewCount = result.grouped.needsReview.length;
+  const score = computeDiscoverabilityScore(result.grouped);
+  const scoreLabel = getDiscoverabilityScoreLabel(score);
+
+  return (
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-blue-200 bg-blue-50/40 p-6 shadow-sm sm:p-8">
+      <p className="text-sm font-semibold uppercase tracking-[0.15em] text-blue-900">
+        Executive Summary
+      </p>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-blue-200 bg-white p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            AI Discoverability Score
+          </p>
+          <p className="mt-2 text-4xl font-semibold tabular-nums text-slate-900">
+            {score}
+            <span className="text-lg font-medium text-slate-500">/100</span>
+          </p>
+          <p className="mt-1 text-sm text-slate-600">{scoreLabel}</p>
+        </div>
+        <div className="rounded-xl border border-emerald-200 bg-white p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Detected Count
+          </p>
+          <p className="mt-2 text-4xl font-semibold tabular-nums text-emerald-700">
+            {detectedCount}
+          </p>
+        </div>
+        <div className="rounded-xl border border-rose-200 bg-white p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Missing Count
+          </p>
+          <p className="mt-2 text-4xl font-semibold tabular-nums text-rose-700">
+            {missingCount}
+          </p>
+        </div>
+        <div className="rounded-xl border border-amber-200 bg-white p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Needs Review Count
+          </p>
+          <p className="mt-2 text-4xl font-semibold tabular-nums text-amber-700">
+            {needsReviewCount}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FindingsJumpNav({
+  detectedCount,
+  missingCount,
+  needsReviewCount,
+}: {
+  detectedCount: number;
+  missingCount: number;
+  needsReviewCount: number;
+}) {
+  const links = [
+    { id: "findings-detected", label: "Detected", count: detectedCount },
+    { id: "findings-missing", label: "Missing", count: missingCount },
+    {
+      id: "findings-needs-review",
+      label: "Needs Review",
+      count: needsReviewCount,
+    },
+  ].filter((link) => link.count > 0);
+
+  if (links.length === 0) {
+    return null;
+  }
+
+  function scrollToSection(sectionId: string) {
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  return (
+    <nav
+      aria-label="Jump to findings"
+      className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-4"
+    >
+      {links.map((link) => (
+        <button
+          key={link.id}
+          type="button"
+          onClick={() => scrollToSection(link.id)}
+          className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+        >
+          [{link.label}]
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 function PlatformAnalysisSection({ platform }: { platform: PlatformAnalysis }) {
   return (
     <section className="min-w-0 overflow-hidden rounded-2xl border border-indigo-200 bg-indigo-50/50 p-6 shadow-sm sm:p-8">
@@ -168,11 +288,13 @@ function PlatformAnalysisSection({ platform }: { platform: PlatformAnalysis }) {
 }
 
 function FindingSection({
+  sectionId,
   title,
   description,
   findings,
   accent,
 }: {
+  sectionId: string;
   title: string;
   description: string;
   findings: Finding[];
@@ -187,7 +309,7 @@ function FindingSection({
   }[accent];
 
   return (
-    <section className="min-w-0 space-y-4">
+    <section id={sectionId} className="scroll-mt-24 min-w-0 space-y-4">
       <div className={`rounded-2xl border p-5 ${accentClasses}`}>
         <h2 className="text-xl font-semibold text-zinc-900">{title}</h2>
         <p className="mt-1 text-sm text-zinc-600">{description}</p>
@@ -218,8 +340,14 @@ export function AuditResultsSection({
   fixesError: string | null;
   onRegenerateFixes: () => void;
 }) {
+  const detectedCount = result.grouped.detected.length;
+  const missingCount = result.grouped.missing.length;
+  const needsReviewCount = result.grouped.needsReview.length;
+
   return (
     <div className="min-w-0 space-y-10">
+      <ExecutiveSummary result={result} />
+
       <section className="min-w-0 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.15em] text-indigo-600">
           Audit Results
@@ -251,9 +379,16 @@ export function AuditResultsSection({
         </dl>
       </section>
 
+      <FindingsJumpNav
+        detectedCount={detectedCount}
+        missingCount={missingCount}
+        needsReviewCount={needsReviewCount}
+      />
+
       <PlatformAnalysisSection platform={result.platform} />
 
       <FindingSection
+        sectionId="findings-detected"
         title="Detected"
         description="Signals found with direct evidence from crawled pages or discovery files."
         findings={result.grouped.detected}
@@ -261,6 +396,7 @@ export function AuditResultsSection({
       />
 
       <FindingSection
+        sectionId="findings-missing"
         title="Missing"
         description="Expected signals that were not found during the crawl."
         findings={result.grouped.missing}
@@ -268,6 +404,7 @@ export function AuditResultsSection({
       />
 
       <FindingSection
+        sectionId="findings-needs-review"
         title="Needs Review"
         description="Partial or ambiguous signals that may require manual verification."
         findings={result.grouped.needsReview}

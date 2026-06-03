@@ -50,8 +50,13 @@ export function AuditHero({
           Will AI agents find your products?
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-          Audit your ecommerce site and discover how easily AI systems can
-          understand your catalog, policies, products, and merchant information.
+          SEO helps search engines discover content. AIO (AI Optimization) helps AI
+          systems like ChatGPT, Claude, Gemini, and Perplexity discover and
+          understand products, catalogs, merchant information, and policies.
+        </p>
+        <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+          This tool audits ecommerce websites for AI discoverability — evidence-backed
+          signals that show how easily agents can find and interpret your storefront.
         </p>
 
         <form onSubmit={onSubmit} className="mt-8 space-y-4">
