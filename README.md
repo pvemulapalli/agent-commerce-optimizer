@@ -196,6 +196,10 @@ UPSTASH_REDIS_REST_TOKEN=
 
 SCAN_RATE_LIMIT_PER_HOUR=10
 
+BANNED_SCAN_DOMAINS=amazon.com,walmart.com,target.com,homedepot.com,etsy.com
+
+ADMIN_RESET_TOKEN=
+
 ENABLE_TURNSTILE=false
 
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=
@@ -247,6 +251,45 @@ ENABLE_TURNSTILE=true
 ```
 
 Turnstile helps prevent automated abuse while keeping the experience frictionless for legitimate users.
+
+---
+
+## Local/Admin Maintenance
+
+### Clear Redis data
+
+Commerce Optimizer stores scan activity, audit cache, and rate-limit state in Upstash Redis under the `aco:` prefix.
+
+To reset Redis data locally or in a deployed environment, set a strong server-only token:
+
+```bash
+ADMIN_RESET_TOKEN=your-secret-token
+```
+
+Then call the admin endpoint (not linked from the public UI):
+
+```bash
+curl -X POST http://localhost:3000/api/admin/reset \
+  -H "Content-Type: application/json" \
+  -d '{"token":"your-secret-token"}'
+```
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "deletedKeys": 42
+}
+```
+
+Or use the npm script (loads `.env.local` when present):
+
+```bash
+npm run admin:reset
+```
+
+If `ADMIN_RESET_TOKEN` is set, the script calls the admin API. Otherwise it deletes `aco:` keys directly when Upstash Redis env vars are configured.
 
 ---
 

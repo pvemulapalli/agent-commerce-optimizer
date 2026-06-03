@@ -1,7 +1,12 @@
+import { readCachedAudit, normalizeAuditUrl } from "./cache";
+import {
+  createBannedDomainResponse,
+  isBannedScanUrl,
+} from "./banned-domains";
 import { enforceScanRateLimit } from "./rate-limit";
 import { verifyTurnstileToken } from "./turnstile";
 
-export async function enforceScanRequestGuards(
+async function enforceScanRequestGuards(
   request: Request,
   turnstileToken: string | undefined,
 ): Promise<Response | null> {
@@ -19,4 +24,25 @@ export async function enforceScanRequestGuards(
   }
 
   return null;
+}
+
+/**
+ * Applies banned-domain checks always. Rate limits and Turnstile apply only when
+ * a fresh crawl may occur (no valid cached audit for the URL).
+ */
+export async function validateScanRequest(
+  request: Request,
+  url: string,
+  turnstileToken: string | undefined,
+): Promise<Response | null> {
+  if (isBannedScanUrl(url)) {
+    return createBannedDomainResponse();
+  }
+
+  const cached = await readCachedAudit(normalizeAuditUrl(url));
+  if (cached) {
+    return null;
+  }
+
+  return enforceScanRequestGuards(request, turnstileToken);
 }

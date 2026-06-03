@@ -87,7 +87,7 @@ export function getOpenApiDocument() {
               description: "Invalid request",
             },
             "403": {
-              description: "Turnstile verification failed",
+              description: "Turnstile verification failed or domain not supported",
             },
             "429": {
               description: "Rate limit exceeded",
@@ -133,7 +133,7 @@ export function getOpenApiDocument() {
               description: "Invalid request",
             },
             "403": {
-              description: "Turnstile verification failed",
+              description: "Turnstile verification failed or domain not supported",
             },
             "429": {
               description: "Rate limit exceeded",

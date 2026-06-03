@@ -1,4 +1,5 @@
 import type { AuditApiResponse } from "./types";
+import { getRegistrableDomain } from "./domains";
 import { getRedis, isRedisConfigured } from "./redis";
 
 export interface RecentScanRecord {
@@ -26,7 +27,25 @@ let memoryTotalScans = 0;
 let memoryRecentScans: RecentScanRecord[] = [];
 
 function normalizeHostname(hostname: string): string {
-  return hostname.toLowerCase();
+  return getRegistrableDomain(hostname);
+}
+
+async function getExistingRecentScans(): Promise<RecentScanRecord[]> {
+  if (isRedisConfigured()) {
+    const redis = getRedis();
+    const recentRaw = await redis.lrange(RECENT_KEY, 0, MAX_RECENT - 1);
+    return dedupeRecentScans(parseRecentScanList(recentRaw ?? []));
+  }
+
+  return dedupeRecentScans(memoryRecentScans);
+}
+
+function hostnameExistsInRecent(
+  hostname: string,
+  existing: RecentScanRecord[],
+): boolean {
+  const hostKey = normalizeHostname(hostname);
+  return existing.some((item) => normalizeHostname(item.hostname) === hostKey);
 }
 
 function parseRecentScanEntry(entry: unknown): RecentScanRecord | null {
@@ -170,15 +189,26 @@ export async function recordCompletedScan(
   const record = createScanRecord(audit);
 
   try {
+    const existing = await getExistingRecentScans();
+    const isNewHostname = !hostnameExistsInRecent(record.hostname, existing);
+
     if (isRedisConfigured()) {
       const redis = getRedis();
-      await redis.incr(TOTAL_KEY);
       await upsertRecentScanInRedis(record);
+
+      if (isNewHostname) {
+        await redis.incr(TOTAL_KEY);
+      }
+
       return record;
     }
 
-    memoryTotalScans += 1;
     upsertRecentScanInMemory(record);
+
+    if (isNewHostname) {
+      memoryTotalScans += 1;
+    }
+
     return record;
   } catch (error) {
     console.error("[scan-activity] record failed:", error);

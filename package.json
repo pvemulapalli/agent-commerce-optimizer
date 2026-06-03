@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:merchants": "tsx scripts/validate-merchants.mts",
-    "validate:platforms": "tsx scripts/run-validation.ts"
+    "validate:platforms": "tsx scripts/run-validation.ts",
+    "admin:reset": "tsx scripts/reset-redis.ts"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2.0.8",

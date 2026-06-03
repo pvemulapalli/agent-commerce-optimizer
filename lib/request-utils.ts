@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
 
@@ -11,4 +13,10 @@ export function getClientIp(request: Request): string {
   }
 
   return "unknown";
+}
+
+/** Hashed identifier for rate-limit keys — raw IP is never stored in Redis. */
+export function getRateLimitKey(request: Request): string {
+  const ip = getClientIp(request);
+  return createHash("sha256").update(ip).digest("hex").slice(0, 32);
 }

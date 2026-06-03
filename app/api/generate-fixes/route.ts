@@ -1,6 +1,6 @@
 import { generateFixAssets } from "@/lib/generate-assets";
 import { runAudit } from "@/lib/run-audit";
-import { enforceScanRequestGuards } from "@/lib/scan-request";
+import { validateScanRequest } from "@/lib/scan-request";
 import { scanUrlSchema } from "@/lib/scan-request-schema";
 import type { GenerateFixesApiResponse } from "@/lib/types";
 import { NextResponse } from "next/server";
@@ -29,8 +29,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const guardResponse = await enforceScanRequestGuards(
+  const guardResponse = await validateScanRequest(
     request,
+    parsed.data.url,
     parsed.data.turnstileToken,
   );
 

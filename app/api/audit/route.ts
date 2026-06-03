@@ -1,5 +1,5 @@
 import { runAudit } from "@/lib/run-audit";
-import { enforceScanRequestGuards } from "@/lib/scan-request";
+import { validateScanRequest } from "@/lib/scan-request";
 import { scanUrlSchema } from "@/lib/scan-request-schema";
 import { recordCompletedScan } from "@/lib/scan-activity";
 import type { AuditApiResponse } from "@/lib/types";
@@ -29,8 +29,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const guardResponse = await enforceScanRequestGuards(
+  const guardResponse = await validateScanRequest(
     request,
+    parsed.data.url,
     parsed.data.turnstileToken,
   );
 

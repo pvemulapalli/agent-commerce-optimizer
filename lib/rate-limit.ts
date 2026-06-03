@@ -1,5 +1,5 @@
 import { Ratelimit } from "@upstash/ratelimit";
-import { getClientIp } from "./request-utils";
+import { getRateLimitKey } from "./request-utils";
 import { getRedis, isRedisConfigured } from "./redis";
 
 const memoryBuckets = new Map<string, { count: number; resetAt: number }>();
@@ -10,14 +10,16 @@ function getScanRateLimitPerHour(): number {
   return Number.isNaN(parsed) || parsed < 1 ? 10 : parsed;
 }
 
-function enforceMemoryRateLimit(ip: string): { allowed: boolean; retryAfterSeconds: number } {
+function enforceMemoryRateLimit(
+  rateLimitKey: string,
+): { allowed: boolean; retryAfterSeconds: number } {
   const limit = getScanRateLimitPerHour();
   const now = Date.now();
   const hourMs = 60 * 60 * 1000;
-  const bucket = memoryBuckets.get(ip);
+  const bucket = memoryBuckets.get(rateLimitKey);
 
   if (!bucket || bucket.resetAt <= now) {
-    memoryBuckets.set(ip, { count: 1, resetAt: now + hourMs });
+    memoryBuckets.set(rateLimitKey, { count: 1, resetAt: now + hourMs });
     return { allowed: true, retryAfterSeconds: 0 };
   }
 
@@ -29,7 +31,7 @@ function enforceMemoryRateLimit(ip: string): { allowed: boolean; retryAfterSecon
   }
 
   bucket.count += 1;
-  memoryBuckets.set(ip, bucket);
+  memoryBuckets.set(rateLimitKey, bucket);
   return { allowed: true, retryAfterSeconds: 0 };
 }
 
@@ -50,11 +52,11 @@ function getScanRateLimiter(): Ratelimit {
 export async function enforceScanRateLimit(
   request: Request,
 ): Promise<Response | null> {
-  const ip = getClientIp(request);
+  const rateLimitKey = getRateLimitKey(request);
   const limit = getScanRateLimitPerHour();
 
   if (!isRedisConfigured()) {
-    const memoryResult = enforceMemoryRateLimit(ip);
+    const memoryResult = enforceMemoryRateLimit(rateLimitKey);
     if (memoryResult.allowed) {
       return null;
     }
@@ -73,7 +75,7 @@ export async function enforceScanRateLimit(
     );
   }
 
-  const result = await getScanRateLimiter().limit(ip);
+  const result = await getScanRateLimiter().limit(rateLimitKey);
 
   if (result.success) {
     return null;
