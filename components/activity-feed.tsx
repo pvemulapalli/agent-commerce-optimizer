@@ -1,5 +1,6 @@
 "use client";
 
+import { PlatformLabel } from "@/components/platform-label";
 import type { RecentScanRecord } from "@/lib/scan-activity";
 import { useEffect, useRef, useState } from "react";
 
@@ -81,8 +82,8 @@ export function ActivityFeed({
         <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700">
           Grade {current.grade || "—"}
         </span>
-        <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700">
-          {current.platform}
+        <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          <PlatformLabel platform={current.platform} />
         </span>
       </div>
     </aside>

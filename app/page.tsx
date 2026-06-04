@@ -8,6 +8,7 @@ import { RecentAuditsPreview } from "@/components/recent-audits";
 import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
+import { scrollToElementById } from "@/lib/scroll-utils";
 import type { AuditApiResponse, GenerateFixesApiResponse } from "@/lib/types";
 import type { RecentScanRecord } from "@/lib/scan-activity";
 import { useCallback, useEffect, useState } from "react";
@@ -16,17 +17,6 @@ type AuditResponse = AuditApiResponse & {
   scanRecord?: { id: string; hostname: string };
 };
 type FixesResponse = GenerateFixesApiResponse;
-
-function scrollToAuditOverview() {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      document.getElementById("overview")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    });
-  });
-}
 
 export default function Home() {
   const [url, setUrl] = useState("");
@@ -57,7 +47,11 @@ export default function Home() {
       return;
     }
 
-    scrollToAuditOverview();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scrollToElementById("overview");
+      });
+    });
   }, [result?.url, result?.crawledAt]);
 
   async function generateFixes(targetUrl: string, token: string | null) {

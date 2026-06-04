@@ -85,6 +85,8 @@ export default function AdminClient() {
   const [unlocking, setUnlocking] = useState(false);
   const [deleteDomain, setDeleteDomain] = useState("");
   const [bannedDomainsText, setBannedDomainsText] = useState("");
+  const [contributorsIntro, setContributorsIntro] = useState("");
+  const [contributorsText, setContributorsText] = useState("");
   const [status, setStatus] = useState<{
     message: string;
     tone: "success" | "error" | "info";
@@ -141,6 +143,40 @@ export default function AdminClient() {
     }
   }, []);
 
+  const loadContributors = useCallback(async (adminToken: string) => {
+    try {
+      const trimmed = adminToken.trim();
+      const response = await fetch(
+        `/api/admin/contributors?token=${encodeURIComponent(trimmed)}`,
+        { headers: adminHeaders(trimmed) },
+      );
+      const data = (await response.json()) as {
+        intro?: string;
+        contributors?: { name: string; linkedinUrl: string }[];
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Failed to load contributors");
+      }
+
+      setContributorsIntro(data.intro ?? "");
+      setContributorsText(
+        (data.contributors ?? [])
+          .map((entry) => `${entry.name} | ${entry.linkedinUrl}`)
+          .join("\n"),
+      );
+    } catch (loadError) {
+      setStatus({
+        tone: "error",
+        message:
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load contributors",
+      });
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -162,7 +198,7 @@ export default function AdminClient() {
 
       if (verification.ok) {
         setToken(stored);
-        await loadBannedDomains(stored);
+        await Promise.all([loadBannedDomains(stored), loadContributors(stored)]);
       } else {
         storeAdminToken("");
         setStatus({ tone: "error", message: verification.error });
@@ -176,7 +212,7 @@ export default function AdminClient() {
     return () => {
       cancelled = true;
     };
-  }, [loadBannedDomains]);
+  }, [loadBannedDomains, loadContributors]);
 
   async function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -200,7 +236,7 @@ export default function AdminClient() {
 
     storeAdminToken(nextToken);
     setToken(nextToken);
-    await loadBannedDomains(nextToken);
+    await Promise.all([loadBannedDomains(nextToken), loadContributors(nextToken)]);
     setUnlocking(false);
   }
 
@@ -326,6 +362,66 @@ export default function AdminClient() {
       }
 
       setBannedDomainsText((data.domains ?? domains).join("\n"));
+      setStatus({
+        tone: "success",
+        message: JSON.stringify(data, null, 2),
+      });
+    } catch (saveError) {
+      setStatus({
+        tone: "error",
+        message:
+          saveError instanceof Error ? saveError.message : "Save failed",
+      });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleSaveContributors() {
+    if (!token) {
+      return;
+    }
+
+    setBusy("contributors");
+    setStatus(null);
+
+    const contributors = contributorsText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [name, linkedinUrl = ""] = line.split("|").map((part) => part.trim());
+        return { name, linkedinUrl };
+      })
+      .filter((entry) => entry.name);
+
+    try {
+      const response = await fetch("/api/admin/contributors", {
+        method: "POST",
+        headers: adminHeaders(token),
+        body: JSON.stringify({
+          token: token.trim(),
+          intro: contributorsIntro,
+          contributors,
+        }),
+      });
+      const data = (await response.json()) as {
+        status?: string;
+        intro?: string;
+        contributors?: { name: string; linkedinUrl: string }[];
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Save failed");
+      }
+
+      setContributorsIntro(data.intro ?? contributorsIntro);
+      setContributorsText(
+        (data.contributors ?? contributors)
+          .map((entry) => `${entry.name} | ${entry.linkedinUrl}`)
+          .join("\n"),
+      );
       setStatus({
         tone: "success",
         message: JSON.stringify(data, null, 2),
@@ -474,6 +570,53 @@ export default function AdminClient() {
             className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
           >
             {busy === "banned" ? "Saving…" : "Save Banned Domains"}
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <h2 className="text-lg font-semibold text-slate-900">Contributors Page</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Edit the public Special Thanks page at{" "}
+          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">/contributors</code>.
+          Use one contributor per line in the format{" "}
+          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">Name | LinkedIn URL</code>.
+        </p>
+        <label className="mt-4 block text-sm font-medium text-slate-700">
+          Intro text
+          <textarea
+            value={contributorsIntro}
+            onChange={(event) => setContributorsIntro(event.target.value)}
+            rows={3}
+            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+          />
+        </label>
+        <label className="mt-4 block text-sm font-medium text-slate-700">
+          Contributors
+          <textarea
+            value={contributorsText}
+            onChange={(event) => setContributorsText(event.target.value)}
+            rows={8}
+            placeholder={"Jane Doe | https://www.linkedin.com/in/jane\nJohn Smith | https://www.linkedin.com/in/john"}
+            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900"
+          />
+        </label>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            disabled={busy === "contributors"}
+            onClick={() => void loadContributors(token)}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+          >
+            Reload Contributors
+          </button>
+          <button
+            type="button"
+            disabled={busy === "contributors"}
+            onClick={() => void handleSaveContributors()}
+            className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
+          >
+            {busy === "contributors" ? "Saving…" : "Save Contributors"}
           </button>
         </div>
       </section>

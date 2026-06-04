@@ -7,7 +7,7 @@ import { crawlSite } from "@/lib/crawler";
 import { finalizeFindings, groupFindings, runChecks } from "@/lib/checks";
 import { buildCrawlSummary, inferCrawlSummaryFromFindings } from "@/lib/crawl-quality";
 import type { CrawlSummary } from "@/lib/crawl-quality";
-import { validateDomainReachability } from "@/lib/domain-reachability";
+import { ensureDomainReachable } from "@/lib/domain-reachability";
 import {
   buildGenerationContext,
   buildGenerationContextFromFindings,
@@ -21,6 +21,8 @@ export interface AuditRunResult extends AuditApiResponse {
 }
 
 export async function runAudit(url: string): Promise<AuditRunResult> {
+  await ensureDomainReachable(url);
+
   if (isCacheEnabled()) {
     const cached = await readCachedAudit(url);
     if (cached) {
@@ -44,8 +46,6 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
       };
     }
   }
-
-  await validateDomainReachability(url);
 
   const crawlData = await crawlSite(url);
   const crawlSummary = buildCrawlSummary(crawlData);

@@ -1,5 +1,6 @@
 "use client";
 
+import { PlatformLabel } from "@/components/platform-label";
 import type { RecentScanRecord } from "@/lib/scan-activity";
 import Link from "next/link";
 
@@ -12,7 +13,7 @@ function formatTimestamp(timestamp: string): string {
 
 function GradeBadge({ grade }: { grade: string }) {
   return (
-    <span className="inline-flex rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">
+    <span className="inline-flex shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
       Grade {grade}
     </span>
   );
@@ -27,11 +28,11 @@ export function RecentAuditsList({
 }) {
   if (entries.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
-        <p className="text-sm text-slate-600">{emptyMessage}</p>
+      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-900">
+        <p className="text-sm text-slate-600 dark:text-slate-300">{emptyMessage}</p>
         <Link
           href="/"
-          className="mt-4 inline-block text-sm font-medium text-blue-900 hover:underline"
+          className="mt-4 inline-block text-sm font-medium text-blue-900 hover:underline dark:text-blue-300"
         >
           Run an audit
         </Link>
@@ -40,37 +41,39 @@ export function RecentAuditsList({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-          <thead className="bg-slate-50">
+        <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
+          <thead className="bg-slate-50 dark:bg-slate-800/60">
             <tr>
-              <th className="px-4 py-3 font-medium text-slate-600">Domain</th>
-              <th className="px-4 py-3 font-medium text-slate-600">Grade</th>
-              <th className="px-4 py-3 font-medium text-slate-600">Score</th>
-              <th className="px-4 py-3 font-medium text-slate-600">Platform</th>
-              <th className="px-4 py-3 font-medium text-slate-600">Top Gap</th>
-              <th className="px-4 py-3 font-medium text-slate-600">Scanned</th>
+              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Domain</th>
+              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Grade</th>
+              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Score</th>
+              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Platform</th>
+              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Top Gap</th>
+              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Scanned</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {entries.map((entry, index) => (
               <tr key={`${entry.id}-${entry.scannedAt}-${index}`} className="align-top">
                 <td className="px-4 py-4">
-                  <div className="font-medium text-slate-900">{entry.merchant}</div>
-                  <div className="mt-1 max-w-xs break-all text-xs text-slate-500">
+                  <div className="font-medium text-slate-900 dark:text-slate-100">{entry.merchant}</div>
+                  <div className="mt-1 max-w-xs break-all text-xs text-slate-500 dark:text-slate-400">
                     {entry.hostname}
                   </div>
                 </td>
                 <td className="px-4 py-4">
                   <GradeBadge grade={entry.grade || "—"} />
                 </td>
-                <td className="px-4 py-4 font-semibold tabular-nums text-slate-900">
+                <td className="px-4 py-4 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
                   {entry.readinessScore ?? "—"}
                 </td>
-                <td className="px-4 py-4 text-slate-800">{entry.platform}</td>
-                <td className="px-4 py-4 text-slate-700">{entry.topGap || "—"}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-slate-700">
+                <td className="px-4 py-4 text-slate-800 dark:text-slate-200">
+                  <PlatformLabel platform={entry.platform} />
+                </td>
+                <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.topGap || "—"}</td>
+                <td className="px-4 py-4 whitespace-nowrap text-slate-700 dark:text-slate-300">
                   {formatTimestamp(entry.scannedAt)}
                 </td>
               </tr>
@@ -96,31 +99,44 @@ function RecentAuditCard({
     <CardTag
       type={isClickable ? "button" : undefined}
       onClick={isClickable ? () => onSelectEntry?.(entry) : undefined}
-      className={`w-full rounded-xl border border-slate-200 bg-slate-50/80 p-4 text-left transition ${
-        isClickable ? "hover:border-blue-200 hover:bg-white hover:shadow-sm" : ""
+      className={`flex h-full min-h-[168px] w-full flex-col rounded-xl border border-slate-200 bg-slate-50/80 p-4 text-left transition dark:border-slate-700 dark:bg-slate-900/70 ${
+        isClickable
+          ? "hover:border-blue-200 hover:bg-white hover:shadow-sm dark:hover:border-blue-700 dark:hover:bg-slate-900"
+          : ""
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-semibold text-slate-900">{entry.merchant}</p>
-          <p className="mt-1 truncate text-xs text-slate-500">{entry.hostname}</p>
+      <div className="flex items-start gap-3">
+        <div className="min-h-[2.75rem] min-w-0 flex-1">
+          <p className="line-clamp-1 font-semibold text-slate-900 dark:text-slate-100">
+            {entry.merchant}
+          </p>
+          <p className="mt-1 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">
+            {entry.hostname}
+          </p>
         </div>
-        <GradeBadge grade={entry.grade || "—"} />
+        <div className="shrink-0 self-start">
+          <GradeBadge grade={entry.grade || "—"} />
+        </div>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-slate-500">Score</p>
-          <p className="mt-1 font-semibold tabular-nums text-slate-900">
+
+      <div className="mt-auto grid grid-cols-3 gap-3 pt-4 text-sm">
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Score</p>
+          <p className="mt-1 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
             {entry.readinessScore ?? "—"}
           </p>
         </div>
-        <div>
-          <p className="text-xs uppercase tracking-wide text-slate-500">Platform</p>
-          <p className="mt-1 font-medium text-slate-800">{entry.platform}</p>
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Platform</p>
+          <p className="mt-1 font-medium text-slate-800 dark:text-slate-200">
+            <PlatformLabel platform={entry.platform} className="line-clamp-2 text-left" />
+          </p>
         </div>
-        <div>
-          <p className="text-xs uppercase tracking-wide text-slate-500">Top Gap</p>
-          <p className="mt-1 font-medium text-slate-800">{entry.topGap || "—"}</p>
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Top Gap</p>
+          <p className="mt-1 line-clamp-2 font-medium text-slate-800 dark:text-slate-200">
+            {entry.topGap || "—"}
+          </p>
         </div>
       </div>
     </CardTag>
@@ -139,49 +155,49 @@ export function RecentAuditsPreview({
   onSelectEntry?: (entry: RecentScanRecord) => void;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
             Global activity
           </p>
-          <h2 className="mt-2 text-xl font-semibold text-slate-900">Recent audits</h2>
+          <h2 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">Recent audits</h2>
         </div>
         <Link
           href="/recent"
-          className="text-sm font-medium text-blue-900 hover:underline"
+          className="text-sm font-medium text-blue-900 hover:underline dark:text-blue-300"
         >
           View all recent audits
         </Link>
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 dark:border-slate-700 dark:bg-slate-800/50">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
             Unique Merchant Domains Audited
           </p>
-          <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900">
+          <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
             {loading ? "—" : totalCount.toLocaleString()}
           </p>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 sm:col-span-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 sm:col-span-2 dark:border-slate-700 dark:bg-slate-800/50">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
             Latest audit
           </p>
           {!loading && entries[0] ? (
             <div className="mt-2 min-w-0">
-              <p className="font-medium text-slate-900">{entries[0].merchant}</p>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="font-medium text-slate-900 dark:text-slate-100">{entries[0].merchant}</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                 Grade {entries[0].grade} · Score {entries[0].readinessScore} ·{" "}
-                {entries[0].platform}
+                <PlatformLabel platform={entries[0].platform} />
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Top gap: {entries[0].topGap} · {formatTimestamp(entries[0].scannedAt)}
               </p>
             </div>
           ) : (
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
               {loading
                 ? "Loading scan activity…"
                 : "No scans yet. Run the first audit above."}
@@ -191,7 +207,7 @@ export function RecentAuditsPreview({
       </div>
 
       {!loading && entries.length > 0 && (
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {entries.slice(0, 6).map((entry, index) => (
             <RecentAuditCard
               key={`${entry.id}-${entry.scannedAt}-${index}`}

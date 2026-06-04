@@ -46,7 +46,7 @@ export function AuditHero({
       </div>
 
       <div className="px-6 py-10 sm:px-8 sm:py-12 lg:px-10">
-        <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.125rem] lg:leading-tight lg:whitespace-nowrap xl:text-5xl">
           Can AI Shopping Agents Discover Your Store?
         </h1>
         <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">

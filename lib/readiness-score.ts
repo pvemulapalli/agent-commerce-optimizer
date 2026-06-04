@@ -4,6 +4,7 @@ import type {
   GroupedFindings,
   PlatformAnalysis,
 } from "./types";
+import { formatPlatformDisplay } from "./platform-labels";
 
 export type ReadinessGrade = "A" | "B" | "C" | "D" | "F";
 
@@ -135,7 +136,7 @@ function computeDimensionScore(
       label: DIMENSION_LABELS[id],
       score: scorePlatform(platform),
       evidenceLabels: [
-        `Platform: ${platform.platform}`,
+        `Platform: ${formatPlatformDisplay(platform.platform)}`,
         `Detection confidence: ${platform.confidence}`,
       ],
     };

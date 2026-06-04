@@ -22,21 +22,21 @@ export function Logo({
           width="26"
           height="26"
           rx="5"
-          stroke="#0f172a"
+          className="stroke-slate-900 dark:stroke-slate-100"
           strokeWidth="2"
         />
-        <rect x="8" y="9" width="16" height="2" fill="#0f172a" />
-        <rect x="8" y="14" width="11" height="2" fill="#1e3a8a" />
-        <rect x="8" y="19" width="14" height="2" fill="#0f172a" />
-        <rect x="21" y="21" width="4" height="4" rx="1" fill="#1e3a8a" />
+        <rect x="8" y="9" width="16" height="2" className="fill-slate-900 dark:fill-slate-100" />
+        <rect x="8" y="14" width="11" height="2" className="fill-blue-900 dark:fill-blue-400" />
+        <rect x="8" y="19" width="14" height="2" className="fill-slate-900 dark:fill-slate-100" />
+        <rect x="21" y="21" width="4" height="4" rx="1" className="fill-blue-900 dark:fill-blue-400" />
       </svg>
 
       {showWordmark && (
         <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold tracking-tight text-slate-900">
+          <span className="block truncate text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Commerce Optimizer
           </span>
-          <span className="block text-xs text-slate-500">{APP_VERSION_LABEL}</span>
+          <span className="block text-xs text-slate-500 dark:text-slate-400">{APP_VERSION_LABEL}</span>
         </span>
       )}
     </span>

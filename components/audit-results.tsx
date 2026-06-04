@@ -1,6 +1,7 @@
 "use client";
 
 import { AuditStickyNav } from "@/components/audit-sticky-nav";
+import { PlatformLabel } from "@/components/platform-label";
 import { FindingCard } from "@/components/finding-card";
 import { GeneratedFixesSection } from "@/components/generated-fixes-section";
 import {
@@ -33,7 +34,9 @@ function PlatformAnalysisSection({ platform }: { platform: PlatformAnalysis }) {
       <dl className="mt-6 grid gap-6 sm:grid-cols-2">
         <div>
           <dt className="text-sm font-medium text-slate-500">Detected Platform</dt>
-          <dd className="mt-1 text-lg font-semibold text-slate-900">{platform.platform}</dd>
+          <dd className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+            <PlatformLabel platform={platform.platform} />
+          </dd>
         </div>
         <div>
           <dt className="text-sm font-medium text-slate-500">Detection Confidence</dt>

@@ -1,4 +1,5 @@
 import dns from "node:dns/promises";
+import { deleteCachedAuditsForHostname, normalizeAuditUrl } from "./cache";
 
 const REACHABILITY_TIMEOUT_MS = 12_000;
 const USER_AGENT =
@@ -96,4 +97,25 @@ export async function validateDomainReachability(inputUrl: string): Promise<void
 
   await resolveHostname(hostname);
   await probeSite(url);
+}
+
+/**
+ * Validates reachability and purges any stale cached audit for unreachable domains.
+ * Always runs before serving cache or starting a crawl.
+ */
+export async function ensureDomainReachable(inputUrl: string): Promise<void> {
+  try {
+    await validateDomainReachability(inputUrl);
+  } catch (error) {
+    if (error instanceof DomainUnreachableError) {
+      try {
+        const hostname = new URL(normalizeAuditUrl(inputUrl)).hostname;
+        await deleteCachedAuditsForHostname(hostname);
+      } catch {
+        // Ignore cache purge failures — still surface the reachability error.
+      }
+    }
+
+    throw error;
+  }
 }
