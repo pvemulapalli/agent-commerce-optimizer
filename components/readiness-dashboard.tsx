@@ -9,7 +9,7 @@ function ScoreGauge({ score, grade }: { score: number; grade: string }) {
   const progress = (score / 100) * circumference;
 
   return (
-    <div className="relative mx-auto h-36 w-36">
+    <div className="relative h-36 w-36 shrink-0">
       <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
         <circle cx="60" cy="60" r="54" fill="none" className="stroke-slate-200 dark:stroke-slate-700" strokeWidth="10" />
         <circle
@@ -51,7 +51,7 @@ function Scorecard({
 
   return (
     <div className={`rounded-xl border p-4 ${tones}`}>
-      <p className="text-xs font-medium uppercase tracking-wide opacity-80">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide">{label}</p>
       <p className="mt-2 text-2xl font-semibold tabular-nums">{value}</p>
     </div>
   );
@@ -97,8 +97,8 @@ export function ReadinessDashboard({
         {merchantName ? (
           <p className="mt-2 text-lg font-semibold text-text-primary">{merchantName}</p>
         ) : null}
-        <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
+        <div className="mt-4 grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-center">
+          <div className="min-w-0">
             <div className="flex items-end gap-3">
               <p className="text-5xl font-semibold tabular-nums tracking-tight text-text-primary sm:text-6xl">
                 {report.score}
@@ -108,7 +108,9 @@ export function ReadinessDashboard({
             <p className="mt-2 text-lg font-semibold text-text-primary">Grade {report.grade}</p>
             <p className="mt-1 text-base text-text-secondary">{report.summaryLabel}</p>
           </div>
-          <ScoreGauge score={report.score} grade={report.grade} />
+          <div className="flex justify-center lg:justify-end">
+            <ScoreGauge score={report.score} grade={report.grade} />
+          </div>
         </div>
         <div className="mt-5">
           <ScoreEvidenceNote />

@@ -95,7 +95,7 @@ export default function ContactPage() {
       <p className="mt-8">
         <Link
           href="/"
-          className="text-sm font-medium text-blue-900 hover:underline"
+          className="text-sm font-medium text-blue-900 hover:underline dark:text-blue-300"
         >
           ← Back to audit
         </Link>

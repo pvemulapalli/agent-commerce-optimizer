@@ -1,4 +1,4 @@
-export const PLATFORM_NOT_IDENTIFIED_LABEL = "Not Identified";
+export const PLATFORM_NOT_IDENTIFIED_LABEL = "Unknown Platform";
 
 export const PLATFORM_NOT_IDENTIFIED_TOOLTIP =
   "We could not confidently determine the ecommerce platform.";

@@ -15,9 +15,24 @@ import {
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import { buildReadinessReport } from "@/lib/readiness-score";
 import { AUDIT_SECTION_SCROLL_CLASS } from "@/lib/scroll-utils";
-import type { Finding, GenerateFixesApiResponse, PlatformAnalysis } from "@/lib/types";
+import type { ConfidenceLevel, Finding, GenerateFixesApiResponse, PlatformAnalysis } from "@/lib/types";
 
 type FixesResponse = GenerateFixesApiResponse;
+
+function ConfidenceBadge({ confidence }: { confidence: ConfidenceLevel }) {
+  const classes = {
+    high: "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/70 dark:text-emerald-100",
+    medium:
+      "border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/70 dark:text-amber-100",
+    low: "border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/70 dark:text-rose-100",
+  }[confidence];
+
+  return (
+    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium capitalize ${classes}`}>
+      {confidence}
+    </span>
+  );
+}
 
 function PlatformAnalysisSection({ platform }: { platform: PlatformAnalysis }) {
   return (
@@ -39,8 +54,8 @@ function PlatformAnalysisSection({ platform }: { platform: PlatformAnalysis }) {
         </div>
         <div>
           <dt className="text-sm font-medium text-text-secondary">Detection Confidence</dt>
-          <dd className="mt-1 text-lg font-semibold capitalize text-text-primary">
-            {platform.confidence}
+          <dd className="mt-2">
+            <ConfidenceBadge confidence={platform.confidence} />
           </dd>
         </div>
       </dl>
@@ -75,18 +90,31 @@ function FindingSection({
   if (findings.length === 0) return null;
 
   const accentClasses = {
-    emerald: "border-emerald-200 bg-emerald-50/60 dark:border-emerald-500/30 dark:bg-emerald-950/30",
-    rose: "border-rose-200 bg-rose-50/60 dark:border-rose-500/30 dark:bg-rose-950/30",
-    amber: "border-amber-200 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-950/30",
+    emerald:
+      "border-emerald-200 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-950/50",
+    rose: "border-rose-200 bg-rose-50 dark:border-rose-500/40 dark:bg-rose-950/50",
+    amber: "border-amber-200 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-950/50",
+  }[accent];
+
+  const titleColor = {
+    emerald: "text-emerald-950 dark:text-emerald-100",
+    rose: "text-rose-950 dark:text-rose-100",
+    amber: "text-amber-950 dark:text-amber-100",
+  }[accent];
+
+  const descriptionColor = {
+    emerald: "text-emerald-900 dark:text-emerald-100/90",
+    rose: "text-rose-900 dark:text-rose-100/90",
+    amber: "text-amber-900 dark:text-amber-100/90",
   }[accent];
 
   return (
     <section id={sectionId} className={`${AUDIT_SECTION_SCROLL_CLASS} min-w-0 space-y-4`}>
       <div className={`rounded-2xl border p-5 ${accentClasses}`}>
-        <h2 className="text-xl font-semibold text-text-primary">{title}</h2>
-        <p className="mt-1 text-sm text-text-secondary">{description}</p>
-        <p className="mt-2 text-sm font-medium text-text-primary">
-          {findings.length} finding{findings.length === 1 ? "" : "s"}
+        <h2 className={`text-xl font-semibold ${titleColor}`}>{title}</h2>
+        <p className={`mt-1 text-sm ${descriptionColor}`}>{description}</p>
+        <p className={`mt-2 text-sm font-semibold ${titleColor}`}>
+          {findings.length} Finding{findings.length === 1 ? "" : "s"}
         </p>
       </div>
 
@@ -183,7 +211,7 @@ export function AuditResultsSection({
 
       <FindingSection
         sectionId="findings-missing"
-        title="Missing"
+        title="Missing Findings"
         description="Expected signals that were not found during the crawl."
         findings={result.grouped.missing}
         accent="rose"
