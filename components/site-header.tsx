@@ -33,7 +33,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-        <Link href="/" className="min-w-0 shrink" onClick={() => setMenuOpen(false)}>
+        <Link href="/" className="min-w-0 shrink-0" onClick={() => setMenuOpen(false)}>
           <Logo showWordmark className="h-9 w-9" />
         </Link>
 
@@ -54,7 +54,7 @@ export function SiteHeader() {
 
         <button
           type="button"
-          className="inline-flex items-center justify-center rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-100 md:hidden dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-100 md:hidden dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           aria-expanded={menuOpen}
           aria-controls="mobile-primary-nav"
           aria-label={menuOpen ? "Close menu" : "Open menu"}

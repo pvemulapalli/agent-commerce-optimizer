@@ -41,10 +41,12 @@ export function FindingCard({ finding }: { finding: Finding }) {
   const statusLabel = getFindingStatusLabel(finding.status);
 
   return (
-    <article className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h3 className="text-base font-semibold text-slate-900">{finding.label}</h3>
-        <div className="flex flex-wrap gap-2">
+    <article className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <h3 className="min-w-0 text-base font-semibold text-slate-900 dark:text-slate-100">
+          {finding.label}
+        </h3>
+        <div className="flex flex-wrap gap-2 md:shrink-0 md:justify-end">
           <ImpactBadge impact={impact} />
           <StatusBadge status={statusLabel} />
         </div>

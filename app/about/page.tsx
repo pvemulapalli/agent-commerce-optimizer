@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -19,12 +20,7 @@ const AUDIT_TOPICS = [
 export default function AboutPage() {
   return (
     <main className="mx-auto w-full min-w-0 max-w-3xl overflow-x-hidden px-6 py-10 lg:px-8 lg:py-14">
-      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
-        About
-      </p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-        AI Commerce Discoverability
-      </h1>
+      <PageHeader eyebrow="About" title="AI Commerce Discoverability" />
 
       <div className="mt-10 space-y-10">
         <section className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">

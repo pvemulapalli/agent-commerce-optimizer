@@ -38,18 +38,18 @@ export function AuditHero({
     loading || !url.trim() || (turnstileRequired && !turnstileToken);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 bg-slate-50/70 px-6 py-4 sm:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="border-b border-slate-100 bg-slate-50/70 px-6 py-4 sm:px-8 dark:border-slate-800 dark:bg-slate-900/70">
+        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
           AI Commerce Discoverability — not SEO
         </p>
       </div>
 
       <div className="px-6 py-10 sm:px-8 sm:py-12 lg:px-10">
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl lg:text-[2.125rem] lg:leading-tight lg:whitespace-nowrap xl:text-5xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl lg:text-[2.125rem] lg:leading-tight lg:whitespace-nowrap xl:text-5xl">
           Can AI Shopping Agents Discover Your Store?
         </h1>
-        <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
+        <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">
           Analyze your ecommerce site and discover how easily ChatGPT, Claude, Gemini,
           Perplexity, Copilot, and AI shopping agents can understand your products,
           catalog, policies, and merchant information.

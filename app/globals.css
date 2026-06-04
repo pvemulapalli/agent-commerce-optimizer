@@ -29,3 +29,13 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+.audit-scroll-target {
+  scroll-margin-top: calc(4rem + 3.25rem + 1.5rem);
+}
+
+@media (max-width: 767px) {
+  .audit-scroll-target {
+    scroll-margin-top: calc(4rem + 3.25rem + 2rem);
+  }
+}

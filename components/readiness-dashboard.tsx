@@ -1,6 +1,7 @@
 "use client";
 
 import { DimensionScoreCards } from "@/components/dimension-score-cards";
+import { AUDIT_SECTION_SCROLL_CLASS } from "@/lib/scroll-utils";
 import { SCORE_EVIDENCE_NOTE, type ReadinessReport } from "@/lib/readiness-score";
 
 function ScoreGauge({ score, grade }: { score: number; grade: string }) {
@@ -85,7 +86,7 @@ export function ReadinessDashboard({
   return (
     <section
       id="overview"
-      className="scroll-mt-28 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+      className={`${AUDIT_SECTION_SCROLL_CLASS} overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm`}
     >
       <div className="border-b border-slate-100 bg-slate-50/80 px-6 py-5 sm:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -183,7 +184,7 @@ export function RecommendationsSection({ report }: { report: ReadinessReport }) 
   return (
     <section
       id="recommendations"
-      className="scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+      className={`${AUDIT_SECTION_SCROLL_CLASS} rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8`}
     >
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
         What to fix first

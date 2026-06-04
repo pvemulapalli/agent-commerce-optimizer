@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  AUDIT_SCROLL_OFFSET_PX,
+  getAuditScrollOffsetPx,
   scrollToElementById,
 } from "@/lib/scroll-utils";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -15,7 +15,6 @@ const SECTIONS = [
   { id: "recommendations", label: "Recommendations" },
 ];
 
-const SCROLL_SPY_OFFSET_PX = 128;
 
 export function AuditStickyNav({
   visibleSections,
@@ -47,7 +46,7 @@ export function AuditStickyNav({
       }
 
       const { top } = element.getBoundingClientRect();
-      if (top <= SCROLL_SPY_OFFSET_PX) {
+      if (top <= getAuditScrollOffsetPx()) {
         current = sectionId;
       }
     }
@@ -70,7 +69,7 @@ export function AuditStickyNav({
   function scrollToSection(sectionId: string) {
     clickLockUntilRef.current = Date.now() + 900;
     setActiveId(sectionId);
-    scrollToElementById(sectionId, "smooth", AUDIT_SCROLL_OFFSET_PX);
+    scrollToElementById(sectionId, "smooth");
   }
 
   const tabs = SECTIONS.filter((section) => visibleSections.includes(section.id));

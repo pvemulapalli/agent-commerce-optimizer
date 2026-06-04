@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -81,20 +82,14 @@ function EndpointSection({
 export default function DocsPage() {
   return (
     <main className="mx-auto w-full min-w-0 max-w-4xl overflow-x-hidden px-6 py-12 lg:px-8 lg:py-16">
-        <div className="max-w-3xl">
-          <p className="text-sm font-semibold uppercase tracking-[0.15em] text-indigo-600">
-            API Reference
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-zinc-900">
-            Documentation
-          </h1>
-          <p className="mt-4 text-lg leading-8 text-zinc-600">
-            Run evidence-backed merchant audits and generate downloadable fix
-            assets programmatically. No authentication required.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="API Reference"
+        eyebrowClassName="text-indigo-600 dark:text-indigo-400"
+        title="Documentation"
+        description="Run evidence-backed merchant audits and generate downloadable fix assets programmatically. No authentication required."
+      />
 
-        <div className="mt-10 space-y-8">
+      <div className="mt-10 space-y-8">
           <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
             <h2 className="text-lg font-semibold text-zinc-900">Base URL</h2>
             <p className="mt-2 text-sm text-zinc-600">
@@ -248,8 +243,8 @@ export default function DocsPage() {
           </section>
         </div>
 
-        <p className="mt-10 text-sm text-zinc-500">
-          <Link href="/" className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline">
+        <p className="mt-10 text-sm text-zinc-500 dark:text-slate-400">
+          <Link href="/" className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300">
             ← Back to audit
           </Link>
         </p>

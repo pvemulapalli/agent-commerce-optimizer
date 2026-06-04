@@ -1,5 +1,6 @@
 "use client";
 
+import { GradeBadge } from "@/components/grade-badge";
 import { PlatformLabel } from "@/components/platform-label";
 import type { RecentScanRecord } from "@/lib/scan-activity";
 import Link from "next/link";
@@ -11,11 +12,48 @@ function formatTimestamp(timestamp: string): string {
   });
 }
 
-function GradeBadge({ grade }: { grade: string }) {
+function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
   return (
-    <span className="inline-flex shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
-      Grade {grade}
-    </span>
+    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium text-slate-900 dark:text-slate-100">{entry.merchant}</p>
+          <p className="mt-1 break-all text-xs text-slate-500 dark:text-slate-400">
+            {entry.hostname}
+          </p>
+        </div>
+        <GradeBadge grade={entry.grade || "—"} />
+      </div>
+
+      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        <div>
+          <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Score
+          </dt>
+          <dd className="mt-1 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+            {entry.readinessScore ?? "—"}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Platform
+          </dt>
+          <dd className="mt-1 font-medium text-slate-800 dark:text-slate-200">
+            <PlatformLabel platform={entry.platform} />
+          </dd>
+        </div>
+        <div className="col-span-2">
+          <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Top Gap
+          </dt>
+          <dd className="mt-1 text-slate-700 dark:text-slate-300">{entry.topGap || "—"}</dd>
+        </div>
+      </dl>
+
+      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+        {formatTimestamp(entry.scannedAt)}
+      </p>
+    </div>
   );
 }
 
@@ -41,47 +79,58 @@ export function RecentAuditsList({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
-          <thead className="bg-slate-50 dark:bg-slate-800/60">
-            <tr>
-              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Domain</th>
-              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Grade</th>
-              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Score</th>
-              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Platform</th>
-              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Top Gap</th>
-              <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Scanned</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {entries.map((entry, index) => (
-              <tr key={`${entry.id}-${entry.scannedAt}-${index}`} className="align-top">
-                <td className="px-4 py-4">
-                  <div className="font-medium text-slate-900 dark:text-slate-100">{entry.merchant}</div>
-                  <div className="mt-1 max-w-xs break-all text-xs text-slate-500 dark:text-slate-400">
-                    {entry.hostname}
-                  </div>
-                </td>
-                <td className="px-4 py-4">
-                  <GradeBadge grade={entry.grade || "—"} />
-                </td>
-                <td className="px-4 py-4 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-                  {entry.readinessScore ?? "—"}
-                </td>
-                <td className="px-4 py-4 text-slate-800 dark:text-slate-200">
-                  <PlatformLabel platform={entry.platform} />
-                </td>
-                <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.topGap || "—"}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-slate-700 dark:text-slate-300">
-                  {formatTimestamp(entry.scannedAt)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <>
+      <div className="space-y-3 md:hidden">
+        {entries.map((entry, index) => (
+          <RecentAuditSummaryCard
+            key={`${entry.id}-${entry.scannedAt}-${index}-mobile`}
+            entry={entry}
+          />
+        ))}
       </div>
-    </div>
+
+      <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white md:block dark:border-slate-700 dark:bg-slate-900">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
+            <thead className="bg-slate-50 dark:bg-slate-800/60">
+              <tr>
+                <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Domain</th>
+                <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Grade</th>
+                <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Score</th>
+                <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Platform</th>
+                <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Top Gap</th>
+                <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Scanned</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {entries.map((entry, index) => (
+                <tr key={`${entry.id}-${entry.scannedAt}-${index}`} className="align-top">
+                  <td className="px-4 py-4">
+                    <div className="font-medium text-slate-900 dark:text-slate-100">{entry.merchant}</div>
+                    <div className="mt-1 max-w-xs break-all text-xs text-slate-500 dark:text-slate-400">
+                      {entry.hostname}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <GradeBadge grade={entry.grade || "—"} />
+                  </td>
+                  <td className="px-4 py-4 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                    {entry.readinessScore ?? "—"}
+                  </td>
+                  <td className="px-4 py-4 text-slate-800 dark:text-slate-200">
+                    <PlatformLabel platform={entry.platform} />
+                  </td>
+                  <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.topGap || "—"}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                    {formatTimestamp(entry.scannedAt)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
   );
 }
 

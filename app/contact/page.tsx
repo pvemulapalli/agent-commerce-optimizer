@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import { PROJECT_DISCLAIMER } from "@/lib/disclaimer";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -10,25 +11,25 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <main className="mx-auto w-full min-w-0 max-w-3xl overflow-x-hidden px-6 py-10 lg:px-8 lg:py-14">
-      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
-        Contact
-      </p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-        Get in touch
-      </h1>
-      <p className="mt-4 text-base leading-7 text-slate-600">
-        Questions, feedback, or ideas about AI commerce discoverability — reach
-        out to{" "}
-        <a
-          href="https://www.linkedin.com/in/praveenvemulapalli/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-blue-900 hover:underline"
-        >
-          Praveen Vemulapalli
-        </a>
-        .
-      </p>
+      <PageHeader
+        eyebrow="Contact"
+        title="Get in touch"
+        description={
+          <>
+            Questions, feedback, or ideas about AI commerce discoverability — reach
+            out to{" "}
+            <a
+              href="https://www.linkedin.com/in/praveenvemulapalli/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-blue-900 hover:underline dark:text-blue-300"
+            >
+              Praveen Vemulapalli
+            </a>
+            .
+          </>
+        }
+      />
 
       <section className="mt-10 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <h2 className="text-xl font-semibold text-slate-900">

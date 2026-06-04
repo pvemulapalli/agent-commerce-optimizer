@@ -10,6 +10,7 @@ import {
   RecommendationsSection,
 } from "@/components/readiness-dashboard";
 import { buildReadinessReport } from "@/lib/readiness-score";
+import { AUDIT_SECTION_SCROLL_CLASS } from "@/lib/scroll-utils";
 import type {
   AuditApiResponse,
   Finding,
@@ -82,7 +83,7 @@ function FindingSection({
   }[accent];
 
   return (
-    <section id={sectionId} className="scroll-mt-28 min-w-0 space-y-4">
+    <section id={sectionId} className={`${AUDIT_SECTION_SCROLL_CLASS} min-w-0 space-y-4`}>
       <div className={`rounded-2xl border p-5 ${accentClasses}`}>
         <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
         <p className="mt-1 text-sm text-slate-600">{description}</p>
@@ -199,7 +200,7 @@ export function AuditResultsSection({
         accent="amber"
       />
 
-      <div id="generated-assets" className="scroll-mt-28">
+      <div id="generated-assets" className={AUDIT_SECTION_SCROLL_CLASS}>
         <GeneratedFixesSection
           fixes={fixes}
           loading={fixesLoading}
