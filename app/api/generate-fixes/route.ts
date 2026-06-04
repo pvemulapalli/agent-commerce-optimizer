@@ -1,3 +1,4 @@
+import { DomainUnreachableError } from "@/lib/domain-reachability";
 import { generateFixAssets } from "@/lib/generate-assets";
 import { runAudit } from "@/lib/run-audit";
 import { validateScanRequest } from "@/lib/scan-request";
@@ -52,6 +53,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(response);
   } catch (error) {
+    if (error instanceof DomainUnreachableError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     const message =
       error instanceof Error ? error.message : "Fix generation failed unexpectedly";
 

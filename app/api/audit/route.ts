@@ -1,3 +1,4 @@
+import { DomainUnreachableError } from "@/lib/domain-reachability";
 import { runAudit } from "@/lib/run-audit";
 import { validateScanRequest } from "@/lib/scan-request";
 import { scanUrlSchema } from "@/lib/scan-request-schema";
@@ -48,6 +49,10 @@ export async function POST(request: Request) {
       ...(scanRecord ? { scanRecord } : {}),
     });
   } catch (error) {
+    if (error instanceof DomainUnreachableError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     const message =
       error instanceof Error ? error.message : "Audit failed unexpectedly";
 

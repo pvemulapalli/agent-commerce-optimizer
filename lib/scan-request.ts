@@ -3,6 +3,7 @@ import {
   createBannedDomainResponse,
   isBannedScanUrl,
 } from "./banned-domains";
+import { validateDomainReachability, DomainUnreachableError } from "./domain-reachability";
 import { enforceScanRateLimit } from "./rate-limit";
 import { verifyTurnstileToken } from "./turnstile";
 
@@ -42,6 +43,19 @@ export async function validateScanRequest(
   const cached = await readCachedAudit(normalizeAuditUrl(url));
   if (cached) {
     return null;
+  }
+
+  try {
+    await validateDomainReachability(url);
+  } catch (error) {
+    if (error instanceof DomainUnreachableError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    throw error;
   }
 
   return enforceScanRequestGuards(request, turnstileToken);

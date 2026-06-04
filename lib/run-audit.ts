@@ -7,6 +7,7 @@ import { crawlSite } from "@/lib/crawler";
 import { finalizeFindings, groupFindings, runChecks } from "@/lib/checks";
 import { buildCrawlSummary, inferCrawlSummaryFromFindings } from "@/lib/crawl-quality";
 import type { CrawlSummary } from "@/lib/crawl-quality";
+import { validateDomainReachability } from "@/lib/domain-reachability";
 import {
   buildGenerationContext,
   buildGenerationContextFromFindings,
@@ -43,6 +44,8 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
       };
     }
   }
+
+  await validateDomainReachability(url);
 
   const crawlData = await crawlSite(url);
   const crawlSummary = buildCrawlSummary(crawlData);
