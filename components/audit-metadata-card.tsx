@@ -1,12 +1,21 @@
 import type { AuditReportMetadata } from "@/lib/audit-metadata";
 
-function formatUtcTimestamp(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "UTC",
+function formatLocalTimestamp(iso: string): string {
+  const date = new Date(iso);
+
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
     timeZoneName: "short",
-  });
+  }).format(date);
 }
 
 function formatDuration(seconds: number | null): string {
@@ -19,7 +28,7 @@ function formatDuration(seconds: number | null): string {
 
 export function AuditMetadataCard({ metadata }: { metadata: AuditReportMetadata }) {
   const items = [
-    { label: "Last Crawled", value: formatUtcTimestamp(metadata.lastCrawled) },
+    { label: "Last Crawled", value: formatLocalTimestamp(metadata.lastCrawled) },
     { label: "Pages Crawled", value: String(metadata.pagesCrawled) },
     { label: "Products Sampled", value: String(metadata.productsSampled) },
     { label: "Policy Pages Found", value: String(metadata.policyPagesFound) },
