@@ -38,22 +38,22 @@ export function AuditMetadataCard({ metadata }: { metadata: AuditReportMetadata 
   ];
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+    <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
         Audit Metadata
       </p>
-      <h2 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
+      <h2 className="mt-2 text-xl font-semibold text-text-primary">
         {metadata.merchantName}
       </h2>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{metadata.normalizedDomain}</p>
+      <p className="mt-1 text-sm text-text-secondary">{metadata.normalizedDomain}</p>
 
       <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
-          <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/50">
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <div key={item.label} className="rounded-xl border border-card-border bg-card-muted p-4">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
               {item.label}
             </dt>
-            <dd className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+            <dd className="mt-2 text-sm font-medium text-text-primary">
               {item.value}
             </dd>
           </div>

@@ -31,7 +31,7 @@ export function SiteHeader() {
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+    <header className="sticky top-0 z-50 border-b border-card-border bg-background">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <Link href="/" className="min-w-0 shrink-0" onClick={() => setMenuOpen(false)}>
           <Logo showWordmark className="h-9 w-9" />
@@ -74,7 +74,7 @@ export function SiteHeader() {
       {menuOpen && (
         <div
           id="mobile-primary-nav"
-          className="border-t border-slate-200 bg-white md:hidden dark:border-slate-800 dark:bg-slate-950"
+          className="border-t border-card-border bg-background md:hidden"
         >
           <div className="mx-auto max-w-6xl space-y-4 px-4 py-4 sm:px-6">
             <ThemeToggle />

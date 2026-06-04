@@ -5,7 +5,11 @@
 :root {
   --background: #ffffff;
   --foreground: #0f172a;
-  --card: #ffffff;
+  --card-background: #ffffff;
+  --card-muted-background: #f8fafc;
+  --card-border: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
   --muted: #64748b;
   --border: #e2e8f0;
 }
@@ -13,7 +17,11 @@
 .dark {
   --background: #020617;
   --foreground: #f8fafc;
-  --card: #0f172a;
+  --card-background: #0f172a;
+  --card-muted-background: #1e293b;
+  --card-border: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
   --muted: #94a3b8;
   --border: #334155;
 }
@@ -21,13 +29,18 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card-background);
+  --color-card-muted: var(--card-muted-background);
+  --color-card-border: var(--card-border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--text-primary);
 }
 
 .audit-scroll-target {

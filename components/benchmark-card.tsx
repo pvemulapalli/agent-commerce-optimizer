@@ -3,18 +3,18 @@ import { formatPlatformDisplay } from "@/lib/platform-labels";
 
 export function BenchmarkCard({ benchmark }: { benchmark: PlatformBenchmark | null }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+    <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
         Benchmarking
       </p>
-      <h2 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
+      <h2 className="mt-2 text-xl font-semibold text-text-primary">
         {benchmark
           ? `Compared to Similar ${formatPlatformDisplay(benchmark.platform)} Stores`
           : "Platform Benchmark"}
       </h2>
 
       {!benchmark ? (
-        <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-4 text-sm text-text-secondary">
           Benchmark data unavailable
         </p>
       ) : (
@@ -27,11 +27,11 @@ export function BenchmarkCard({ benchmark }: { benchmark: PlatformBenchmark | nu
               {benchmark.yourScore}
             </dd>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/50">
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <div className="rounded-xl border border-card-border bg-card-muted p-4">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Average
             </dt>
-            <dd className="mt-2 text-3xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+            <dd className="mt-2 text-3xl font-semibold tabular-nums text-text-primary">
               {benchmark.average}
             </dd>
           </div>
@@ -47,7 +47,7 @@ export function BenchmarkCard({ benchmark }: { benchmark: PlatformBenchmark | nu
       )}
 
       {benchmark ? (
-        <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-4 text-xs text-text-secondary">
           Based on {benchmark.sampleSize} scanned {formatPlatformDisplay(benchmark.platform)} stores.
         </p>
       ) : null}

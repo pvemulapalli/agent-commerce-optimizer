@@ -35,42 +35,42 @@ function EndpointSection({
   curlExample: string;
 }) {
   return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
       <div className="flex flex-wrap items-center gap-3">
         <span className="rounded-lg bg-indigo-600 px-2.5 py-1 font-mono text-xs font-bold uppercase text-white">
           {method}
         </span>
-        <code className="break-all font-mono text-sm text-zinc-900">{path}</code>
+        <code className="break-all font-mono text-sm text-text-primary">{path}</code>
       </div>
 
-      <h2 className="mt-4 text-2xl font-semibold text-zinc-900">{title}</h2>
-      <p className="mt-2 text-sm leading-7 text-zinc-600">{description}</p>
+      <h2 className="mt-4 text-2xl font-semibold text-text-primary">{title}</h2>
+      <p className="mt-2 text-sm leading-7 text-text-secondary">{description}</p>
 
-      <h3 className="mt-8 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+      <h3 className="mt-8 text-sm font-semibold uppercase tracking-wide text-text-secondary">
         Request
       </h3>
-      <p className="mt-2 text-sm text-zinc-600">
-        Content-Type: <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs">application/json</code>
+      <p className="mt-2 text-sm text-text-secondary">
+        Content-Type: <code className="rounded bg-card-muted px-1.5 py-0.5 font-mono text-xs">application/json</code>
       </p>
       <div className="mt-3 min-w-0">
         <CodeBlock>{requestExample}</CodeBlock>
       </div>
 
-      <h3 className="mt-8 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+      <h3 className="mt-8 text-sm font-semibold uppercase tracking-wide text-text-secondary">
         Response
       </h3>
-      <p className="mt-2 text-sm text-zinc-600">
-        Success: <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs">200 OK</code>
+      <p className="mt-2 text-sm text-text-secondary">
+        Success: <code className="rounded bg-card-muted px-1.5 py-0.5 font-mono text-xs">200 OK</code>
         {" · "}
-        Error: <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs">400</code>
+        Error: <code className="rounded bg-card-muted px-1.5 py-0.5 font-mono text-xs">400</code>
         {" / "}
-        <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs">500</code>
+        <code className="rounded bg-card-muted px-1.5 py-0.5 font-mono text-xs">500</code>
       </p>
       <div className="mt-3 min-w-0">
         <CodeBlock>{responseExample}</CodeBlock>
       </div>
 
-      <h3 className="mt-8 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+      <h3 className="mt-8 text-sm font-semibold uppercase tracking-wide text-text-secondary">
         curl
       </h3>
       <div className="mt-3 min-w-0">
@@ -93,13 +93,13 @@ export default async function DocsPage() {
       />
 
       <div className="mt-10 space-y-8">
-          <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-            <h2 className="text-lg font-semibold text-zinc-900">Base URL</h2>
-            <p className="mt-2 text-sm text-zinc-600">
+          <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
+            <h2 className="text-lg font-semibold text-text-primary">Base URL</h2>
+            <p className="mt-2 text-sm text-text-secondary">
               Use this deployment origin for API requests:
             </p>
             <CodeBlock>{appOrigin}</CodeBlock>
-            <p className="mt-4 text-sm text-zinc-600">
+            <p className="mt-4 text-sm text-text-secondary">
               Utility routes:{" "}
               <a href="/api/health" className="font-medium text-indigo-600 hover:underline">
                 /api/health
@@ -127,9 +127,9 @@ export default async function DocsPage() {
             curlExample={`curl -s ${appOrigin}/api/health`}
           />
 
-          <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-            <h2 className="text-lg font-semibold text-zinc-900">OpenAPI specification</h2>
-            <p className="mt-2 text-sm leading-7 text-zinc-600">
+          <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
+            <h2 className="text-lg font-semibold text-text-primary">OpenAPI specification</h2>
+            <p className="mt-2 text-sm leading-7 text-text-secondary">
               Machine-readable API description for health, audit, and generate-fixes
               endpoints.
             </p>
@@ -230,9 +230,9 @@ export default async function DocsPage() {
   -d '{"url":"https://www.allbirds.com"}'`}
           />
 
-          <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-6 sm:p-8">
-            <h2 className="text-lg font-semibold text-zinc-900">Error responses</h2>
-            <p className="mt-2 text-sm leading-7 text-zinc-600">
+          <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-6 dark:border-amber-500/30 dark:bg-amber-950/30 sm:p-8">
+            <h2 className="text-lg font-semibold text-text-primary">Error responses</h2>
+            <p className="mt-2 text-sm leading-7 text-text-secondary">
               Invalid requests return <code className="font-mono text-xs">400</code> with{" "}
               <code className="font-mono text-xs">{`{ "error": "..." }`}</code>.
               Server failures return <code className="font-mono text-xs">500</code> with the
@@ -246,7 +246,7 @@ export default async function DocsPage() {
           </section>
         </div>
 
-        <p className="mt-10 text-sm text-zinc-500 dark:text-slate-400">
+        <p className="mt-10 text-sm text-text-secondary">
           <Link href="/" className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300">
             ← Back to audit
           </Link>

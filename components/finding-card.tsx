@@ -41,9 +41,9 @@ export function FindingCard({ finding }: { finding: Finding }) {
   const statusLabel = getFindingStatusLabel(finding.status);
 
   return (
-    <article className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <article className="min-w-0 overflow-hidden rounded-xl border border-card-border bg-card p-5 shadow-sm">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <h3 className="min-w-0 text-base font-semibold text-slate-900 dark:text-slate-100">
+        <h3 className="min-w-0 text-base font-semibold text-text-primary">
           {finding.label}
         </h3>
         <div className="flex flex-wrap gap-2 md:shrink-0 md:justify-end">
@@ -53,38 +53,38 @@ export function FindingCard({ finding }: { finding: Finding }) {
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="rounded-lg bg-card-muted p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
             Business Impact
           </p>
-          <p className="mt-2 text-sm leading-6 text-slate-700">{guidance.businessImpact}</p>
+          <p className="mt-2 text-sm leading-6 text-text-secondary">{guidance.businessImpact}</p>
         </div>
-        <div className="rounded-lg bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="rounded-lg bg-card-muted p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
             Potential Result
           </p>
-          <p className="mt-2 text-sm leading-6 text-slate-700">{guidance.potentialResult}</p>
+          <p className="mt-2 text-sm leading-6 text-text-secondary">{guidance.potentialResult}</p>
         </div>
-        <div className="rounded-lg bg-blue-50/70 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-blue-900">
+        <div className="rounded-lg border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-500/30 dark:bg-blue-950/30">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-900 dark:text-blue-200">
             Recommended Action
           </p>
-          <p className="mt-2 text-sm leading-6 text-blue-950">{guidance.recommendedAction}</p>
+          <p className="mt-2 text-sm leading-6 text-blue-950 dark:text-blue-100">{guidance.recommendedAction}</p>
         </div>
       </div>
 
-      <details className="mt-5 rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-3">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">
+      <details className="mt-5 rounded-lg border border-card-border bg-card-muted px-4 py-3">
+        <summary className="cursor-pointer text-sm font-medium text-text-secondary">
           Technical evidence
         </summary>
         <dl className="mt-4 space-y-3 text-sm">
           <div>
-            <dt className="font-medium text-slate-500">Evidence</dt>
-            <dd className="mt-1 break-words text-slate-800">{finding.evidence}</dd>
+            <dt className="font-medium text-text-secondary">Evidence</dt>
+            <dd className="mt-1 break-words text-text-primary">{finding.evidence}</dd>
           </div>
           {finding.evidenceUrls.length > 0 && (
             <div>
-              <dt className="font-medium text-slate-500">Evidence URLs</dt>
+              <dt className="font-medium text-text-secondary">Evidence URLs</dt>
               <dd className="mt-1 space-y-1">
                 {finding.evidenceUrls.map((evidenceUrl) => (
                   <div key={evidenceUrl} className="break-all">
@@ -92,7 +92,7 @@ export function FindingCard({ finding }: { finding: Finding }) {
                       href={evidenceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-800 hover:underline"
+                      className="text-blue-800 hover:underline dark:text-blue-300"
                     >
                       {evidenceUrl}
                     </a>
@@ -102,13 +102,13 @@ export function FindingCard({ finding }: { finding: Finding }) {
             </div>
           )}
           <div>
-            <dt className="font-medium text-slate-500">Source URL</dt>
+            <dt className="font-medium text-text-secondary">Source URL</dt>
             <dd className="mt-1 break-all">
               <a
                 href={finding.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-800 hover:underline"
+                className="text-blue-800 hover:underline dark:text-blue-300"
               >
                 {finding.sourceUrl}
               </a>

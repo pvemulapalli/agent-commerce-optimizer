@@ -21,33 +21,33 @@ type FixesResponse = GenerateFixesApiResponse;
 
 function PlatformAnalysisSection({ platform }: { platform: PlatformAnalysis }) {
   return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
         Platform Detection
       </p>
-      <h2 className="mt-2 text-2xl font-semibold text-slate-900">Commerce Platform</h2>
-      <p className="mt-2 text-sm text-slate-600">
+      <h2 className="mt-2 text-2xl font-semibold text-text-primary">Commerce Platform</h2>
+      <p className="mt-2 text-sm text-text-secondary">
         Platform signals detected from storefront assets, URL structures, and crawled pages.
       </p>
 
       <dl className="mt-6 grid gap-6 sm:grid-cols-2">
         <div>
-          <dt className="text-sm font-medium text-slate-500">Detected Platform</dt>
-          <dd className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          <dt className="text-sm font-medium text-text-secondary">Detected Platform</dt>
+          <dd className="mt-1 text-lg font-semibold text-text-primary">
             <PlatformLabel platform={platform.platform} />
           </dd>
         </div>
         <div>
-          <dt className="text-sm font-medium text-slate-500">Detection Confidence</dt>
-          <dd className="mt-1 text-lg font-semibold capitalize text-slate-900">
+          <dt className="text-sm font-medium text-text-secondary">Detection Confidence</dt>
+          <dd className="mt-1 text-lg font-semibold capitalize text-text-primary">
             {platform.confidence}
           </dd>
         </div>
       </dl>
 
       <div className="mt-6">
-        <h3 className="text-sm font-medium text-slate-500">Evidence</h3>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-800">
+        <h3 className="text-sm font-medium text-text-secondary">Evidence</h3>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-text-primary">
           {platform.evidence.map((item) => (
             <li key={item} className="break-words">
               {item}
@@ -75,17 +75,17 @@ function FindingSection({
   if (findings.length === 0) return null;
 
   const accentClasses = {
-    emerald: "border-emerald-200 bg-emerald-50/60",
-    rose: "border-rose-200 bg-rose-50/60",
-    amber: "border-amber-200 bg-amber-50/60",
+    emerald: "border-emerald-200 bg-emerald-50/60 dark:border-emerald-500/30 dark:bg-emerald-950/30",
+    rose: "border-rose-200 bg-rose-50/60 dark:border-rose-500/30 dark:bg-rose-950/30",
+    amber: "border-amber-200 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-950/30",
   }[accent];
 
   return (
     <section id={sectionId} className={`${AUDIT_SECTION_SCROLL_CLASS} min-w-0 space-y-4`}>
       <div className={`rounded-2xl border p-5 ${accentClasses}`}>
-        <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
-        <p className="mt-1 text-sm text-slate-600">{description}</p>
-        <p className="mt-2 text-sm font-medium text-slate-700">
+        <h2 className="text-xl font-semibold text-text-primary">{title}</h2>
+        <p className="mt-1 text-sm text-text-secondary">{description}</p>
+        <p className="mt-2 text-sm font-medium text-text-primary">
           {findings.length} finding{findings.length === 1 ? "" : "s"}
         </p>
       </div>
@@ -147,23 +147,23 @@ export function AuditResultsSection({
 
       <ExecutiveSummaryPanel report={report} />
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+      <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
           Report Details
         </p>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="min-w-0">
-            <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Audited URL</dt>
-            <dd className="mt-1 break-all text-slate-900 dark:text-slate-100">{result.url}</dd>
+            <dt className="text-sm font-medium text-text-secondary">Audited URL</dt>
+            <dd className="mt-1 break-all text-text-primary">{result.url}</dd>
           </div>
           <div>
-            <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Cache Status</dt>
-            <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{result.cacheStatus}</dd>
+            <dt className="text-sm font-medium text-text-secondary">Cache Status</dt>
+            <dd className="mt-1 font-medium text-text-primary">{result.cacheStatus}</dd>
           </div>
           {result.expiresAt && (
             <div>
-              <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Cache Expires At</dt>
-              <dd className="mt-1 text-slate-900 dark:text-slate-100">
+              <dt className="text-sm font-medium text-text-secondary">Cache Expires At</dt>
+              <dd className="mt-1 text-text-primary">
                 {new Date(result.expiresAt).toLocaleString()}
               </dd>
             </div>

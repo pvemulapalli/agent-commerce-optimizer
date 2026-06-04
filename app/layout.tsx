@@ -18,11 +18,23 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "AI Commerce Discoverability Optimizer",
+    default: "AI Commerce Optimization Platform",
     template: `%s | ${APP_VERSION_LABEL}`,
   },
   description:
-    "Will AI agents find your products? Audit your ecommerce site and discover how easily AI systems can understand your catalog, policies, and merchant information.",
+    "Commerce Optimizer helps merchants understand how AI systems discover, interpret, and interact with their storefronts — with evidence-backed findings and actionable recommendations.",
+  openGraph: {
+    title: "AI Commerce Optimization Platform",
+    description:
+      "Analyze machine-readable signals, uncover optimization opportunities, and receive evidence-backed recommendations to improve AI commerce visibility.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI Commerce Optimization Platform",
+    description:
+      "Evidence-backed AI commerce optimization with live storefront crawls, findings, and recommended fixes.",
+  },
   icons: {
     icon: [{ url: "/favicon.ico", sizes: "any" }],
     shortcut: ["/favicon.ico"],
@@ -40,7 +52,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-white font-sans text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <body className="flex min-h-full flex-col bg-background font-sans text-text-primary">
         <ThemeProvider>
           <SiteHeader />
           <div className="flex-1">{children}</div>

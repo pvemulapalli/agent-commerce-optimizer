@@ -15,7 +15,7 @@ function formatTimestamp(timestamp: string): string {
 
 function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+    <div className="rounded-xl border border-card-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-medium text-slate-900 dark:text-slate-100">{entry.merchant}</p>
@@ -91,8 +91,8 @@ export function RecentAuditsList({
   }
   if (entries.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-900">
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+      <div className="rounded-xl border border-dashed border-card-border bg-card px-6 py-10 text-center">
+        <p className="text-sm text-text-secondary">
           {emptyMessage}
         </p>
         <Link
@@ -116,10 +116,10 @@ export function RecentAuditsList({
         ))}
       </div>
 
-      <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white md:block dark:border-slate-700 dark:bg-slate-900">
+      <div className="hidden overflow-hidden rounded-xl border border-card-border bg-card md:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
-            <thead className="bg-slate-50 dark:bg-slate-800/60">
+            <thead className="bg-card-muted">
               <tr>
                 <th className="px-4 py-3">{renderSortHeader("domain", "Domain")}</th>
                 <th className="px-4 py-3">{renderSortHeader("grade", "Grade")}</th>
@@ -231,7 +231,7 @@ export function RecentAuditsPreview({
   onSelectEntry?: (entry: RecentScanRecord) => void;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
+    <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
@@ -248,7 +248,7 @@ export function RecentAuditsPreview({
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 dark:border-slate-700 dark:bg-slate-800/50">
+        <div className="rounded-xl border border-card-border bg-card-muted px-4 py-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
             Unique Merchant Domains Audited
           </p>

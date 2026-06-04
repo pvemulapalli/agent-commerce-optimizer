@@ -191,6 +191,13 @@ export default function Home() {
           onUrlChange={setUrl}
           onSubmit={handleSubmit}
           onTurnstileTokenChange={setTurnstileToken}
+          onScanAnother={() => {
+            setError(null);
+            setUrl("");
+            setResult(null);
+            setFixes(null);
+            setFixesError(null);
+          }}
         />
 
         <RecentAuditsPreview

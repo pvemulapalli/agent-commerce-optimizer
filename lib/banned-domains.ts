@@ -5,14 +5,23 @@
  * Use /admin to update the Redis override in production (takes priority when present).
  */
 
+import {
+  BANNED_DOMAIN_CODE,
+  BANNED_DOMAIN_MESSAGE,
+  BANNED_DOMAIN_TITLE,
+} from "./banned-domain-messages";
 import { normalizeAuditUrl } from "./cache";
 import { getRegistrableDomain } from "./domains";
 import { getRedis, isRedisConfigured } from "./redis";
 
-const REDIS_BANNED_KEY = "aco:admin:banned-domains";
+export {
+  BANNED_DOMAIN_CODE,
+  BANNED_DOMAIN_MESSAGE,
+  BANNED_DOMAIN_TITLE,
+  isBannedDomainError,
+} from "./banned-domain-messages";
 
-export const BANNED_DOMAIN_MESSAGE =
-  "This domain is not supported for scanning.";
+const REDIS_BANNED_KEY = "aco:admin:banned-domains";
 
 export function normalizeHostname(hostname: string): string {
   return getRegistrableDomain(hostname.trim().toLowerCase());
@@ -106,10 +115,17 @@ export async function isBannedScanUrl(url: string): Promise<boolean> {
 }
 
 export function createBannedDomainResponse(): Response {
-  return new Response(JSON.stringify({ error: BANNED_DOMAIN_MESSAGE }), {
-    status: 403,
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify({
+      error: BANNED_DOMAIN_MESSAGE,
+      title: BANNED_DOMAIN_TITLE,
+      code: BANNED_DOMAIN_CODE,
+    }),
+    {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
 }
 
 /** @deprecated Use getBannedDomains */

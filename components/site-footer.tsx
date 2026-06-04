@@ -21,14 +21,14 @@ const ATTRIBUTION_LINKS = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+    <footer className="mt-auto border-t border-card-border bg-background">
       <div className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Logo showWordmark className="h-8 w-8" />
-            <p className="mt-4 max-w-md text-sm leading-7 text-slate-600 dark:text-slate-300">
-              Evidence-backed audits and generated assets for AI commerce
-              discoverability research.
+            <p className="mt-4 max-w-md text-sm leading-7 text-text-secondary">
+              AI Commerce Optimization Platform — evidence-backed storefront analysis,
+              findings, and recommended fixes for AI commerce visibility.
             </p>
           </div>
 

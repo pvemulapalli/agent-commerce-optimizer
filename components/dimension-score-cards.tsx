@@ -26,7 +26,7 @@ function DimensionScoreCard({ dimension }: { dimension: ReadinessDimension }) {
   const evidenceOverflow = dimension.evidenceLabels.length - evidencePreview.length;
 
   return (
-    <article className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:border-slate-300 hover:shadow-md">
+    <article className="group rounded-2xl border border-card-border bg-card p-5 shadow-sm transition duration-200 hover:border-slate-300 hover:shadow-md dark:hover:border-slate-600">
       <div className="flex flex-col items-center text-center">
         <div className="relative h-24 w-24">
           <svg viewBox="0 0 88 88" className="h-full w-full -rotate-90" aria-hidden>
@@ -35,7 +35,7 @@ function DimensionScoreCard({ dimension }: { dimension: ReadinessDimension }) {
               cy="44"
               r={radius}
               fill="none"
-              stroke="#e2e8f0"
+              className="stroke-slate-200 dark:stroke-slate-700"
               strokeWidth="7"
             />
             <circle
@@ -51,22 +51,22 @@ function DimensionScoreCard({ dimension }: { dimension: ReadinessDimension }) {
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-2xl font-semibold tabular-nums text-slate-900">{score}</span>
+            <span className="text-2xl font-semibold tabular-nums text-text-primary">{score}</span>
           </div>
         </div>
 
-        <h4 className="mt-4 text-sm font-semibold text-slate-900">{dimension.label}</h4>
+        <h4 className="mt-4 text-sm font-semibold text-text-primary">{dimension.label}</h4>
 
-        <div className="mt-3 w-full border-t border-slate-100 pt-3 text-left">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Based on</p>
+        <div className="mt-3 w-full border-t border-card-border pt-3 text-left">
+          <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">Based on</p>
           <ul className="mt-2 space-y-1">
             {evidencePreview.map((label) => (
-              <li key={label} className="truncate text-xs text-slate-600">
+              <li key={label} className="truncate text-xs text-text-secondary">
                 {label}
               </li>
             ))}
             {evidenceOverflow > 0 && (
-              <li className="text-xs text-slate-400">+{evidenceOverflow} more</li>
+              <li className="text-xs text-text-secondary/70">+{evidenceOverflow} more</li>
             )}
           </ul>
         </div>
@@ -82,7 +82,7 @@ export function DimensionScoreCards({
 }) {
   if (dimensions.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-sm text-slate-600">
+      <p className="rounded-2xl border border-dashed border-card-border bg-card-muted px-6 py-10 text-center text-sm text-text-secondary">
         No scored dimensions — run a full audit to collect evidence-backed signals.
       </p>
     );

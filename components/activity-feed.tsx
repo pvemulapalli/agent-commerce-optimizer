@@ -65,16 +65,16 @@ export function ActivityFeed({
 
   return (
     <aside
-      className={`fixed bottom-6 right-6 z-40 w-[min(100vw-2rem,22rem)] rounded-2xl border border-slate-200 bg-white p-4 shadow-lg transition-opacity duration-300 ${
+      className={`fixed bottom-6 right-6 z-40 w-[min(100vw-2rem,22rem)] rounded-2xl border border-card-border bg-card p-4 shadow-lg transition-opacity duration-300 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
       aria-live="polite"
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
+      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary">
         Live activity
       </p>
-      <p className="mt-2 text-sm font-medium text-slate-900">New audit completed</p>
-      <p className="mt-1 break-all text-sm text-blue-900">{current.hostname}</p>
+      <p className="mt-2 text-sm font-medium text-text-primary">New audit completed</p>
+      <p className="mt-1 break-all text-sm text-blue-900 dark:text-blue-300">{current.hostname}</p>
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
         <span className="rounded-full bg-slate-900 px-2.5 py-1 font-semibold text-white">
           Score {current.readinessScore ?? "—"}

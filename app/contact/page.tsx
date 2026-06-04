@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contact Praveen Vemulapalli, creator of the AI Commerce Discoverability Optimizer.",
+  description: "Contact Praveen Vemulapalli, creator of the AI Commerce Optimization Platform.",
 };
 
 export default function ContactPage() {
@@ -31,8 +31,8 @@ export default function ContactPage() {
         }
       />
 
-      <section className="mt-10 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h2 className="text-xl font-semibold text-slate-900">
+      <section className="mt-10 rounded-2xl border border-card-border bg-card p-8 shadow-sm">
+        <h2 className="text-xl font-semibold text-text-primary">
           <a
             href="https://www.linkedin.com/in/praveenvemulapalli/"
             target="_blank"
@@ -45,13 +45,13 @@ export default function ContactPage() {
 
         <dl className="mt-6 space-y-5 text-sm">
           <div>
-            <dt className="font-medium text-slate-500">X</dt>
+            <dt className="font-medium text-text-secondary">X</dt>
             <dd className="mt-1">
               <a
                 href="https://x.com/PraveenVem"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="break-all text-blue-900 hover:underline"
+          className="break-all text-blue-900 hover:underline dark:text-blue-300"
               >
                 https://x.com/PraveenVem
               </a>
@@ -59,13 +59,13 @@ export default function ContactPage() {
           </div>
 
           <div>
-            <dt className="font-medium text-slate-500">LinkedIn</dt>
+            <dt className="font-medium text-text-secondary">LinkedIn</dt>
             <dd className="mt-1">
               <a
                 href="https://www.linkedin.com/in/praveenvemulapalli/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="break-all text-blue-900 hover:underline"
+          className="break-all text-blue-900 hover:underline dark:text-blue-300"
               >
                 https://www.linkedin.com/in/praveenvemulapalli/
               </a>
@@ -73,13 +73,13 @@ export default function ContactPage() {
           </div>
 
           <div>
-            <dt className="font-medium text-slate-500">GitHub</dt>
+            <dt className="font-medium text-text-secondary">GitHub</dt>
             <dd className="mt-1">
               <a
                 href="https://github.com/pvemulapalli"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="break-all text-blue-900 hover:underline"
+          className="break-all text-blue-900 hover:underline dark:text-blue-300"
               >
                 https://github.com/pvemulapalli
               </a>
@@ -88,7 +88,7 @@ export default function ContactPage() {
         </dl>
       </section>
 
-      <p className="mt-8 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-600">
+      <p className="mt-8 rounded-xl border border-card-border bg-card-muted px-5 py-4 text-sm leading-7 text-text-secondary">
         {PROJECT_DISCLAIMER}
       </p>
 
