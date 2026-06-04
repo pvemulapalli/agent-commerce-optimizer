@@ -1,7 +1,7 @@
 export const PLATFORM_NOT_IDENTIFIED_LABEL = "Unknown Platform";
 
 export const PLATFORM_NOT_IDENTIFIED_TOOLTIP =
-  "We could not confidently determine the ecommerce platform.";
+  "We could not confidently identify the commerce platform from storefront assets, page structure, or URL patterns.";
 
 export function formatPlatformDisplay(platform: string | null | undefined): string {
   if (!platform || platform === "Unknown") {

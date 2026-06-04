@@ -1,4 +1,3 @@
-import { formatPlatformDisplay } from "./platform-labels";
 import type { AuditApiResponse, Finding } from "./types";
 import { getMerchantDisplayName, normalizeDomainFromUrl } from "./domain-normalization";
 import type { CrawlSummary } from "./crawl-quality";
@@ -94,7 +93,7 @@ export function buildAuditReportMetadata(input: {
     pagesCrawled: crawlSummary.pagesCrawled,
     productsSampled,
     policyPagesFound,
-    platform: formatPlatformDisplay(audit.platform.platform),
+    platform: audit.platform.platform,
     crawlDurationSec,
     dataSource: audit.cacheStatus === "HIT" ? "Cached Audit" : "Live Crawl",
     merchantName: getMerchantDisplayName(audit.url),

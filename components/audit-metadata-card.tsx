@@ -1,3 +1,4 @@
+import { PlatformLabel } from "@/components/platform-label";
 import type { AuditReportMetadata } from "@/lib/audit-metadata";
 
 function formatLocalTimestamp(iso: string): string {
@@ -32,7 +33,6 @@ export function AuditMetadataCard({ metadata }: { metadata: AuditReportMetadata 
     { label: "Pages Crawled", value: String(metadata.pagesCrawled) },
     { label: "Products Sampled", value: String(metadata.productsSampled) },
     { label: "Policy Pages Found", value: String(metadata.policyPagesFound) },
-    { label: "Platform", value: metadata.platform },
     { label: "Crawl Duration", value: formatDuration(metadata.crawlDurationSec) },
     { label: "Data Source", value: metadata.dataSource },
   ];
@@ -58,6 +58,14 @@ export function AuditMetadataCard({ metadata }: { metadata: AuditReportMetadata 
             </dd>
           </div>
         ))}
+        <div className="rounded-xl border border-card-border bg-card-muted p-4">
+          <dt className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+            Platform
+          </dt>
+          <dd className="mt-2 text-sm font-medium text-text-primary">
+            <PlatformLabel platform={metadata.platform} />
+          </dd>
+        </div>
       </dl>
     </section>
   );
