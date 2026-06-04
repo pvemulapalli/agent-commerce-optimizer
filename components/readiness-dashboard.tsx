@@ -1,6 +1,6 @@
 "use client";
 
-import { DimensionScoreBars } from "@/components/dimension-score-bars";
+import { DimensionScoreCards } from "@/components/dimension-score-cards";
 import { SCORE_EVIDENCE_NOTE, type ReadinessReport } from "@/lib/readiness-score";
 
 function ScoreGauge({ score, grade }: { score: number; grade: string }) {
@@ -109,17 +109,20 @@ export function ReadinessDashboard({
         </div>
       </div>
 
-      <div className="grid gap-8 px-6 py-8 sm:px-8 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className="space-y-8 px-6 py-8 sm:px-8">
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Dimension scores
           </h3>
-          <div className="mt-4">
-            <DimensionScoreBars dimensions={report.dimensions} />
+          <p className="mt-1 text-sm text-slate-600">
+            Evidence-backed scores across each AI discoverability dimension.
+          </p>
+          <div className="mt-5">
+            <DimensionScoreCards dimensions={report.dimensions} />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 content-start">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Scorecard label="Detected Signals" value={detectedCount} tone="emerald" />
           <Scorecard label="Missing Signals" value={missingCount} tone="rose" />
           <Scorecard label="Needs Review" value={needsReviewCount} tone="amber" />
