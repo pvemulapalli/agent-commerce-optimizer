@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/page-header";
+import { getAppOrigin } from "@/lib/app-origin";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -79,7 +80,9 @@ function EndpointSection({
   );
 }
 
-export default function DocsPage() {
+export default async function DocsPage() {
+  const appOrigin = await getAppOrigin();
+
   return (
     <main className="mx-auto w-full min-w-0 max-w-4xl overflow-x-hidden px-6 py-12 lg:px-8 lg:py-16">
       <PageHeader
@@ -93,9 +96,9 @@ export default function DocsPage() {
           <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
             <h2 className="text-lg font-semibold text-zinc-900">Base URL</h2>
             <p className="mt-2 text-sm text-zinc-600">
-              Use your deployment origin. Local development:
+              Use this deployment origin for API requests:
             </p>
-            <CodeBlock>http://localhost:3000</CodeBlock>
+            <CodeBlock>{appOrigin}</CodeBlock>
             <p className="mt-4 text-sm text-zinc-600">
               Utility routes:{" "}
               <a href="/api/health" className="font-medium text-indigo-600 hover:underline">
@@ -121,7 +124,7 @@ export default function DocsPage() {
   "timestamp": "2026-05-30T12:00:00.000Z",
   "redis": "configured"
 }`}
-            curlExample="curl -s http://localhost:3000/api/health"
+            curlExample={`curl -s ${appOrigin}/api/health`}
           />
 
           <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
@@ -131,7 +134,7 @@ export default function DocsPage() {
               endpoints.
             </p>
             <div className="mt-4 min-w-0">
-              <CodeBlock>http://localhost:3000/openapi.json</CodeBlock>
+              <CodeBlock>{`${appOrigin}/openapi.json`}</CodeBlock>
             </div>
           </section>
 
@@ -172,7 +175,7 @@ export default function DocsPage() {
   "cacheStatus": "MISS",
   "expiresAt": "2026-05-30T14:00:00.000Z"
 }`}
-            curlExample={`curl -s -X POST http://localhost:3000/api/audit \\
+            curlExample={`curl -s -X POST ${appOrigin}/api/audit \\
   -H "Content-Type: application/json" \\
   -d '{"url":"https://www.allbirds.com"}'`}
           />
@@ -222,7 +225,7 @@ export default function DocsPage() {
     }
   ]
 }`}
-            curlExample={`curl -s -X POST http://localhost:3000/api/generate-fixes \\
+            curlExample={`curl -s -X POST ${appOrigin}/api/generate-fixes \\
   -H "Content-Type: application/json" \\
   -d '{"url":"https://www.allbirds.com"}'`}
           />
