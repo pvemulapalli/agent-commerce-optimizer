@@ -8,10 +8,20 @@ const USER_AGENT =
 export const DOMAIN_UNREACHABLE_MESSAGE =
   "Unable to reach this website. Please verify the URL and try again.";
 
+export const DNS_RESOLUTION_MESSAGE =
+  "Domain could not be resolved. We could not locate this website. Please verify the URL and try again.";
+
 export class DomainUnreachableError extends Error {
   constructor(message = DOMAIN_UNREACHABLE_MESSAGE) {
     super(message);
     this.name = "DomainUnreachableError";
+  }
+}
+
+export class DnsResolutionError extends DomainUnreachableError {
+  constructor(message = DNS_RESOLUTION_MESSAGE) {
+    super(message);
+    this.name = "DnsResolutionError";
   }
 }
 
@@ -51,7 +61,7 @@ async function resolveHostname(hostname: string): Promise<void> {
 
   const resolved = lookups.some((result) => result.status === "fulfilled");
   if (!resolved) {
-    throw new DomainUnreachableError();
+    throw new DnsResolutionError();
   }
 }
 

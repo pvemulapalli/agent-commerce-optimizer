@@ -1,6 +1,9 @@
 "use client";
 
+import { AuditConfidenceSection } from "@/components/audit-confidence-section";
+import { AuditMetadataCard } from "@/components/audit-metadata-card";
 import { AuditStickyNav } from "@/components/audit-sticky-nav";
+import { BenchmarkCard } from "@/components/benchmark-card";
 import { PlatformLabel } from "@/components/platform-label";
 import { FindingCard } from "@/components/finding-card";
 import { GeneratedFixesSection } from "@/components/generated-fixes-section";
@@ -9,16 +12,11 @@ import {
   ReadinessDashboard,
   RecommendationsSection,
 } from "@/components/readiness-dashboard";
+import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import { buildReadinessReport } from "@/lib/readiness-score";
 import { AUDIT_SECTION_SCROLL_CLASS } from "@/lib/scroll-utils";
-import type {
-  AuditApiResponse,
-  Finding,
-  GenerateFixesApiResponse,
-  PlatformAnalysis,
-} from "@/lib/types";
+import type { Finding, GenerateFixesApiResponse, PlatformAnalysis } from "@/lib/types";
 
-type AuditResponse = AuditApiResponse;
 type FixesResponse = GenerateFixesApiResponse;
 
 function PlatformAnalysisSection({ platform }: { platform: PlatformAnalysis }) {
@@ -108,7 +106,7 @@ export function AuditResultsSection({
   fixesError,
   onRegenerateFixes,
 }: {
-  result: AuditResponse;
+  result: EnrichedAuditResponse;
   fixes: FixesResponse | null;
   fixesLoading: boolean;
   fixesError: string | null;
@@ -137,36 +135,35 @@ export function AuditResultsSection({
 
       <ReadinessDashboard
         report={report}
+        merchantName={result.auditMetadata.merchantName}
         detectedCount={detectedCount}
         missingCount={missingCount}
         needsReviewCount={needsReviewCount}
       />
 
+      <AuditMetadataCard metadata={result.auditMetadata} />
+      <AuditConfidenceSection confidence={result.auditConfidence} />
+      <BenchmarkCard benchmark={result.benchmark} />
+
       <ExecutiveSummaryPanel report={report} />
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-          Audit Metadata
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+          Report Details
         </p>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="min-w-0">
-            <dt className="text-sm font-medium text-slate-500">Audited URL</dt>
-            <dd className="mt-1 break-all text-slate-900">{result.url}</dd>
+            <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Audited URL</dt>
+            <dd className="mt-1 break-all text-slate-900 dark:text-slate-100">{result.url}</dd>
           </div>
           <div>
-            <dt className="text-sm font-medium text-slate-500">Cache Status</dt>
-            <dd className="mt-1 font-medium text-slate-900">{result.cacheStatus}</dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-slate-500">Crawled At</dt>
-            <dd className="mt-1 text-slate-900">
-              {new Date(result.crawledAt).toLocaleString()}
-            </dd>
+            <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Cache Status</dt>
+            <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{result.cacheStatus}</dd>
           </div>
           {result.expiresAt && (
             <div>
-              <dt className="text-sm font-medium text-slate-500">Cache Expires At</dt>
-              <dd className="mt-1 text-slate-900">
+              <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Cache Expires At</dt>
+              <dd className="mt-1 text-slate-900 dark:text-slate-100">
                 {new Date(result.expiresAt).toLocaleString()}
               </dd>
             </div>

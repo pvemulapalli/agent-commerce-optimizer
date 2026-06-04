@@ -9,11 +9,12 @@ import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
 import { scrollToElementById } from "@/lib/scroll-utils";
-import type { AuditApiResponse, GenerateFixesApiResponse } from "@/lib/types";
+import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
+import type { GenerateFixesApiResponse } from "@/lib/types";
 import type { RecentScanRecord } from "@/lib/scan-activity";
 import { useCallback, useEffect, useState } from "react";
 
-type AuditResponse = AuditApiResponse & {
+type AuditResponse = EnrichedAuditResponse & {
   scanRecord?: { id: string; hostname: string };
 };
 type FixesResponse = GenerateFixesApiResponse;

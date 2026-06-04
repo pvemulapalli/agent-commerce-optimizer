@@ -41,7 +41,10 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
         findings,
         grouped: groupFindings(findings),
         cacheStatus: "HIT",
-        crawlSummary: inferCrawlSummaryFromFindings(findings),
+        crawlSummary: inferCrawlSummaryFromFindings(
+          findings,
+          generationContext?.pages.length ?? 0,
+        ),
         generationContext,
       };
     }

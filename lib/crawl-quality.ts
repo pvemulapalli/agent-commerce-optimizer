@@ -25,7 +25,10 @@ export function buildCrawlSummary(data: CrawlData): CrawlSummary {
   };
 }
 
-export function inferCrawlSummaryFromFindings(findings: Finding[]): CrawlSummary {
+export function inferCrawlSummaryFromFindings(
+  findings: Finding[],
+  pagesCrawled = 0,
+): CrawlSummary {
   const robots = findings.find((finding) => finding.id === "robots-txt");
   const sitemap = findings.find((finding) => finding.id === "sitemap-xml");
 
@@ -37,7 +40,7 @@ export function inferCrawlSummaryFromFindings(findings: Finding[]): CrawlSummary
 
   return {
     entryStatus: null,
-    pagesCrawled: 0,
+    pagesCrawled,
     pages403: 0,
     robotsStatus: parseStatus(robots?.evidence),
     sitemapStatus: parseStatus(sitemap?.evidence),

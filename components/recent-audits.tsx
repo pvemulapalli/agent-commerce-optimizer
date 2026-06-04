@@ -2,6 +2,7 @@
 
 import { GradeBadge } from "@/components/grade-badge";
 import { PlatformLabel } from "@/components/platform-label";
+import type { RecentAuditSortDirection, RecentAuditSortField } from "@/lib/recent-audits-query";
 import type { RecentScanRecord } from "@/lib/scan-activity";
 import Link from "next/link";
 
@@ -60,14 +61,40 @@ function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
 export function RecentAuditsList({
   entries,
   emptyMessage = "No scans recorded yet. Run the first audit from the homepage.",
+  sort,
+  direction,
+  onSortChange,
 }: {
   entries: RecentScanRecord[];
   emptyMessage?: string;
+  sort?: RecentAuditSortField;
+  direction?: RecentAuditSortDirection;
+  onSortChange?: (field: RecentAuditSortField) => void;
 }) {
+  function renderSortHeader(field: RecentAuditSortField, label: string) {
+    if (!onSortChange) {
+      return label;
+    }
+
+    const isActive = sort === field;
+
+    return (
+      <button
+        type="button"
+        onClick={() => onSortChange(field)}
+        className="inline-flex items-center gap-1 font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+      >
+        {label}
+        {isActive ? (direction === "asc" ? "↑" : "↓") : null}
+      </button>
+    );
+  }
   if (entries.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-900">
-        <p className="text-sm text-slate-600 dark:text-slate-300">{emptyMessage}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          {emptyMessage}
+        </p>
         <Link
           href="/"
           className="mt-4 inline-block text-sm font-medium text-blue-900 hover:underline dark:text-blue-300"
@@ -94,12 +121,12 @@ export function RecentAuditsList({
           <table className="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
             <thead className="bg-slate-50 dark:bg-slate-800/60">
               <tr>
-                <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Domain</th>
-                <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Grade</th>
-                <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Score</th>
-                <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Platform</th>
+                <th className="px-4 py-3">{renderSortHeader("domain", "Domain")}</th>
+                <th className="px-4 py-3">{renderSortHeader("grade", "Grade")}</th>
+                <th className="px-4 py-3">{renderSortHeader("score", "Score")}</th>
+                <th className="px-4 py-3">{renderSortHeader("platform", "Platform")}</th>
                 <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Top Gap</th>
-                <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Scanned</th>
+                <th className="px-4 py-3">{renderSortHeader("scannedAt", "Scanned")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

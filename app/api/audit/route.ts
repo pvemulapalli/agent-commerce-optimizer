@@ -1,9 +1,9 @@
+import { enrichAuditResponse } from "@/lib/enrich-audit-response";
 import { DomainUnreachableError } from "@/lib/domain-reachability";
 import { runAudit } from "@/lib/run-audit";
 import { validateScanRequest } from "@/lib/scan-request";
 import { scanUrlSchema } from "@/lib/scan-request-schema";
 import { recordCompletedScan } from "@/lib/scan-activity";
-import type { AuditApiResponse } from "@/lib/types";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -41,7 +41,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response: AuditApiResponse = await runAudit(parsed.data.url);
+    const startedAt = Date.now();
+    const auditRun = await runAudit(parsed.data.url);
+    const crawlDurationSec =
+      auditRun.cacheStatus === "HIT"
+        ? null
+        : Number(((Date.now() - startedAt) / 1000).toFixed(1));
+
+    const response = await enrichAuditResponse({
+      audit: auditRun,
+      crawlSummary: auditRun.crawlSummary,
+      crawlDurationSec,
+    });
     const scanRecord = await recordCompletedScan(response);
 
     return NextResponse.json({

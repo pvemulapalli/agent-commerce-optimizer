@@ -1,10 +1,11 @@
+import { getMerchantDisplayName } from "./domain-normalization";
+import { formatPlatformDisplay } from "./platform-labels";
 import type {
   AuditApiResponse,
   Finding,
   GroupedFindings,
   PlatformAnalysis,
 } from "./types";
-import { formatPlatformDisplay } from "./platform-labels";
 
 export type ReadinessGrade = "A" | "B" | "C" | "D" | "F";
 
@@ -214,13 +215,7 @@ export function getReadinessSummaryLabel(score: number): string {
 }
 
 function getMerchantName(audit: AuditApiResponse): string {
-  try {
-    const hostname = new URL(audit.url).hostname.replace(/^www\./, "");
-    const label = hostname.split(".")[0] ?? hostname;
-    return label.charAt(0).toUpperCase() + label.slice(1);
-  } catch {
-    return "This store";
-  }
+  return getMerchantDisplayName(audit.url);
 }
 
 function buildRecommendations(

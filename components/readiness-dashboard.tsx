@@ -74,11 +74,13 @@ function ScoreEvidenceNote() {
 
 export function ReadinessDashboard({
   report,
+  merchantName,
   detectedCount,
   missingCount,
   needsReviewCount,
 }: {
   report: ReadinessReport;
+  merchantName?: string;
   detectedCount: number;
   missingCount: number;
   needsReviewCount: number;
@@ -92,6 +94,9 @@ export function ReadinessDashboard({
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
           AI Commerce Readiness
         </p>
+        {merchantName ? (
+          <p className="mt-2 text-lg font-semibold text-slate-900">{merchantName}</p>
+        ) : null}
         <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-end gap-3">

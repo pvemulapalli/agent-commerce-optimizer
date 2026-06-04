@@ -1,5 +1,5 @@
+import { getMerchantDisplayName, normalizeDomainFromUrl } from "./domain-normalization";
 import type { AuditApiResponse } from "./types";
-import { getRegistrableDomain } from "./domains";
 import { buildReadinessReport } from "./readiness-score";
 import { getRedis, isRedisConfigured } from "./redis";
 
@@ -31,7 +31,7 @@ let memoryTotalScans = 0;
 let memoryRecentScans: RecentScanRecord[] = [];
 
 function normalizeHostname(hostname: string): string {
-  return getRegistrableDomain(hostname);
+  return normalizeDomainFromUrl(`https://${hostname.replace(/^www\./, "")}/`);
 }
 
 async function getExistingRecentScans(): Promise<RecentScanRecord[]> {
@@ -111,18 +111,7 @@ export function dedupeRecentScans(records: RecentScanRecord[]): RecentScanRecord
 }
 
 export function extractMerchantName(url: string): string {
-  try {
-    const hostname = new URL(url).hostname.replace(/^www\./, "");
-    const label = hostname.split(".")[0] ?? hostname;
-
-    if (!label) {
-      return hostname;
-    }
-
-    return label.charAt(0).toUpperCase() + label.slice(1);
-  } catch {
-    return url;
-  }
+  return getMerchantDisplayName(url);
 }
 
 export function buildAuditSummary(audit: AuditApiResponse): string {
