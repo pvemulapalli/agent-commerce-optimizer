@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/page-header";
 import { getAppOrigin } from "@/lib/app-origin";
+import { APP_VERSION } from "@/lib/app-version";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -120,7 +121,7 @@ export default async function DocsPage() {
             responseExample={`{
   "status": "ok",
   "service": "commerce-optimizer",
-  "version": "2.5",
+  "version": "${APP_VERSION}",
   "timestamp": "2026-05-30T12:00:00.000Z",
   "redis": "configured"
 }`}

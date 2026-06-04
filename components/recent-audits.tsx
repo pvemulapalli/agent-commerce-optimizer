@@ -1,7 +1,9 @@
 "use client";
 
 import { GradeBadge } from "@/components/grade-badge";
-import { PlatformLabel } from "@/components/platform-label";
+import { PlatformDisplay } from "@/components/platform-display";
+import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
+import type { PlatformReadinessStat } from "@/lib/platform-readiness-stats";
 import type { RecentAuditSortDirection, RecentAuditSortField } from "@/lib/recent-audits-query";
 import type { RecentScanRecord } from "@/lib/scan-activity";
 import Link from "next/link";
@@ -40,7 +42,7 @@ function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
             Platform
           </dt>
           <dd className="mt-1 font-medium text-slate-800 dark:text-slate-200">
-            <PlatformLabel platform={entry.platform} />
+            <PlatformDisplay platform={entry.platform} auditUrl={entry.url} helpVariant="compact" />
           </dd>
         </div>
         <div className="col-span-2">
@@ -145,7 +147,7 @@ export function RecentAuditsList({
                     {entry.readinessScore ?? "—"}
                   </td>
                   <td className="px-4 py-4 text-slate-800 dark:text-slate-200">
-                    <PlatformLabel platform={entry.platform} />
+                    <PlatformDisplay platform={entry.platform} auditUrl={entry.url} helpVariant="compact" />
                   </td>
                   <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.topGap || "—"}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-slate-700 dark:text-slate-300">
@@ -205,7 +207,11 @@ function RecentAuditCard({
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Platform</p>
           <p className="mt-1 font-medium text-slate-800 dark:text-slate-200">
-            <PlatformLabel platform={entry.platform} className="line-clamp-2 text-left" />
+            <PlatformDisplay
+              platform={entry.platform}
+              auditUrl={entry.url}
+              helpVariant="compact"
+            />
           </p>
         </div>
         <div className="min-w-0">
@@ -223,14 +229,19 @@ export function RecentAuditsPreview({
   entries,
   totalCount,
   loading,
+  platformStats = [],
   onSelectEntry,
 }: {
   entries: RecentScanRecord[];
   totalCount: number;
   loading: boolean;
+  platformStats?: PlatformReadinessStat[];
   onSelectEntry?: (entry: RecentScanRecord) => void;
 }) {
   return (
+    <div className="space-y-8">
+      {platformStats.length > 0 ? <PlatformReadinessCards stats={platformStats} /> : null}
+
     <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -266,7 +277,11 @@ export function RecentAuditsPreview({
               <p className="font-medium text-slate-900 dark:text-slate-100">{entries[0].merchant}</p>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                 Grade {entries[0].grade} · Score {entries[0].readinessScore} ·{" "}
-                <PlatformLabel platform={entries[0].platform} />
+                <PlatformDisplay
+                  platform={entries[0].platform}
+                  auditUrl={entries[0].url}
+                  helpVariant="compact"
+                />
               </p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Top gap: {entries[0].topGap} · {formatTimestamp(entries[0].scannedAt)}
@@ -294,5 +309,6 @@ export function RecentAuditsPreview({
         </div>
       )}
     </section>
+    </div>
   );
 }

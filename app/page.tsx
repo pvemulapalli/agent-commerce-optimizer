@@ -204,6 +204,7 @@ export default function Home() {
           entries={activity.recentScans}
           totalCount={activity.totalScans}
           loading={activityLoading}
+          platformStats={activity.platformStats}
           onSelectEntry={(entry) => void loadRecentAudit(entry)}
         />
 

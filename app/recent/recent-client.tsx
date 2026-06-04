@@ -2,6 +2,7 @@
 
 import { PageHeader } from "@/components/page-header";
 import { RecentAuditsControls } from "@/components/recent-audits-controls";
+import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import { RecentAuditsList } from "@/components/recent-audits";
 import { useRecentScans } from "@/hooks/use-recent-scans";
 import {
@@ -64,6 +65,12 @@ export default function RecentAuditsPage() {
         title="Recent Audits"
         description="Shared scan summaries across all users, stored in Redis. Recent audits show public scan summaries only. Full reports are available only from the original scan flow."
       />
+
+      {activity.platformStats.length > 0 ? (
+        <div className="mt-10">
+          <PlatformReadinessCards stats={activity.platformStats} />
+        </div>
+      ) : null}
 
       <div className="mt-10">
         {!loading && !error ? (

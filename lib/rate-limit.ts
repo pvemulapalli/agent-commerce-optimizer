@@ -1,4 +1,5 @@
 import { Ratelimit } from "@upstash/ratelimit";
+import { RATE_LIMIT_ERROR_MESSAGE } from "./scan-messaging";
 import { getRateLimitKey } from "./request-utils";
 import { getRedis, isRedisConfigured } from "./redis";
 
@@ -53,7 +54,6 @@ export async function enforceScanRateLimit(
   request: Request,
 ): Promise<Response | null> {
   const rateLimitKey = getRateLimitKey(request);
-  const limit = getScanRateLimitPerHour();
 
   if (!isRedisConfigured()) {
     const memoryResult = enforceMemoryRateLimit(rateLimitKey);
@@ -63,7 +63,7 @@ export async function enforceScanRateLimit(
 
     return new Response(
       JSON.stringify({
-        error: `Rate limit exceeded. You can run ${limit} scans per hour from this network. Please try again later.`,
+        error: RATE_LIMIT_ERROR_MESSAGE,
       }),
       {
         status: 429,
@@ -88,7 +88,7 @@ export async function enforceScanRateLimit(
 
   return new Response(
     JSON.stringify({
-      error: `Rate limit exceeded. You can run ${limit} scans per hour from this network. Please try again later.`,
+      error: RATE_LIMIT_ERROR_MESSAGE,
     }),
     {
       status: 429,

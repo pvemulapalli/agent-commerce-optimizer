@@ -1,4 +1,8 @@
 import { getMerchantDisplayName, normalizeDomainFromUrl } from "./domain-normalization";
+import {
+  computePlatformReadinessStats,
+  type PlatformReadinessStat,
+} from "./platform-readiness-stats";
 import type { AuditApiResponse } from "./types";
 import { buildReadinessReport } from "./readiness-score";
 import { getRedis, isRedisConfigured } from "./redis";
@@ -21,6 +25,7 @@ export interface RecentScanRecord {
 export interface ScanActivityResponse {
   totalScans: number;
   recentScans: RecentScanRecord[];
+  platformStats: PlatformReadinessStat[];
 }
 
 const TOTAL_KEY = "aco:scan:total";
@@ -277,6 +282,20 @@ export async function recordCompletedScan(
   }
 }
 
+function buildScanActivityResponse(
+  totalScans: number,
+  allRecent: RecentScanRecord[],
+  limit: number,
+): ScanActivityResponse {
+  const deduped = dedupeRecentScans(allRecent);
+
+  return {
+    totalScans,
+    recentScans: deduped.slice(0, limit),
+    platformStats: computePlatformReadinessStats(deduped),
+  };
+}
+
 export async function getScanActivity(
   limit = 5,
 ): Promise<ScanActivityResponse> {
@@ -284,28 +303,27 @@ export async function getScanActivity(
 
   try {
     await compactRecentScansInRedis();
+    const allRecent = await getExistingRecentScans();
 
     if (isRedisConfigured()) {
       const redis = getRedis();
-      const [totalRaw, recentRaw] = await Promise.all([
-        redis.get<number>(TOTAL_KEY),
-        redis.lrange(RECENT_KEY, 0, MAX_RECENT - 1),
-      ]);
+      const totalRaw = await redis.get<number>(TOTAL_KEY);
 
-      return {
-        totalScans: Number(totalRaw ?? 0),
-        recentScans: dedupeRecentScans(parseRecentScanList(recentRaw ?? [])).slice(
-          0,
-          safeLimit,
-        ),
-      };
+      return buildScanActivityResponse(
+        Number(totalRaw ?? 0),
+        allRecent,
+        safeLimit,
+      );
     }
+
+    return buildScanActivityResponse(memoryTotalScans, allRecent, safeLimit);
   } catch (error) {
     console.error("[scan-activity] read failed:", error);
   }
 
-  return {
-    totalScans: memoryTotalScans,
-    recentScans: dedupeRecentScans(memoryRecentScans).slice(0, safeLimit),
-  };
+  return buildScanActivityResponse(
+    memoryTotalScans,
+    dedupeRecentScans(memoryRecentScans),
+    safeLimit,
+  );
 }

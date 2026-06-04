@@ -4,7 +4,7 @@ import { AuditConfidenceSection } from "@/components/audit-confidence-section";
 import { AuditMetadataCard } from "@/components/audit-metadata-card";
 import { AuditStickyNav } from "@/components/audit-sticky-nav";
 import { BenchmarkCard } from "@/components/benchmark-card";
-import { PlatformLabel } from "@/components/platform-label";
+import { PlatformDisplay } from "@/components/platform-display";
 import { FindingCard } from "@/components/finding-card";
 import { GeneratedFixesSection } from "@/components/generated-fixes-section";
 import {
@@ -34,7 +34,13 @@ function ConfidenceBadge({ confidence }: { confidence: ConfidenceLevel }) {
   );
 }
 
-function PlatformAnalysisSection({ platform }: { platform: PlatformAnalysis }) {
+function PlatformAnalysisSection({
+  platform,
+  auditUrl,
+}: {
+  platform: PlatformAnalysis;
+  auditUrl: string;
+}) {
   return (
     <section className="min-w-0 overflow-hidden rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
@@ -49,7 +55,11 @@ function PlatformAnalysisSection({ platform }: { platform: PlatformAnalysis }) {
         <div>
           <dt className="text-sm font-medium text-text-secondary">Detected Platform</dt>
           <dd className="mt-1 text-lg font-semibold text-text-primary">
-            <PlatformLabel platform={platform.platform} />
+            <PlatformDisplay
+              platform={platform.platform}
+              auditUrl={auditUrl}
+              helpVariant="full"
+            />
           </dd>
         </div>
         <div>
@@ -169,7 +179,7 @@ export function AuditResultsSection({
         needsReviewCount={needsReviewCount}
       />
 
-      <AuditMetadataCard metadata={result.auditMetadata} />
+      <AuditMetadataCard metadata={result.auditMetadata} auditUrl={result.url} />
       <AuditConfidenceSection confidence={result.auditConfidence} />
       <BenchmarkCard benchmark={result.benchmark} />
 
@@ -199,7 +209,7 @@ export function AuditResultsSection({
         </dl>
       </section>
 
-      <PlatformAnalysisSection platform={result.platform} />
+      <PlatformAnalysisSection platform={result.platform} auditUrl={result.url} />
 
       <FindingSection
         sectionId="findings-detected"

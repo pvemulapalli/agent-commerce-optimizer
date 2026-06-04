@@ -1,7 +1,9 @@
 "use client";
 
 import { DimensionScoreCards } from "@/components/dimension-score-cards";
+import { LowScoreScopeNote } from "@/components/low-score-scope-note";
 import { AUDIT_SECTION_SCROLL_CLASS } from "@/lib/scroll-utils";
+import { FUTURE_AUTOMATION_NOTE } from "@/lib/scan-messaging";
 import { SCORE_EVIDENCE_NOTE, type ReadinessReport } from "@/lib/readiness-score";
 
 function ScoreGauge({ score, grade }: { score: number; grade: string }) {
@@ -107,6 +109,7 @@ export function ReadinessDashboard({
             </div>
             <p className="mt-2 text-lg font-semibold text-text-primary">Grade {report.grade}</p>
             <p className="mt-1 text-base text-text-secondary">{report.summaryLabel}</p>
+            {report.score < 50 ? <LowScoreScopeNote /> : null}
           </div>
           <div className="flex justify-center lg:justify-end">
             <ScoreGauge score={report.score} grade={report.grade} />
@@ -201,6 +204,10 @@ export function RecommendationsSection({ report }: { report: ReadinessReport }) 
         Prioritized actions based on your weakest evidence-backed dimensions and missing
         signals.
       </p>
+      <p className="mt-6 rounded-xl border border-card-border bg-card-muted px-4 py-3 text-sm leading-6 text-text-secondary">
+        {FUTURE_AUTOMATION_NOTE}
+      </p>
+
       <ol className="mt-6 space-y-4">
         {report.recommendations.map((item, index) => (
           <li

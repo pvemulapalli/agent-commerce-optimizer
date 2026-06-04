@@ -27,6 +27,7 @@ export function useRecentScans(options?: {
   const [activity, setActivity] = useState<ScanActivityResponse>({
     totalScans: 0,
     recentScans: [],
+    platformStats: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
