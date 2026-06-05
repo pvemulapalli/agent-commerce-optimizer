@@ -4,9 +4,17 @@ All notable changes to Commerce Optimizer are documented here and on [/release-n
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Release dates match git commits that bumped `lib/app-version.ts`.
+Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
-## [3.2.10] - 2026-05-30
+## [3.3.0] - 2026-06-05
+
+### Changed
+- Update Header with parent brand and product name
+- Update Footer with parent brand and product name
+- Update About page with parent brand and product name
+- Update Site metadata/Open Graph with parent brand and product name
+
+## [3.2.10] - 2026-06-04
 
 ### Fixed
 - commercetools detection for headless storefronts (Bang & Olufsen, PetSmart, Carhartt, L'Oréal Paris US) via `__NEXT_DATA__` probes, expanded fingerprints, and verified domain hints
@@ -17,14 +25,14 @@ Release dates match git commits that bumped `lib/app-version.ts`.
 ### Changed
 - Platform label displays **commercetools** (not Other Platforms) when CommerceTools is detected
 
-## [3.2.9] - 2026-05-30
+## [3.2.9] - 2026-06-04
 
 ### Fixed
 - Ecommerce eligibility no longer passes brochure or local-business sites that only expose Squarespace/Wix cart URLs without product catalog signals
 - Requires core storefront findings (product pages, schema, catalog, or pricing) before cart/checkout/platform points count
 - Rejects LocalBusiness, Restaurant, and similar non-storefront schema when no catalog signals are present
 
-## [3.2.8] - 2026-05-30
+## [3.2.8] - 2026-06-04
 
 ### Added
 - Ecommerce eligibility validation before persisting scans (`ecommerceConfidence` threshold 50)

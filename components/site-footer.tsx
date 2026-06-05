@@ -1,4 +1,8 @@
-import { PROJECT_DISCLAIMER } from "@/lib/disclaimer";
+import {
+  DEFAULT_SITE_DESCRIPTION,
+  FOOTER_COPYRIGHT,
+  FOOTER_TAGLINE,
+} from "@/lib/brand";
 import Link from "next/link";
 import { Logo } from "./logo";
 
@@ -28,8 +32,7 @@ export function SiteFooter() {
           <div className="min-w-0">
             <Logo showWordmark className="h-8 w-8" />
             <p className="mt-4 max-w-md text-sm leading-7 text-text-secondary">
-              AI Commerce Optimization Platform — evidence-backed storefront analysis,
-              findings, and recommended fixes for AI commerce visibility.
+              {DEFAULT_SITE_DESCRIPTION}
             </p>
           </div>
 
@@ -60,9 +63,10 @@ export function SiteFooter() {
           ))}
         </div>
 
-        <p className="mt-6 max-w-3xl text-sm leading-7 text-slate-500 dark:text-slate-400">
-          {PROJECT_DISCLAIMER}
-        </p>
+        <div className="mt-6 max-w-3xl space-y-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
+          <p className="font-medium text-slate-700 dark:text-slate-300">{FOOTER_COPYRIGHT}</p>
+          <p>{FOOTER_TAGLINE}</p>
+        </div>
       </div>
     </footer>
   );

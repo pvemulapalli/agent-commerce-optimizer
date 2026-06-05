@@ -3,7 +3,12 @@ import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { APP_VERSION_LABEL } from "@/lib/app-version";
+import {
+  DEFAULT_SITE_DESCRIPTION,
+  OPEN_GRAPH_TITLE,
+  PRODUCT_NAME,
+  SITE_NAME,
+} from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,23 +22,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  applicationName: PRODUCT_NAME,
   title: {
-    default: "AI Commerce Optimization Platform",
-    template: `%s | ${APP_VERSION_LABEL}`,
+    default: OPEN_GRAPH_TITLE,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Commerce Optimizer helps merchants understand how AI systems discover, interpret, and interact with their storefronts — with evidence-backed findings and actionable recommendations.",
+  description: DEFAULT_SITE_DESCRIPTION,
   openGraph: {
-    title: "AI Commerce Optimization Platform",
-    description:
-      "Analyze machine-readable signals, uncover optimization opportunities, and receive evidence-backed recommendations to improve AI commerce visibility.",
+    siteName: SITE_NAME,
+    title: OPEN_GRAPH_TITLE,
+    description: DEFAULT_SITE_DESCRIPTION,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Commerce Optimization Platform",
-    description:
-      "Evidence-backed AI commerce optimization with live storefront crawls, findings, and recommended fixes.",
+    title: OPEN_GRAPH_TITLE,
+    description: DEFAULT_SITE_DESCRIPTION,
   },
   icons: {
     icon: [{ url: "/favicon.ico", sizes: "any" }],

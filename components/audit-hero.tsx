@@ -8,6 +8,7 @@ import {
   getClientTurnstileSiteKey,
 } from "@/components/turnstile-widget";
 import { isBannedDomainError } from "@/lib/banned-domain-messages";
+import { DEFAULT_SITE_DESCRIPTION, PARENT_BRAND, PRODUCT_NAME } from "@/lib/brand";
 import { FREE_SCAN_PRIMARY, FREE_SCAN_SECONDARY } from "@/lib/scan-messaging";
 import { inputClass } from "@/lib/theme-classes";
 
@@ -107,7 +108,7 @@ export function AuditHero({
     <section className="overflow-hidden rounded-2xl border border-card-border bg-card shadow-sm">
       <div className="border-b border-card-border bg-card-muted px-6 py-4 sm:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary">
-          AI Commerce Optimization Platform
+          {PARENT_BRAND}
         </p>
       </div>
 
@@ -115,11 +116,11 @@ export function AuditHero({
         {/* Mobile: scan-first above the fold */}
         <div className="lg:hidden">
           <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
-            Optimize Your Store for AI Commerce
+            {PRODUCT_NAME}{" "}
+            <span className="font-medium text-text-secondary">by {PARENT_BRAND}</span>
           </h1>
           <p className="mt-3 text-base leading-7 text-text-secondary">
-            See whether AI systems can discover and understand your catalog, policies,
-            and merchant information.
+            {DEFAULT_SITE_DESCRIPTION}
           </p>
 
           <div className="mt-5">
@@ -138,15 +139,15 @@ export function AuditHero({
         {/* Desktop: richer hero, CTA still prominent */}
         <div className="hidden lg:block">
           <h1 className="text-4xl font-semibold tracking-tight text-text-primary xl:text-5xl">
-            Optimize Your Store For AI Commerce
+            {PRODUCT_NAME}{" "}
+            <span className="font-medium text-text-secondary">by {PARENT_BRAND}</span>
           </h1>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-text-secondary">
-            Live storefront crawl with evidence-backed findings, recommended fixes, and
-            downloadable assets — free to try, no signup required.
+            {DEFAULT_SITE_DESCRIPTION}
           </p>
           <p className="mt-4 max-w-3xl text-base leading-7 text-text-secondary">
-            Most tools tell you whether you&apos;re visible. Commerce Optimizer helps you
-            understand why and what to fix on your storefront.
+            Live storefront crawl with evidence-backed findings, recommended fixes, and
+            downloadable assets — free to try, no signup required.
           </p>
 
           <div className="mt-8">

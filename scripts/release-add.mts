@@ -3,6 +3,10 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import {
+  getReleaseDateFromGit,
+  readWorkingTreeVersion,
+} from "./lib/release-dates";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const releasesPath = path.join(root, "content/releases.json");
@@ -32,9 +36,7 @@ const VALID_CATEGORIES = new Set<ReleaseCategory>([
   "Fixes",
 ]);
 
-function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+const docsOnly = process.argv.includes("--docs-only");
 
 function parseCategories(input: string): ReleaseCategory[] {
   const values = input
@@ -78,14 +80,59 @@ ${entry.changes.map((change) => `- ${change}`).join("\n")}
   writeFileSync(changelogPath, next);
 }
 
+function resolveReleaseDate(version: string, dateInput: string): string {
+  const gitDate = getReleaseDateFromGit(version, root);
+  const resolved = dateInput || gitDate;
+
+  if (!resolved) {
+    if (docsOnly) {
+      throw new Error(
+        `No git commit found for version ${version} in lib/app-version.ts. Commit the version bump first, then run release:add --docs-only.`,
+      );
+    }
+
+    throw new Error(
+      "No release date available from git. Commit lib/app-version.ts with the new version, then run release:add --docs-only, or enter a date explicitly.",
+    );
+  }
+
+  return resolved;
+}
+
 async function main() {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const workingVersion = readWorkingTreeVersion(root);
 
   try {
-    const version = (await rl.question("Version (e.g. 3.2.7): ")).trim();
+    if (docsOnly) {
+      console.log(
+        "Docs-only mode: updates CHANGELOG.md and content/releases.json only (no lib/app-version.ts bump).",
+      );
+      if (workingVersion) {
+        console.log(`Current lib/app-version.ts: ${workingVersion}`);
+      }
+    } else {
+      console.log(
+        "Standard mode: bumps lib/app-version.ts and adds release notes. Commit code + version + notes together in one commit.",
+      );
+    }
+
+    const defaultVersion = docsOnly && workingVersion ? workingVersion : "";
+    const version = (
+      await rl.question(
+        defaultVersion
+          ? `Version [${defaultVersion}]: `
+          : "Version (e.g. 3.3.0): ",
+      )
+    ).trim() || defaultVersion;
+
     const title = (await rl.question("Title: ")).trim();
     const summary = (await rl.question("Summary: ")).trim();
-    const dateInput = (await rl.question(`Date [${todayIsoDate()}]: `)).trim();
+    const gitDate = version ? getReleaseDateFromGit(version, root) : null;
+    const datePrompt = gitDate
+      ? `Date [${gitDate} from git]: `
+      : "Date (leave blank to use git after version commit): ";
+    const dateInput = (await rl.question(datePrompt)).trim();
     const categoriesInput = (await rl.question("Categories (comma-separated, default UX): ")).trim();
     const changesInput = await rl.question(
       "Changes (one per line, blank line to finish):\n",
@@ -104,9 +151,21 @@ async function main() {
       throw new Error("At least one change line is required.");
     }
 
+    if (docsOnly) {
+      if (workingVersion && workingVersion !== version) {
+        console.warn(
+          `Warning: lib/app-version.ts is ${workingVersion} but release entry is ${version}.`,
+        );
+      }
+    } else {
+      bumpAppVersion(version);
+    }
+
+    const resolvedDate = resolveReleaseDate(version, dateInput);
+
     const entry: ReleaseEntry = {
       version,
-      date: dateInput || todayIsoDate(),
+      date: resolvedDate,
       title,
       summary,
       categories: parseCategories(categoriesInput),
@@ -119,11 +178,25 @@ async function main() {
     writeFileSync(releasesPath, `${JSON.stringify(document, null, 2)}\n`);
 
     prependChangelog(entry);
-    bumpAppVersion(version);
 
-    console.log(`\nAdded release ${version} to content/releases.json and CHANGELOG.md`);
-    console.log(`Bumped lib/app-version.ts to ${version}.`);
-    console.log("Run npm run build to verify.");
+    console.log(`\nAdded release ${version} to content/releases.json and CHANGELOG.md (date: ${resolvedDate}).`);
+
+    if (docsOnly) {
+      console.log(
+        "Next: git add CHANGELOG.md content/releases.json && git commit --amend --no-edit",
+      );
+      console.log(
+        "  (amend folds notes into the existing version commit if not pushed yet)",
+      );
+    } else {
+      console.log(`Bumped lib/app-version.ts to ${version}.`);
+      console.log(
+        "Next: git add -A && git commit -m \"Version X.Y.Z - …\"  (one commit for code + version + notes)",
+      );
+    }
+
+    console.log("Optional: npm run release:sync-dates  (verify dates match git)");
+    console.log("Then: npm run build");
   } finally {
     rl.close();
   }

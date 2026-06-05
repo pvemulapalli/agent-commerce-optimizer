@@ -1,11 +1,26 @@
 {
   "releases": [
     {
+      "version": "3.3.0",
+      "date": "2026-06-05",
+      "title": "Brand Architecture Update with MerchantSignals.com",
+      "summary": "Branding updates across site to support new domain name along with continued use of Commerce Optimizer product name.",
+      "categories": [
+        "UX"
+      ],
+      "changes": [
+        "Update Header with parent brand and product name"
+      ]
+    },
+    {
       "version": "3.2.10",
-      "date": "2026-05-30",
+      "date": "2026-06-04",
       "title": "commercetools detection and Recent Audits UX",
       "summary": "Headless commercetools storefronts are identified correctly; Recent Audits cards and links are easier to read and use.",
-      "categories": ["API", "UX"],
+      "categories": [
+        "API",
+        "UX"
+      ],
       "changes": [
         "commercetools detection via __NEXT_DATA__, expanded HTML fingerprints, and verified domain hints",
         "Platform false-positive fixes for robots.txt Demandware paths, generic /product/ URLs, and cross-domain Shopify links",
@@ -16,10 +31,12 @@
     },
     {
       "version": "3.2.9",
-      "date": "2026-05-30",
+      "date": "2026-06-04",
       "title": "Ecommerce eligibility false-positive fix",
       "summary": "Restaurant and brochure sites on Squarespace/Wix no longer pass eligibility from default cart URLs alone.",
-      "categories": ["API"],
+      "categories": [
+        "API"
+      ],
       "changes": [
         "Require core storefront signals (product pages, schema, catalog, or pricing) for a valid audit",
         "Cart, checkout, and generic platform points only count when catalog signals exist",
@@ -28,10 +45,13 @@
     },
     {
       "version": "3.2.8",
-      "date": "2026-05-30",
+      "date": "2026-06-04",
       "title": "Ecommerce eligibility validation",
       "summary": "Non-storefront domains are rejected before persistence so Recent Audits, benchmarks, and platform stats reflect verified ecommerce sites only.",
-      "categories": ["API", "UX"],
+      "categories": [
+        "API",
+        "UX"
+      ],
       "changes": [
         "Ecommerce eligibility check with ecommerceConfidence scoring (threshold 50) before any scan is saved",
         "Parked, coming-soon, and brokered domains rejected immediately",
@@ -44,7 +64,9 @@
       "date": "2026-06-04",
       "title": "Homepage hierarchy, platform logos, release notes UX",
       "summary": "Reordered homepage for faster value comprehension, compact platform and recent-audit cards, grouped release notes, and About creator section.",
-      "categories": ["UX"],
+      "categories": [
+        "UX"
+      ],
       "changes": [
         "Homepage order: hero, differentiator, audit checks, assets, platform stats, recent audits",
         "Platform readiness cards use local wordmarks and ~40% shorter layout",
@@ -59,7 +81,10 @@
       "date": "2026-06-04",
       "title": "UI clarity, platform display, release notes, contributors",
       "summary": "Simplified Other Platform display, platform readiness icons, grade badge fixes, automated release notes, and richer contributor profiles.",
-      "categories": ["UX", "Admin"],
+      "categories": [
+        "UX",
+        "Admin"
+      ],
       "changes": [
         "Renamed Unknown Platform to Other Platform with compact tooltip-only display on cards and tables",
         "BuiltWith technology profile link only in Platform Detection on audit reports",
@@ -74,7 +99,10 @@
       "date": "2026-06-04",
       "title": "User feedback: platform help, mobile CTA, differentiation",
       "summary": "Addressed feedback on platform confidence, mobile homepage CTA, API docs version, free-tier messaging, and homepage differentiation.",
-      "categories": ["UX", "API"],
+      "categories": [
+        "UX",
+        "API"
+      ],
       "changes": [
         "Unknown Platform explanation and BuiltWith link on audit surfaces",
         "Low-score scope note for popular brands",
@@ -90,7 +118,9 @@
       "date": "2026-06-04",
       "title": "Other Platform label consistency",
       "summary": "Unknown Platform shown as plain muted text instead of a badge, matching known platform typography.",
-      "categories": ["UX"],
+      "categories": [
+        "UX"
+      ],
       "changes": [
         "Other Platform (formerly Unknown) uses plain text with info tooltip",
         "Removed pill styling from unrecognized platform values",
@@ -102,7 +132,9 @@
       "date": "2026-06-04",
       "title": "UI polish and visual hierarchy",
       "summary": "Presentation-only release improving readability, badges, dark mode, and score card layout.",
-      "categories": ["UX"],
+      "categories": [
+        "UX"
+      ],
       "changes": [
         "Balanced 60/40 overall score card layout",
         "Confidence badges and uppercase finding titles",
@@ -115,7 +147,9 @@
       "date": "2026-06-04",
       "title": "Theme tokens and homepage positioning",
       "summary": "Semantic theme tokens, dark mode card consistency, and AI Commerce Optimization Platform positioning.",
-      "categories": ["UX"],
+      "categories": [
+        "UX"
+      ],
       "changes": [
         "Semantic CSS theme tokens for cards and text",
         "Banned domain scanning notice",
@@ -127,7 +161,9 @@
       "date": "2026-06-04",
       "title": "Crash fix and local timezone",
       "summary": "Fixed audit metadata timestamp formatting and timezone display.",
-      "categories": ["Fixes"],
+      "categories": [
+        "Fixes"
+      ],
       "changes": [
         "Resolved Invalid option error in audit metadata timestamps",
         "Audit times shown in the user's local timezone"
@@ -138,7 +174,10 @@
       "date": "2026-06-04",
       "title": "Historical data and audit credibility",
       "summary": "Foundation for historical audits, benchmarking, domain normalization, and enriched API responses.",
-      "categories": ["API", "Scoring"],
+      "categories": [
+        "API",
+        "Scoring"
+      ],
       "changes": [
         "Audit history storage and crawl hash",
         "Benchmarking and audit confidence metadata",
@@ -151,7 +190,9 @@
       "date": "2026-06-03",
       "title": "Dynamic API origin",
       "summary": "API documentation examples use deployment origin automatically.",
-      "categories": ["API"],
+      "categories": [
+        "API"
+      ],
       "changes": [
         "Dynamic base URL in API docs examples based on localhost or server"
       ]
@@ -161,7 +202,9 @@
       "date": "2026-06-03",
       "title": "Scroll offset and mobile polish",
       "summary": "Audit navigation scroll offset, mobile finding badges, and dark mode headers.",
-      "categories": ["UX"],
+      "categories": [
+        "UX"
+      ],
       "changes": [
         "Scroll offset helper for audit section anchors",
         "Compact grade badge and mobile recent audit cards",
@@ -173,7 +216,10 @@
       "date": "2026-06-03",
       "title": "Desktop and mobile UI fixes",
       "summary": "Multiple UI/UX fixes across desktop and mobile layouts.",
-      "categories": ["UX", "Fixes"],
+      "categories": [
+        "UX",
+        "Fixes"
+      ],
       "changes": [
         "Platform label and tooltip improvements",
         "Recent audit card layout consistency",
@@ -186,7 +232,9 @@
       "date": "2026-06-03",
       "title": "Invalid domain handling",
       "summary": "Improved validation and messaging for invalid scan URLs.",
-      "categories": ["Fixes"],
+      "categories": [
+        "Fixes"
+      ],
       "changes": [
         "Clearer invalid domain error handling"
       ]
@@ -196,7 +244,9 @@
       "date": "2026-06-03",
       "title": "Dimension score UX",
       "summary": "Improved dimension score presentation on the readiness dashboard.",
-      "categories": ["UX"],
+      "categories": [
+        "UX"
+      ],
       "changes": [
         "Dimension score card UX improvements"
       ]
@@ -206,7 +256,9 @@
       "date": "2026-06-03",
       "title": "Scroll to overview",
       "summary": "After running an audit, the page scrolls to the overview section.",
-      "categories": ["UX"],
+      "categories": [
+        "UX"
+      ],
       "changes": [
         "Auto-scroll to overview after audit completes"
       ]
@@ -216,7 +268,9 @@
       "date": "2026-06-03",
       "title": "Bug fixes and version display",
       "summary": "Various bug fixes and application version labeling.",
-      "categories": ["Fixes"],
+      "categories": [
+        "Fixes"
+      ],
       "changes": [
         "Version label in header and footer",
         "Miscellaneous audit and UI bug fixes"
@@ -227,7 +281,10 @@
       "date": "2026-06-03",
       "title": "Scoring and activity feed fixes",
       "summary": "Removed artificial scoring, fixed activity feed, restored project focus.",
-      "categories": ["Scoring", "Fixes"],
+      "categories": [
+        "Scoring",
+        "Fixes"
+      ],
       "changes": [
         "Evidence-backed scoring without artificial inflation",
         "Activity feed reliability improvements"
@@ -238,7 +295,10 @@
       "date": "2026-06-02",
       "title": "AI Commerce Readiness scoring",
       "summary": "Major release introducing readiness scoring, executive dashboard, and visual refresh.",
-      "categories": ["Scoring", "UX"],
+      "categories": [
+        "Scoring",
+        "UX"
+      ],
       "changes": [
         "AI Commerce Readiness score and grade",
         "Executive summary and recommendations dashboard",
@@ -250,7 +310,10 @@
       "date": "2026-06-02",
       "title": "Admin tools and audit management",
       "summary": "Admin maintenance tools, single audit delete, banned domains, and recent scans UX.",
-      "categories": ["Admin", "UX"],
+      "categories": [
+        "Admin",
+        "UX"
+      ],
       "changes": [
         "Admin tools with server-verified token",
         "Delete single audit by hostname",
@@ -263,7 +326,10 @@
       "date": "2026-06-02",
       "title": "Rate limits and audit deduplication",
       "summary": "Scan rate limits, banned domains, and deduplicated recent audit storage.",
-      "categories": ["API", "Admin"],
+      "categories": [
+        "API",
+        "Admin"
+      ],
       "changes": [
         "Scan rate limiting",
         "Banned domain enforcement",
@@ -275,7 +341,9 @@
       "date": "2026-06-02",
       "title": "Product UX improvements",
       "summary": "Merchant-facing UX refinements from early user feedback.",
-      "categories": ["UX"],
+      "categories": [
+        "UX"
+      ],
       "changes": [
         "Audit results layout improvements",
         "Clearer finding presentation",
@@ -287,7 +355,10 @@
       "date": "2026-06-02",
       "title": "Production launch cleanup",
       "summary": "Production readiness pass before public launch.",
-      "categories": ["Fixes", "API"],
+      "categories": [
+        "Fixes",
+        "API"
+      ],
       "changes": [
         "Production configuration cleanup",
         "API health and docs stabilization",
@@ -299,7 +370,10 @@
       "date": "2026-06-02",
       "title": "Production readiness and shared activity",
       "summary": "Shared scan activity, bot protection, and production cache behavior.",
-      "categories": ["API", "UX"],
+      "categories": [
+        "API",
+        "UX"
+      ],
       "changes": [
         "Shared recent scan activity in Redis",
         "Turnstile bot protection support",
@@ -311,7 +385,9 @@
       "date": "2026-05-31",
       "title": "Community and product experience",
       "summary": "Contributors page foundations and community-facing polish.",
-      "categories": ["UX"],
+      "categories": [
+        "UX"
+      ],
       "changes": [
         "Contributors and contact pages",
         "Community positioning copy",
@@ -323,7 +399,9 @@
       "date": "2026-05-31",
       "title": "Product experience and positioning",
       "summary": "Clearer product narrative and audit presentation.",
-      "categories": ["UX"],
+      "categories": [
+        "UX"
+      ],
       "changes": [
         "Homepage positioning refresh",
         "Audit report readability improvements",
@@ -335,7 +413,9 @@
       "date": "2026-05-31",
       "title": "Generated assets UX",
       "summary": "Improved downloadable fix assets experience.",
-      "categories": ["UX"],
+      "categories": [
+        "UX"
+      ],
       "changes": [
         "Generated fixes download UX",
         "Asset section layout improvements"
@@ -346,7 +426,10 @@
       "date": "2026-05-31",
       "title": "AI commerce recommendations",
       "summary": "Major milestone adding AI-ready recommendation and asset generation.",
-      "categories": ["UX", "API"],
+      "categories": [
+        "UX",
+        "API"
+      ],
       "changes": [
         "Generate fixes API and downloadable assets",
         "llms.txt and schema template generation",
@@ -358,7 +441,10 @@
       "date": "2026-05-30",
       "title": "Validation reporting quality",
       "summary": "Early merchant validation and reporting improvements.",
-      "categories": ["Fixes", "Scoring"],
+      "categories": [
+        "Fixes",
+        "Scoring"
+      ],
       "changes": [
         "Improved validation fixture reporting",
         "Early platform detection checks",

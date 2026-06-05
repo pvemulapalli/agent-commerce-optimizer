@@ -1,4 +1,10 @@
 import { PageHeader } from "@/components/page-header";
+import {
+  ABOUT_MERCHANT_SIGNALS_INTRO,
+  ABOUT_PRODUCT_INTRO,
+  PARENT_BRAND,
+  PRODUCT_NAME,
+} from "@/lib/brand";
 import { PROJECT_DISCLAIMER } from "@/lib/disclaimer";
 import {
   FREE_SCAN_PRIMARY,
@@ -14,7 +20,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Why Commerce Optimizer exists, what the live crawl measures, what it does not measure, and how evidence-backed scoring works.",
+    "About Merchant Signals and Commerce Optimizer — machine-readable commerce signals, storefront discoverability, and AI commerce readiness.",
 };
 
 const AUDIT_DOES = [
@@ -38,11 +44,25 @@ export default function AboutPage() {
     <main className="mx-auto w-full min-w-0 max-w-3xl overflow-x-hidden px-6 py-10 lg:px-8 lg:py-14">
       <PageHeader
         eyebrow="About"
-        title="Commerce Optimizer"
-        description="A personal project to understand whether storefronts expose the signals AI systems need for commerce discovery."
+        title={`About ${PARENT_BRAND}`}
+        description={
+          <>
+            <span className="block">{ABOUT_MERCHANT_SIGNALS_INTRO}</span>
+            <span className="mt-4 block">{ABOUT_PRODUCT_INTRO}</span>
+          </>
+        }
       />
 
       <section className="mt-10 rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
+        <h2 className="text-xl font-semibold text-text-primary">About {PRODUCT_NAME}</h2>
+        <p className="mt-4 text-sm leading-7 text-text-secondary">
+          {PRODUCT_NAME} is a focused storefront audit that crawls public pages and discovery
+          files to show whether AI systems can discover catalog structure, policies, schema, and
+          merchant facts — based on observed evidence, not visibility hype.
+        </p>
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
           <Image
             src="/about/creator-headshot.jpg"
