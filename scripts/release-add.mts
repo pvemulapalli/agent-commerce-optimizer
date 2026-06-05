@@ -7,6 +7,7 @@ import path from "node:path";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const releasesPath = path.join(root, "content/releases.json");
 const changelogPath = path.join(root, "CHANGELOG.md");
+const appVersionPath = path.join(root, "lib/app-version.ts");
 
 type ReleaseCategory = "UX" | "API" | "Admin" | "Scoring" | "Fixes";
 
@@ -48,6 +49,15 @@ function parseCategories(input: string): ReleaseCategory[] {
   }
 
   return values.length > 0 ? values : ["UX"];
+}
+
+function bumpAppVersion(version: string): void {
+  const content = `/** Bump when shipping a new version of the optimizer. */
+export const APP_VERSION = "${version}";
+
+export const APP_VERSION_LABEL = \`Version \${APP_VERSION}\`;
+`;
+  writeFileSync(appVersionPath, content);
 }
 
 function prependChangelog(entry: ReleaseEntry): void {
@@ -109,9 +119,11 @@ async function main() {
     writeFileSync(releasesPath, `${JSON.stringify(document, null, 2)}\n`);
 
     prependChangelog(entry);
+    bumpAppVersion(version);
 
     console.log(`\nAdded release ${version} to content/releases.json and CHANGELOG.md`);
-    console.log("Remember to bump lib/app-version.ts and run npm run build.");
+    console.log(`Bumped lib/app-version.ts to ${version}.`);
+    console.log("Run npm run build to verify.");
   } finally {
     rl.close();
   }

@@ -1,3 +1,4 @@
+import { getCommercetoolsDomainHint } from "./commercetools-domain-hints";
 import type { CommercePlatform, ConfidenceLevel, CrawlData } from "./types";
 import { aggregateConfidence, uniqueUrls } from "./schema-utils";
 
@@ -20,12 +21,28 @@ const PLATFORM_LABELS: Record<CommercePlatform, string> = {
   Unknown: "Unknown",
 };
 
+function isSameOriginPage(url: string, origin: string): boolean {
+  try {
+    return new URL(url).origin === origin;
+  } catch {
+    return false;
+  }
+}
+
+function getStorefrontPages(data: CrawlData): CrawlData["pages"] {
+  return data.pages.filter((page) => isSameOriginPage(page.url, data.origin));
+}
+
 function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
   const signals: PlatformSignal[] = [];
   const htmlSources = [
-    ...data.pages.map((page) => ({
+    ...getStorefrontPages(data).map((page) => ({
       url: page.url,
-      content: [page.htmlSnippet ?? "", page.bodyTextSnippet ?? ""].join(" "),
+      content: [
+        page.htmlSnippet ?? "",
+        page.bodyTextSnippet ?? "",
+        JSON.stringify(page.jsonLdBlocks ?? []),
+      ].join(" "),
     })),
     ...Object.values(data.resources)
       .filter((resource) => resource.content)
@@ -77,7 +94,11 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
       });
     }
 
-    if (/demandware\.net|demandware\.store|dw\.ac|dwanalytics|sfcc/i.test(content)) {
+    if (
+      /demandware\.net|\/on\/demandware\.store|demandware\.store\/|dw\.ac=|dwanalytics|\bsfcc\b/i.test(
+        content,
+      )
+    ) {
       signals.push({
         platform: "Salesforce Commerce Cloud",
         label: "Demandware / SFCC storefront assets detected",
@@ -125,7 +146,14 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
       });
     }
 
-    if (/commercetools\.com|composable-commerce|commercetools/i.test(content)) {
+    if (
+      /commercetools\.com|commercetools\.io|composable-commerce|commercetools/i.test(
+        content,
+      ) ||
+      /commerceToolsAttributes|commerceToolsApi|@commercetools|frontastic/i.test(
+        content,
+      )
+    ) {
       signals.push({
         platform: "CommerceTools",
         label: "CommerceTools composable commerce assets detected",
@@ -138,12 +166,22 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
   return signals;
 }
 
+function crawlHasWooCommerceHtml(data: CrawlData): boolean {
+  const haystack = getStorefrontPages(data)
+    .map((page) =>
+      [page.htmlSnippet, page.bodyTextSnippet, JSON.stringify(page.jsonLdBlocks)].join(" "),
+    )
+    .join(" ");
+
+  return /wp-content\/plugins\/woocommerce|woocommerce|wp-json\/wc\//i.test(haystack);
+}
+
 function collectUrlSignals(data: CrawlData): PlatformSignal[] {
   const signals: PlatformSignal[] = [];
   const urls = [
-    ...data.pages.map((page) => page.url),
-    ...data.sitemap.urlsSelected,
-    ...data.sitemap.urlsCrawled,
+    ...getStorefrontPages(data).map((page) => page.url),
+    ...data.sitemap.urlsSelected.filter((url) => isSameOriginPage(url, data.origin)),
+    ...data.sitemap.urlsCrawled.filter((url) => isSameOriginPage(url, data.origin)),
   ];
 
   for (const url of urls) {
@@ -206,7 +244,16 @@ function collectUrlSignals(data: CrawlData): PlatformSignal[] {
       });
     }
 
-    if (/\/product\/|\/product-category\//i.test(lower)) {
+    if (/\/product-category\//i.test(lower)) {
+      signals.push({
+        platform: "WooCommerce",
+        label: "WooCommerce product category URL structure detected",
+        weight: 2,
+        sourceUrl: url,
+      });
+    }
+
+    if (/\/product\//i.test(lower) && crawlHasWooCommerceHtml(data)) {
       signals.push({
         platform: "WooCommerce",
         label: "WooCommerce product permalink structure detected",
@@ -287,9 +334,44 @@ function scoreToConfidence(score: number, evidenceCount: number): ConfidenceLeve
   return "low";
 }
 
+function shouldApplyCommercetoolsDomainHint(
+  ranked: {
+    platform: CommercePlatform;
+    score: number;
+  } | null,
+): boolean {
+  if (!ranked) {
+    return true;
+  }
+
+  if (ranked.platform === "CommerceTools") {
+    return true;
+  }
+
+  return ranked.score < 6;
+}
+
 export function detectPlatform(data: CrawlData) {
   const signals = [...collectHtmlSignals(data), ...collectUrlSignals(data)];
   const ranked = scorePlatform(signals);
+  const domainHint = getCommercetoolsDomainHint(data.entryUrl);
+
+  if (domainHint && shouldApplyCommercetoolsDomainHint(ranked)) {
+    const evidence = ranked?.platform === "CommerceTools"
+      ? [...ranked.evidence, domainHint]
+      : [domainHint, ...(ranked?.evidence ?? [])];
+
+    const score = ranked?.platform === "CommerceTools"
+      ? ranked.score + 2
+      : 4;
+
+    return {
+      platform: "CommerceTools" as CommercePlatform,
+      confidence: scoreToConfidence(score, evidence.length),
+      evidence: [...new Set(evidence)],
+      sourceUrls: uniqueUrls([data.entryUrl, ...(ranked?.sourceUrls ?? [])]),
+    };
+  }
 
   if (!ranked) {
     return {

@@ -1,6 +1,20 @@
 {
   "releases": [
     {
+      "version": "3.2.10",
+      "date": "2026-05-30",
+      "title": "commercetools detection and Recent Audits UX",
+      "summary": "Headless commercetools storefronts are identified correctly; Recent Audits cards and links are easier to read and use.",
+      "categories": ["API", "UX"],
+      "changes": [
+        "commercetools detection via __NEXT_DATA__, expanded HTML fingerprints, and verified domain hints",
+        "Platform false-positive fixes for robots.txt Demandware paths, generic /product/ URLs, and cross-domain Shopify links",
+        "CommerceTools displays as commercetools in audit and stats surfaces",
+        "Homepage recent-audit card grid no longer overlaps Platform and Top Gap columns",
+        "Recent Audits table and mobile cards link domains to storefront URLs in a new tab"
+      ]
+    },
+    {
       "version": "3.2.9",
       "date": "2026-05-30",
       "title": "Ecommerce eligibility false-positive fix",

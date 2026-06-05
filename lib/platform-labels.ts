@@ -9,12 +9,16 @@ export const PLATFORM_NOT_IDENTIFIED_LABEL = OTHER_PLATFORM_LABEL;
 /** @deprecated Use OTHER_PLATFORM_TOOLTIP */
 export const PLATFORM_NOT_IDENTIFIED_TOOLTIP = OTHER_PLATFORM_TOOLTIP;
 
+const PLATFORM_DISPLAY_LABELS: Record<string, string> = {
+  CommerceTools: "commercetools",
+};
+
 export function formatPlatformDisplay(platform: string | null | undefined): string {
   if (!platform || platform === "Unknown") {
     return OTHER_PLATFORM_LABEL;
   }
 
-  return platform;
+  return PLATFORM_DISPLAY_LABELS[platform] ?? platform;
 }
 
 export function isPlatformNotIdentified(platform: string | null | undefined): boolean {

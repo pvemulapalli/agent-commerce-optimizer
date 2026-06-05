@@ -247,7 +247,8 @@ async function fetchPage(
 
     const html = await response.text();
     const $ = cheerio.load(html);
-    const htmlSnippet = html.slice(0, 12000);
+    const nextDataScript = $("script#__NEXT_DATA__").html()?.slice(0, 50_000) ?? "";
+    const htmlSnippet = `${html.slice(0, 12_000)}\n${nextDataScript}`;
 
     const title = $("title").first().text().replace(/\s+/g, " ").trim() || null;
     const metaDescription =

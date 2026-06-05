@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`.
 
+## [3.2.10] - 2026-05-30
+
+### Fixed
+- commercetools detection for headless storefronts (Bang & Olufsen, PetSmart, Carhartt, L'Oréal Paris US) via `__NEXT_DATA__` probes, expanded fingerprints, and verified domain hints
+- Platform false positives from PetSmart `robots.txt` legacy Demandware paths, generic `/product/` WooCommerce URLs, and cross-domain Shopify links (e.g. Carhartt Reworked)
+- Homepage recent-audit card column overlap (Platform vs Top Gap)
+- Recent Audits domain URLs open the storefront in a new tab
+
+### Changed
+- Platform label displays **commercetools** (not Other Platforms) when CommerceTools is detected
+
 ## [3.2.9] - 2026-05-30
 
 ### Fixed
