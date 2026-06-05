@@ -32,6 +32,7 @@ export default function Home() {
   const [fixes, setFixes] = useState<FixesResponse | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [feedNotifications, setFeedNotifications] = useState<RecentScanRecord[]>([]);
+  const [loadingRecentId, setLoadingRecentId] = useState<string | null>(null);
 
   const activityFeedEnabled = isActivityFeedEnabled();
 
@@ -96,11 +97,13 @@ export default function Home() {
   async function loadRecentAudit(entry: RecentScanRecord) {
     setUrl(entry.url);
     setLoading(true);
+    setLoadingRecentId(entry.id);
     setError(null);
     setNonEcommerceMessage(null);
     setResult(null);
     setFixes(null);
     setFixesError(null);
+    scrollToElementById("audit-hero");
 
     try {
       const payload: { url: string; turnstileToken?: string } = { url: entry.url };
@@ -135,6 +138,7 @@ export default function Home() {
       );
     } finally {
       setLoading(false);
+      setLoadingRecentId(null);
     }
   }
 
@@ -198,24 +202,26 @@ export default function Home() {
   return (
     <>
       <div className="mx-auto w-full min-w-0 max-w-6xl space-y-12 px-6 py-10 lg:px-8 lg:py-14">
-        <AuditHero
-          url={url}
-          loading={loading}
-          error={error}
-          nonEcommerceMessage={nonEcommerceMessage}
-          turnstileToken={turnstileToken}
-          onUrlChange={setUrl}
-          onSubmit={handleSubmit}
-          onTurnstileTokenChange={setTurnstileToken}
-          onScanAnother={() => {
-            setError(null);
-            setNonEcommerceMessage(null);
-            setUrl("");
-            setResult(null);
-            setFixes(null);
-            setFixesError(null);
-          }}
-        />
+        <div id="audit-hero">
+          <AuditHero
+            url={url}
+            loading={loading}
+            error={error}
+            nonEcommerceMessage={nonEcommerceMessage}
+            turnstileToken={turnstileToken}
+            onUrlChange={setUrl}
+            onSubmit={handleSubmit}
+            onTurnstileTokenChange={setTurnstileToken}
+            onScanAnother={() => {
+              setError(null);
+              setNonEcommerceMessage(null);
+              setUrl("");
+              setResult(null);
+              setFixes(null);
+              setFixesError(null);
+            }}
+          />
+        </div>
 
         {!result && <MarketingSections />}
 
@@ -230,6 +236,8 @@ export default function Home() {
             loading={activityLoading}
             variant="homepage"
             onSelectEntry={(entry) => void loadRecentAudit(entry)}
+            loadingEntryId={loadingRecentId}
+            auditLoading={loading}
           />
         ) : null}
 

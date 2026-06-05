@@ -12,7 +12,10 @@ import {
   assertEcommerceEligible,
   EcommerceIneligibleError,
 } from "@/lib/ecommerce-eligibility";
-import { ensureDomainReachable } from "@/lib/domain-reachability";
+import {
+  assertMinimumCrawlHealth,
+  ensureDomainReachable,
+} from "@/lib/domain-reachability";
 import {
   buildGenerationContext,
   buildGenerationContextFromFindings,
@@ -70,6 +73,7 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
   }
 
   const crawlData = await crawlSite(url);
+  assertMinimumCrawlHealth(crawlData);
   const crawlSummary = buildCrawlSummary(crawlData);
   const { platform, findings } = runChecks(crawlData);
   const finalizedFindings = finalizeFindings(findings, platform);

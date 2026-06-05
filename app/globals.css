@@ -47,6 +47,19 @@ body {
   scroll-margin-top: calc(4rem + 3.25rem + 1.5rem);
 }
 
+@keyframes audit-progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.audit-progress-bar {
+  animation: audit-progress-slide 1.4s ease-in-out infinite;
+}
+
 @media (max-width: 767px) {
   .audit-scroll-target {
     scroll-margin-top: calc(4rem + 3.25rem + 2rem);

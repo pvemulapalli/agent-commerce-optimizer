@@ -1,5 +1,14 @@
 import dns from "node:dns/promises";
 import { deleteCachedAuditsForHostname, normalizeAuditUrl } from "./cache";
+import {
+  gatewayErrorMessage,
+  isGatewayErrorContent,
+  mapFetchReachabilityError,
+  pageContentHaystack,
+  SITE_ERROR_MESSAGE,
+  SSL_CERTIFICATE_MESSAGE,
+} from "./gateway-errors";
+import type { CrawlData, PageData } from "./types";
 
 const REACHABILITY_TIMEOUT_MS = 12_000;
 const USER_AGENT =
@@ -10,6 +19,13 @@ export const DOMAIN_UNREACHABLE_MESSAGE =
 
 export const DNS_RESOLUTION_MESSAGE =
   "Domain could not be resolved. We could not locate this website. Please verify the URL and try again.";
+
+export {
+  SITE_ERROR_MESSAGE,
+  SSL_CERTIFICATE_MESSAGE,
+  isGatewayErrorContent,
+  pageContentHaystack,
+};
 
 export class DomainUnreachableError extends Error {
   constructor(message = DOMAIN_UNREACHABLE_MESSAGE) {
@@ -70,7 +86,7 @@ async function probeSite(url: URL): Promise<void> {
   const timeout = setTimeout(() => controller.abort(), REACHABILITY_TIMEOUT_MS);
 
   try {
-    await fetch(url.href, {
+    const response = await fetch(url.href, {
       method: "GET",
       signal: controller.signal,
       redirect: "follow",
@@ -79,10 +95,72 @@ async function probeSite(url: URL): Promise<void> {
         Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
       },
     });
-  } catch {
-    throw new DomainUnreachableError();
+
+    const contentType = response.headers.get("content-type") ?? "";
+    const text = await response.text();
+    const snippet = text.slice(0, 4000);
+
+    if (isGatewayErrorContent(snippet)) {
+      throw new DomainUnreachableError(gatewayErrorMessage(snippet));
+    }
+
+    if (response.status >= 500) {
+      throw new DomainUnreachableError(SITE_ERROR_MESSAGE);
+    }
+
+    if (response.status === 404 || response.status === 410) {
+      throw new DomainUnreachableError();
+    }
+
+    if (
+      !contentType.includes("text/html") &&
+      !contentType.includes("application/xhtml")
+    ) {
+      throw new DomainUnreachableError();
+    }
+  } catch (error) {
+    if (error instanceof DomainUnreachableError) {
+      throw error;
+    }
+
+    throw new DomainUnreachableError(mapFetchReachabilityError(error));
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+function findEntryPage(data: CrawlData): PageData | undefined {
+  return (
+    data.pages.find(
+      (page) => page.url.replace(/\/$/, "") === data.entryUrl.replace(/\/$/, ""),
+    ) ?? data.pages[0]
+  );
+}
+
+/** Rejects crawls where every page failed or the entry is a gateway/SSL error page. */
+export function assertMinimumCrawlHealth(data: CrawlData): void {
+  const entry = findEntryPage(data);
+  const entryHaystack = entry ? pageContentHaystack(entry) : "";
+
+  if (
+    entry &&
+    (entry.status === null ||
+      entry.status >= 500 ||
+      isGatewayErrorContent(entryHaystack))
+  ) {
+    throw new DomainUnreachableError(
+      isGatewayErrorContent(entryHaystack)
+        ? gatewayErrorMessage(entryHaystack)
+        : SITE_ERROR_MESSAGE,
+    );
+  }
+
+  const healthyPages = data.pages.filter(
+    (page) => page.status === 200 && !isGatewayErrorContent(pageContentHaystack(page)),
+  );
+
+  if (healthyPages.length === 0) {
+    throw new DomainUnreachableError(SITE_ERROR_MESSAGE);
   }
 }
 

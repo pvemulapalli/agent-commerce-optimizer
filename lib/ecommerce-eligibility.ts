@@ -1,3 +1,4 @@
+import { isGatewayErrorContent, pageContentHaystack } from "./gateway-errors";
 import { normalizeSchemaType } from "./schema-utils";
 import type {
   CommercePlatform,
@@ -219,19 +220,26 @@ function detectNonEcommerceBusinessSite(
   return null;
 }
 
-function hasCrawlableContent(pages: PageData[]): boolean {
-  return pages.some(
-    (page) =>
-      page.status !== null &&
-      page.status < 400 &&
-      Boolean(
-        page.title ||
-          page.metaDescription ||
-          page.bodyTextSnippet ||
-          page.htmlSnippet ||
-          page.jsonLdBlocks.length > 0,
-      ),
+function isHealthyCrawlPage(page: PageData): boolean {
+  if (page.status === null || page.status >= 400) {
+    return false;
+  }
+
+  if (isGatewayErrorContent(pageContentHaystack(page))) {
+    return false;
+  }
+
+  return Boolean(
+    page.title ||
+      page.metaDescription ||
+      page.bodyTextSnippet ||
+      page.htmlSnippet ||
+      page.jsonLdBlocks.length > 0,
   );
+}
+
+function hasCrawlableContent(pages: PageData[]): boolean {
+  return pages.some(isHealthyCrawlPage);
 }
 
 function computeConfidenceScore(

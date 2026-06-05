@@ -1,8 +1,22 @@
 {
   "releases": [
     {
+      "version": "3.3.2",
+      "date": "2026-06-05",
+      "title": "Audit loading feedback",
+      "summary": "Animated crawl progress during scans and clearer loading states when opening recent audits from the homepage.",
+      "categories": [
+        "UX"
+      ],
+      "changes": [
+        "Animated progress bar with rotating crawl status during 5–15 second audits",
+        "Recent audit cards use pointer cursor and show a loading overlay while fetching",
+        "Clicking a recent audit scrolls to the hero progress bar"
+      ]
+    },
+    {
       "version": "3.3.1",
-      "date": "2026-05-30",
+      "date": "2026-06-05",
       "title": "Brand clarity and homepage messaging",
       "summary": "Simpler hero and About page, restored disclaimer, and easier release-notes navigation — no audit or API changes.",
       "categories": [

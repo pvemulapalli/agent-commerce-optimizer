@@ -1,5 +1,6 @@
 "use client";
 
+import { AuditProgressBar } from "@/components/audit-progress";
 import { NonEcommerceNotice } from "@/components/non-ecommerce-notice";
 import { ScanningRestrictedNotice } from "@/components/scanning-restricted-notice";
 import {
@@ -142,12 +143,7 @@ export function AuditHero({
           ))}
         </ul>
 
-        {loading && (
-          <div className="mt-5 rounded-lg border border-card-border bg-card-muted px-4 py-3 text-sm text-text-secondary">
-            Crawling discovery files, parsing sitemaps, and analyzing storefront
-            signals…
-          </div>
-        )}
+        {loading ? <AuditProgressBar /> : null}
 
         {restrictedDomain ? (
           <ScanningRestrictedNotice onScanAnother={onScanAnother} />

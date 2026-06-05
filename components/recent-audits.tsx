@@ -188,26 +188,40 @@ function RecentAuditCard({
   entry,
   onSelectEntry,
   compact = false,
+  loading = false,
 }: {
   entry: RecentScanRecord;
   onSelectEntry?: (entry: RecentScanRecord) => void;
   compact?: boolean;
+  loading?: boolean;
 }) {
-  const isClickable = Boolean(onSelectEntry);
-  const CardTag = isClickable ? "button" : "div";
+  const isClickable = Boolean(onSelectEntry) && !loading;
 
   return (
-    <CardTag
-      type={isClickable ? "button" : undefined}
+    <button
+      type="button"
+      disabled={!isClickable}
       onClick={isClickable ? () => onSelectEntry?.(entry) : undefined}
-      className={`flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-left transition dark:border-slate-700 dark:bg-slate-900/70 ${
+      aria-busy={loading}
+      className={`relative flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-left transition dark:border-slate-700 dark:bg-slate-900/70 ${
         compact ? "min-h-[7.5rem]" : "min-h-[168px] p-4"
       } ${
-        isClickable
-          ? "hover:border-blue-200 hover:bg-white hover:shadow-sm dark:hover:border-blue-700 dark:hover:bg-slate-900"
+        onSelectEntry
+          ? "cursor-pointer hover:border-blue-200 hover:bg-white hover:shadow-sm disabled:cursor-wait dark:hover:border-blue-700 dark:hover:bg-slate-900"
           : ""
-      }`}
+      } ${loading ? "border-blue-200 ring-2 ring-blue-200/60 dark:border-blue-700 dark:ring-blue-700/40" : ""}`}
     >
+      {loading ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/75 dark:bg-slate-900/80">
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
+            <span
+              className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-900 border-t-transparent dark:border-blue-300 dark:border-t-transparent"
+              aria-hidden
+            />
+            Loading audit…
+          </span>
+        </div>
+      ) : null}
       <div className="flex items-start justify-between gap-2">
         <p className="line-clamp-1 min-w-0 flex-1 font-semibold text-slate-900 dark:text-slate-100">
           {entry.merchant}
@@ -245,7 +259,7 @@ function RecentAuditCard({
           </p>
         </div>
       </div>
-    </CardTag>
+    </button>
   );
 }
 
@@ -256,6 +270,8 @@ export function RecentAuditsPreview({
   platformStats = [],
   variant = "full",
   onSelectEntry,
+  loadingEntryId = null,
+  auditLoading = false,
 }: {
   entries: RecentScanRecord[];
   totalCount: number;
@@ -263,6 +279,8 @@ export function RecentAuditsPreview({
   platformStats?: PlatformReadinessStat[];
   variant?: "homepage" | "full";
   onSelectEntry?: (entry: RecentScanRecord) => void;
+  loadingEntryId?: string | null;
+  auditLoading?: boolean;
 }) {
   const isHomepage = variant === "homepage";
 
@@ -335,8 +353,9 @@ export function RecentAuditsPreview({
             <RecentAuditCard
               key={`${entry.id}-${entry.scannedAt}-${index}`}
               entry={entry}
-              onSelectEntry={onSelectEntry}
+              onSelectEntry={auditLoading ? undefined : onSelectEntry}
               compact={isHomepage}
+              loading={loadingEntryId === entry.id}
             />
           ))}
         </div>

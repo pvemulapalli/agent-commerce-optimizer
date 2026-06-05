@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
-## [3.3.1] - 2026-05-30
+## [3.3.2] - 2026-06-05
+
+### Changed
+- Animated audit progress bar with rotating crawl status during 5–15 second scans
+- Recent audit cards show pointer cursor, per-card loading overlay, and scroll-to-hero when opening a cached audit
+
+## [3.3.1] - 2026-06-05
 
 ### Changed
 - Simplified homepage hero: Merchant Signals label, outcome-focused headline, clearer product messaging
