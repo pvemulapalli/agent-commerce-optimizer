@@ -1,4 +1,5 @@
 import {
+  deleteCachedAuditsForHostname,
   isCacheEnabled,
   readCachedAudit,
   writeCachedAudit,
@@ -7,6 +8,10 @@ import { crawlSite } from "@/lib/crawler";
 import { finalizeFindings, groupFindings, runChecks } from "@/lib/checks";
 import { buildCrawlSummary, inferCrawlSummaryFromFindings } from "@/lib/crawl-quality";
 import type { CrawlSummary } from "@/lib/crawl-quality";
+import {
+  assertEcommerceEligible,
+  EcommerceIneligibleError,
+} from "@/lib/ecommerce-eligibility";
 import { ensureDomainReachable } from "@/lib/domain-reachability";
 import {
   buildGenerationContext,
@@ -36,6 +41,19 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
           findings,
         );
 
+      try {
+        assertEcommerceEligible({
+          findings,
+          platform: cached.platform,
+        });
+      } catch (error) {
+        if (error instanceof EcommerceIneligibleError) {
+          const hostname = new URL(cached.url).hostname;
+          await deleteCachedAuditsForHostname(hostname);
+        }
+        throw error;
+      }
+
       return {
         ...cached,
         findings,
@@ -55,6 +73,13 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
   const { platform, findings } = runChecks(crawlData);
   const finalizedFindings = finalizeFindings(findings, platform);
   const grouped = groupFindings(finalizedFindings);
+
+  assertEcommerceEligible({
+    findings: finalizedFindings,
+    platform,
+    crawlData,
+  });
+
   const generationContext = buildGenerationContext(
     crawlData,
     platform,

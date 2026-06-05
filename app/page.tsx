@@ -8,6 +8,7 @@ import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import { RecentAuditsPreview } from "@/components/recent-audits";
 import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
+import { isNonEcommerceScanResponse } from "@/lib/non-ecommerce-messages";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
 import { scrollToElementById } from "@/lib/scroll-utils";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
@@ -24,6 +25,7 @@ export default function Home() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nonEcommerceMessage, setNonEcommerceMessage] = useState<string | null>(null);
   const [result, setResult] = useState<AuditResponse | null>(null);
   const [fixesLoading, setFixesLoading] = useState(false);
   const [fixesError, setFixesError] = useState<string | null>(null);
@@ -95,6 +97,7 @@ export default function Home() {
     setUrl(entry.url);
     setLoading(true);
     setError(null);
+    setNonEcommerceMessage(null);
     setResult(null);
     setFixes(null);
     setFixesError(null);
@@ -112,6 +115,11 @@ export default function Home() {
       });
 
       const data = (await response.json()) as AuditResponse & { error?: string };
+
+      if (isNonEcommerceScanResponse(data)) {
+        setNonEcommerceMessage(data.message);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error ?? "Audit request failed");
@@ -138,6 +146,7 @@ export default function Home() {
 
     setLoading(true);
     setError(null);
+    setNonEcommerceMessage(null);
     setResult(null);
     setFixes(null);
     setFixesError(null);
@@ -155,6 +164,11 @@ export default function Home() {
       });
 
       const data = (await response.json()) as AuditResponse & { error?: string };
+
+      if (isNonEcommerceScanResponse(data)) {
+        setNonEcommerceMessage(data.message);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error ?? "Audit request failed");
@@ -188,12 +202,14 @@ export default function Home() {
           url={url}
           loading={loading}
           error={error}
+          nonEcommerceMessage={nonEcommerceMessage}
           turnstileToken={turnstileToken}
           onUrlChange={setUrl}
           onSubmit={handleSubmit}
           onTurnstileTokenChange={setTurnstileToken}
           onScanAnother={() => {
             setError(null);
+            setNonEcommerceMessage(null);
             setUrl("");
             setResult(null);
             setFixes(null);

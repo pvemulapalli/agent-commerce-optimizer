@@ -1,5 +1,6 @@
 "use client";
 
+import { NonEcommerceNotice } from "@/components/non-ecommerce-notice";
 import { ScanningRestrictedNotice } from "@/components/scanning-restricted-notice";
 import {
   TurnstileWidget,
@@ -83,6 +84,7 @@ export function AuditHero({
   url,
   loading,
   error,
+  nonEcommerceMessage,
   turnstileToken,
   onUrlChange,
   onSubmit,
@@ -92,6 +94,7 @@ export function AuditHero({
   url: string;
   loading: boolean;
   error: string | null;
+  nonEcommerceMessage: string | null;
   turnstileToken: string | null;
   onUrlChange: (url: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -183,7 +186,14 @@ export function AuditHero({
           <ScanningRestrictedNotice onScanAnother={onScanAnother} />
         ) : null}
 
-        {error && !restrictedDomain ? (
+        {nonEcommerceMessage ? (
+          <NonEcommerceNotice
+            message={nonEcommerceMessage}
+            onScanAnother={onScanAnother}
+          />
+        ) : null}
+
+        {error && !restrictedDomain && !nonEcommerceMessage ? (
           <div className="mt-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/50 dark:text-rose-200">
             {error}
           </div>

@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`.
 
+## [3.2.8] - 2026-05-30
+
+### Added
+- Ecommerce eligibility validation before persisting scans (`ecommerceConfidence` threshold 50)
+- Parked-domain and coming-soon detection with immediate rejection
+- Lightweight rejection log (`domain`, `timestamp`, `reason`, `ecommerceConfidence`) for troubleshooting
+- API `scanStatus: invalid_non_ecommerce_site` response and dedicated homepage notice
+
+### Changed
+- Invalid non-storefront scans are no longer cached, recorded in Recent Audits, audit history, or platform benchmarks
+
 ## [3.2.7] - 2026-06-04
 
 ### Changed

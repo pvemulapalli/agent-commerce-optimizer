@@ -89,6 +89,10 @@ export function getOpenApiDocument() {
             "403": {
               description: "Turnstile verification failed or domain not supported",
             },
+            "422": {
+              description:
+                "Domain failed ecommerce eligibility validation (scanStatus: invalid_non_ecommerce_site)",
+            },
             "429": {
               description: "Rate limit exceeded",
             },

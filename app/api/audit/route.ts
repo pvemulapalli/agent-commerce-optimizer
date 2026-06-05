@@ -1,4 +1,7 @@
 import { enrichAuditResponse } from "@/lib/enrich-audit-response";
+import { createIneligibleEcommerceResponse } from "@/lib/ecommerce-eligibility-api";
+import { EcommerceIneligibleError } from "@/lib/ecommerce-eligibility";
+import { recordEcommerceRejection } from "@/lib/ecommerce-rejection-log";
 import { DomainUnreachableError } from "@/lib/domain-reachability";
 import { runAudit } from "@/lib/run-audit";
 import { validateScanRequest } from "@/lib/scan-request";
@@ -60,6 +63,15 @@ export async function POST(request: Request) {
       ...(scanRecord ? { scanRecord } : {}),
     });
   } catch (error) {
+    if (error instanceof EcommerceIneligibleError) {
+      await recordEcommerceRejection({
+        url: parsed.data.url,
+        reason: error.assessment.reason,
+        ecommerceConfidence: error.assessment.ecommerceConfidence,
+      });
+      return createIneligibleEcommerceResponse(error.assessment);
+    }
+
     if (error instanceof DomainUnreachableError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

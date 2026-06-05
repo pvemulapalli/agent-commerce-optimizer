@@ -1,6 +1,19 @@
 {
   "releases": [
     {
+      "version": "3.2.8",
+      "date": "2026-05-30",
+      "title": "Ecommerce eligibility validation",
+      "summary": "Non-storefront domains are rejected before persistence so Recent Audits, benchmarks, and platform stats reflect verified ecommerce sites only.",
+      "categories": ["API", "UX"],
+      "changes": [
+        "Ecommerce eligibility check with ecommerceConfidence scoring (threshold 50) before any scan is saved",
+        "Parked, coming-soon, and brokered domains rejected immediately",
+        "Invalid scans return scanStatus invalid_non_ecommerce_site with guided messaging",
+        "Only lightweight rejection logs stored for troubleshooting; no scores or findings persisted"
+      ]
+    },
+    {
       "version": "3.2.7",
       "date": "2026-06-04",
       "title": "Homepage hierarchy, platform logos, release notes UX",

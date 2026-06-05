@@ -1,3 +1,6 @@
+import { createIneligibleEcommerceResponse } from "@/lib/ecommerce-eligibility-api";
+import { EcommerceIneligibleError } from "@/lib/ecommerce-eligibility";
+import { recordEcommerceRejection } from "@/lib/ecommerce-rejection-log";
 import { DomainUnreachableError } from "@/lib/domain-reachability";
 import { generateFixAssets } from "@/lib/generate-assets";
 import { runAudit } from "@/lib/run-audit";
@@ -53,6 +56,15 @@ export async function POST(request: Request) {
 
     return NextResponse.json(response);
   } catch (error) {
+    if (error instanceof EcommerceIneligibleError) {
+      await recordEcommerceRejection({
+        url: parsed.data.url,
+        reason: error.assessment.reason,
+        ecommerceConfidence: error.assessment.ecommerceConfidence,
+      });
+      return createIneligibleEcommerceResponse(error.assessment);
+    }
+
     if (error instanceof DomainUnreachableError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
