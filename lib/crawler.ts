@@ -55,6 +55,17 @@ function normalizeInputUrl(input: string): URL {
   return new URL(withProtocol);
 }
 
+function normalizeCrawlHref(url: URL | string): string {
+  const normalized = typeof url === "string" ? new URL(url) : new URL(url.href);
+  normalized.hash = "";
+
+  if (normalized.pathname !== "/" && normalized.pathname.endsWith("/")) {
+    normalized.pathname = normalized.pathname.slice(0, -1);
+  }
+
+  return normalized.href;
+}
+
 function extractSchemaTypes(data: unknown): string[] {
   const types = new Set<string>();
 
@@ -208,10 +219,14 @@ async function fetchPage(
   try {
     const response = await fetchWithTimeout(url);
     const status = response.status;
+    const pageUrl = normalizeCrawlHref(response.url || url);
+    const effectiveOrigin =
+      entryOrigin === "pending" ? new URL(pageUrl).origin : entryOrigin;
+    const effectiveEntryUrl = entryUrl === "pending" ? pageUrl : entryUrl;
 
     if (!response.ok) {
       return {
-        url,
+        url: pageUrl,
         title: null,
         metaDescription: null,
         bodyTextSnippet: null,
@@ -231,7 +246,7 @@ async function fetchPage(
       !contentType.includes("application/xhtml")
     ) {
       return {
-        url,
+        url: pageUrl,
         title: null,
         metaDescription: null,
         bodyTextSnippet: null,
@@ -262,11 +277,16 @@ async function fetchPage(
       .filter(Boolean);
 
     const { blocks, schemaTypes } = parseJsonLdBlocks(rawJsonLd);
-    const discoveredLinks = extractDiscoveredLinks($, url, entryOrigin, entryUrl);
+    const discoveredLinks = extractDiscoveredLinks(
+      $,
+      pageUrl,
+      effectiveOrigin,
+      effectiveEntryUrl,
+    );
     const bodyTextSnippet = extractBodyText($);
 
     return {
-      url,
+      url: pageUrl,
       title,
       metaDescription,
       bodyTextSnippet,
@@ -279,7 +299,7 @@ async function fetchPage(
     };
   } catch (error) {
     return {
-      url,
+      url: normalizeCrawlHref(url),
       title: null,
       metaDescription: null,
       bodyTextSnippet: null,
@@ -347,9 +367,10 @@ async function resolveInitialSitemapUrl(
 }
 
 export async function crawlSite(inputUrl: string): Promise<CrawlData> {
-  const entryUrlObj = normalizeInputUrl(inputUrl);
-  const entryUrl = entryUrlObj.href;
-  const origin = entryUrlObj.origin;
+  const initialUrl = normalizeInputUrl(inputUrl).href;
+  const entryPage = await fetchPage(initialUrl, "pending", "pending");
+  const entryUrl = entryPage.url;
+  const origin = new URL(entryUrl).origin;
 
   const resourcePaths = {
     robotsTxt: `${origin}/robots.txt`,
@@ -360,9 +381,8 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
 
   const limit = pLimit(4);
 
-  const [entryPage, robotsTxt, sitemapXml, llmsTxt, llmsFullTxt] =
+  const [robotsTxt, sitemapXml, llmsTxt, llmsFullTxt] =
     await Promise.all([
-      fetchPage(entryUrl, origin, entryUrl),
       limit(() => fetchResource(resourcePaths.robotsTxt)),
       limit(() => fetchResource(resourcePaths.sitemapXml)),
       limit(() => fetchResource(resourcePaths.llmsTxt)),

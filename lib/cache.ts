@@ -79,6 +79,7 @@ export function normalizeAuditUrl(input: string): string {
 
   const url = new URL(withProtocol);
   url.hash = "";
+  url.hostname = url.hostname.toLowerCase().replace(/^www\./, "");
 
   if (url.pathname !== "/" && url.pathname.endsWith("/")) {
     url.pathname = url.pathname.slice(0, -1);
