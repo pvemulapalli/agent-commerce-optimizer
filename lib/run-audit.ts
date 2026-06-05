@@ -45,6 +45,7 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
         assertEcommerceEligible({
           findings,
           platform: cached.platform,
+          generationPages: generationContext.pages,
         });
       } catch (error) {
         if (error instanceof EcommerceIneligibleError) {

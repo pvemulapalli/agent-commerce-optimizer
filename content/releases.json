@@ -1,6 +1,18 @@
 {
   "releases": [
     {
+      "version": "3.2.9",
+      "date": "2026-05-30",
+      "title": "Ecommerce eligibility false-positive fix",
+      "summary": "Restaurant and brochure sites on Squarespace/Wix no longer pass eligibility from default cart URLs alone.",
+      "categories": ["API"],
+      "changes": [
+        "Require core storefront signals (product pages, schema, catalog, or pricing) for a valid audit",
+        "Cart, checkout, and generic platform points only count when catalog signals exist",
+        "Reject LocalBusiness, Restaurant, and similar schema without storefront catalog evidence"
+      ]
+    },
+    {
       "version": "3.2.8",
       "date": "2026-05-30",
       "title": "Ecommerce eligibility validation",

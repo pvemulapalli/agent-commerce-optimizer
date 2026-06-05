@@ -1,4 +1,12 @@
-import type { CrawlData, Finding, PageData, PlatformAnalysis } from "./types";
+import { normalizeSchemaType } from "./schema-utils";
+import type {
+  CommercePlatform,
+  CrawlData,
+  Finding,
+  GenerationPageSnapshot,
+  PageData,
+  PlatformAnalysis,
+} from "./types";
 
 export const ECOMMERCE_CONFIDENCE_THRESHOLD = 50;
 
@@ -53,6 +61,79 @@ const PARKED_URL_PATTERNS = [
   /parkingcrew/i,
   /namecheap\.com\/parking/i,
 ];
+
+const CORE_STOREFRONT_FINDING_IDS = [
+  "product-pages",
+  "product-schema",
+  "offer-schema",
+  "catalog-pages",
+  "collection-pages",
+  "category-pages",
+  "product-prices",
+] as const;
+
+const DEDICATED_ECOMMERCE_PLATFORMS = new Set<CommercePlatform>([
+  "Shopify",
+  "BigCommerce",
+  "WooCommerce",
+  "Magento",
+  "Salesforce Commerce Cloud",
+  "CommerceTools",
+]);
+
+const NON_ECOMMERCE_BUSINESS_SCHEMA_TYPES = new Set([
+  "localbusiness",
+  "restaurant",
+  "foodestablishment",
+  "cafeorcoffeeshop",
+  "bakery",
+  "barorpub",
+  "fastfoodrestaurant",
+  "governmentorganization",
+  "educationalorganization",
+  "school",
+  "collegeoruniversity",
+  "highschool",
+  "elementaryschool",
+  "middleschool",
+  "preschool",
+  "newsmediaorganization",
+  "blog",
+  "medicalorganization",
+  "physician",
+  "dentist",
+  "hospital",
+  "legalservice",
+  "professionalservice",
+  "realestateagent",
+  "travelagency",
+  "sportsactivitylocation",
+  "gym",
+  "church",
+  "nonprofit",
+  "ngo",
+  "performinggroup",
+  "library",
+  "museum",
+  "park",
+]);
+
+function pagesFromGenerationSnapshots(
+  snapshots: GenerationPageSnapshot[],
+): PageData[] {
+  return snapshots.map((snapshot) => ({
+    url: snapshot.url,
+    title: snapshot.title,
+    metaDescription: snapshot.metaDescription,
+    bodyTextSnippet: null,
+    htmlSnippet: null,
+    jsonLdBlocks: snapshot.jsonLdBlocks,
+    schemaTypes: snapshot.schemaTypes,
+    discoveredLinks: [],
+    internalLinks: [],
+    status: 200,
+  }));
+}
 
 function isFindingDetected(findings: Finding[], id: string): boolean {
   return findings.find((finding) => finding.id === id)?.status === "detected";
@@ -112,6 +193,32 @@ function detectParkedDomain(
   return null;
 }
 
+function hasCoreStorefrontSignal(findings: Finding[]): boolean {
+  return CORE_STOREFRONT_FINDING_IDS.some((id) => isFindingDetected(findings, id));
+}
+
+function pageHasNonEcommerceBusinessSchema(page: PageData): boolean {
+  return page.schemaTypes.some((type) =>
+    NON_ECOMMERCE_BUSINESS_SCHEMA_TYPES.has(normalizeSchemaType(type)),
+  );
+}
+
+function detectNonEcommerceBusinessSite(
+  pages: PageData[],
+  findings: Finding[],
+): { reason: string } | null {
+  if (hasCoreStorefrontSignal(findings)) {
+    return null;
+  }
+
+  const hasBusinessSchema = pages.some((page) => pageHasNonEcommerceBusinessSchema(page));
+  if (hasBusinessSchema) {
+    return { reason: "non_ecommerce_business" };
+  }
+
+  return null;
+}
+
 function hasCrawlableContent(pages: PageData[]): boolean {
   return pages.some(
     (page) =>
@@ -133,6 +240,7 @@ function computeConfidenceScore(
 ): { score: number; signals: string[] } {
   let score = 0;
   const signals: string[] = [];
+  const hasCoreSignals = hasCoreStorefrontSignal(findings);
 
   if (isFindingDetected(findings, "product-pages")) {
     score += 25;
@@ -144,12 +252,12 @@ function computeConfidenceScore(
     signals.push("product_schema");
   }
 
-  if (isFindingDetected(findings, "cart-checkout-pages")) {
+  if (hasCoreSignals && isFindingDetected(findings, "cart-checkout-pages")) {
     score += 20;
     signals.push("cart_detected");
   }
 
-  if (isFindingDetected(findings, "checkout-cart-links")) {
+  if (hasCoreSignals && isFindingDetected(findings, "checkout-cart-links")) {
     score += 20;
     signals.push("checkout_detected");
   }
@@ -159,7 +267,11 @@ function computeConfidenceScore(
     signals.push("offer_schema");
   }
 
-  if (platform.platform !== "Unknown") {
+  const platformCounts =
+    platform.platform !== "Unknown" &&
+    (DEDICATED_ECOMMERCE_PLATFORMS.has(platform.platform) || hasCoreSignals);
+
+  if (platformCounts) {
     score += 10;
     signals.push("platform_identified");
   }
@@ -172,8 +284,12 @@ export function assessEcommerceEligibility(input: {
   platform: PlatformAnalysis;
   crawlData?: CrawlData;
   pages?: PageData[];
+  generationPages?: GenerationPageSnapshot[];
 }): EcommerceEligibilityAssessment {
-  const pages = input.pages ?? input.crawlData?.pages ?? [];
+  const pages =
+    input.pages ??
+    input.crawlData?.pages ??
+    pagesFromGenerationSnapshots(input.generationPages ?? []);
   const pageText = collectPageText(pages);
   const pageUrls = collectPageUrls(pages);
 
@@ -198,8 +314,21 @@ export function assessEcommerceEligibility(input: {
     };
   }
 
+  const nonEcommerceBusiness = detectNonEcommerceBusinessSite(pages, input.findings);
+  if (nonEcommerceBusiness) {
+    return {
+      eligible: false,
+      ecommerceConfidence: 0,
+      reason: nonEcommerceBusiness.reason,
+      message: NON_ECOMMERCE_SCAN_MESSAGE,
+      signals: [],
+    };
+  }
+
   const { score, signals } = computeConfidenceScore(input.findings, input.platform);
-  const eligible = score >= ECOMMERCE_CONFIDENCE_THRESHOLD;
+  const eligible =
+    hasCoreStorefrontSignal(input.findings) &&
+    score >= ECOMMERCE_CONFIDENCE_THRESHOLD;
 
   return {
     eligible,
@@ -215,6 +344,7 @@ export function assertEcommerceEligible(input: {
   platform: PlatformAnalysis;
   crawlData?: CrawlData;
   pages?: PageData[];
+  generationPages?: GenerationPageSnapshot[];
 }): EcommerceEligibilityAssessment {
   const assessment = assessEcommerceEligibility(input);
 

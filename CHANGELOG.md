@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`.
 
+## [3.2.9] - 2026-05-30
+
+### Fixed
+- Ecommerce eligibility no longer passes brochure or local-business sites that only expose Squarespace/Wix cart URLs without product catalog signals
+- Requires core storefront findings (product pages, schema, catalog, or pricing) before cart/checkout/platform points count
+- Rejects LocalBusiness, Restaurant, and similar non-storefront schema when no catalog signals are present
+
 ## [3.2.8] - 2026-05-30
 
 ### Added
