@@ -1,11 +1,17 @@
-export const PLATFORM_NOT_IDENTIFIED_LABEL = "Unknown Platform";
+export const OTHER_PLATFORM_LABEL = "Other Platform";
 
-export const PLATFORM_NOT_IDENTIFIED_TOOLTIP =
-  "We could not confidently identify the commerce platform from storefront assets, page structure, or URL patterns.";
+export const OTHER_PLATFORM_TOOLTIP =
+  "Platform was not confidently identified from storefront signals. This may indicate a custom, proprietary, headless, or heavily modified commerce stack.";
+
+/** @deprecated Use OTHER_PLATFORM_LABEL */
+export const PLATFORM_NOT_IDENTIFIED_LABEL = OTHER_PLATFORM_LABEL;
+
+/** @deprecated Use OTHER_PLATFORM_TOOLTIP */
+export const PLATFORM_NOT_IDENTIFIED_TOOLTIP = OTHER_PLATFORM_TOOLTIP;
 
 export function formatPlatformDisplay(platform: string | null | undefined): string {
   if (!platform || platform === "Unknown") {
-    return PLATFORM_NOT_IDENTIFIED_LABEL;
+    return OTHER_PLATFORM_LABEL;
   }
 
   return platform;

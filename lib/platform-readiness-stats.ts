@@ -1,4 +1,4 @@
-import { formatPlatformDisplay } from "./platform-labels";
+import { OTHER_PLATFORM_LABEL } from "./platform-labels";
 import type { RecentScanRecord } from "./scan-activity";
 
 export const PLATFORM_READINESS_BUCKETS = [
@@ -8,7 +8,9 @@ export const PLATFORM_READINESS_BUCKETS = [
   { key: "WooCommerce", label: "WooCommerce" },
   { key: "Wix", label: "Wix" },
   { key: "Squarespace", label: "Squarespace" },
-  { key: "Unknown", label: "Unknown Platform" },
+  { key: "CommerceTools", label: "commercetools" },
+  { key: "Magento", label: "Adobe Commerce" },
+  { key: "Unknown", label: OTHER_PLATFORM_LABEL },
 ] as const;
 
 const MIN_SAMPLE_SIZE = 3;
@@ -66,7 +68,7 @@ export function computePlatformReadinessStats(
     if (insufficientData) {
       return {
         key,
-        label: key === "Unknown" ? formatPlatformDisplay("Unknown") : label,
+        label,
         scanCount,
         averageScore: null,
         topGap: null,
@@ -81,7 +83,7 @@ export function computePlatformReadinessStats(
 
     return {
       key,
-      label: key === "Unknown" ? formatPlatformDisplay("Unknown") : label,
+      label,
       scanCount,
       averageScore,
       topGap,

@@ -4,7 +4,11 @@ import { AuditConfidenceSection } from "@/components/audit-confidence-section";
 import { AuditMetadataCard } from "@/components/audit-metadata-card";
 import { AuditStickyNav } from "@/components/audit-sticky-nav";
 import { BenchmarkCard } from "@/components/benchmark-card";
-import { PlatformDisplay } from "@/components/platform-display";
+import {
+  OtherPlatformDetectionDetails,
+  PlatformValue,
+} from "@/components/other-platform-detection";
+import { isPlatformNotIdentified } from "@/lib/platform-labels";
 import { FindingCard } from "@/components/finding-card";
 import { GeneratedFixesSection } from "@/components/generated-fixes-section";
 import {
@@ -53,22 +57,22 @@ function PlatformAnalysisSection({
 
       <dl className="mt-6 grid gap-6 sm:grid-cols-2">
         <div>
-          <dt className="text-sm font-medium text-text-secondary">Detected Platform</dt>
+          <dt className="text-sm font-medium text-text-secondary">Platform</dt>
           <dd className="mt-1 text-lg font-semibold text-text-primary">
-            <PlatformDisplay
-              platform={platform.platform}
-              auditUrl={auditUrl}
-              helpVariant="full"
-            />
+            <PlatformValue platform={platform.platform} />
           </dd>
         </div>
         <div>
-          <dt className="text-sm font-medium text-text-secondary">Detection Confidence</dt>
+          <dt className="text-sm font-medium text-text-secondary">Confidence</dt>
           <dd className="mt-2">
             <ConfidenceBadge confidence={platform.confidence} />
           </dd>
         </div>
       </dl>
+
+      {isPlatformNotIdentified(platform.platform) ? (
+        <OtherPlatformDetectionDetails auditUrl={auditUrl} />
+      ) : null}
 
       <div className="mt-6">
         <h3 className="text-sm font-medium text-text-secondary">Evidence</h3>
@@ -179,7 +183,7 @@ export function AuditResultsSection({
         needsReviewCount={needsReviewCount}
       />
 
-      <AuditMetadataCard metadata={result.auditMetadata} auditUrl={result.url} />
+      <AuditMetadataCard metadata={result.auditMetadata} />
       <AuditConfidenceSection confidence={result.auditConfidence} />
       <BenchmarkCard benchmark={result.benchmark} />
 

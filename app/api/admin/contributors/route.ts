@@ -13,6 +13,10 @@ export const runtime = "nodejs";
 const contributorSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   linkedinUrl: z.string().trim().optional().default(""),
+  companyName: z.string().trim().optional(),
+  companyUrl: z.string().trim().optional(),
+  note: z.string().trim().optional(),
+  active: z.boolean().optional(),
 });
 
 const saveSchema = z.object({
@@ -61,12 +65,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const contributors: ContributorEntry[] = parsed.data.contributors.map(
-      (entry) => ({
-        name: entry.name,
-        linkedinUrl: entry.linkedinUrl,
-      }),
-    );
+    const contributors: ContributorEntry[] = parsed.data.contributors.map((entry) => ({
+      name: entry.name,
+      linkedinUrl: entry.linkedinUrl,
+      companyName: entry.companyName,
+      companyUrl: entry.companyUrl,
+      note: entry.note,
+      active: entry.active,
+    }));
 
     const saved = await saveContributorsContent({
       intro: parsed.data.intro ?? "",

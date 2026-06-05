@@ -5,6 +5,10 @@ const REDIS_CONTRIBUTORS_KEY = "aco:admin:contributors";
 export interface ContributorEntry {
   name: string;
   linkedinUrl: string;
+  companyName?: string;
+  companyUrl?: string;
+  note?: string;
+  active?: boolean;
 }
 
 export interface ContributorsContent {
@@ -13,7 +17,7 @@ export interface ContributorsContent {
 }
 
 export const DEFAULT_CONTRIBUTORS_INTRO =
-  "The following individuals provided feedback, testing, and ideas that helped improve the project.";
+  "Community contributors who provided feedback, testing, and ideas that helped improve Commerce Optimizer.";
 
 export const DEFAULT_CONTRIBUTORS: ContributorsContent = {
   intro: DEFAULT_CONTRIBUTORS_INTRO,
@@ -21,6 +25,17 @@ export const DEFAULT_CONTRIBUTORS: ContributorsContent = {
 };
 
 let memoryContributors: ContributorsContent = DEFAULT_CONTRIBUTORS;
+
+function parseActive(value: unknown): boolean {
+  if (value === false || value === 0) {
+    return false;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return !["false", "0", "no", "inactive"].includes(normalized);
+  }
+  return true;
+}
 
 function normalizeContributor(entry: unknown): ContributorEntry | null {
   if (!entry || typeof entry !== "object") {
@@ -31,12 +46,24 @@ function normalizeContributor(entry: unknown): ContributorEntry | null {
   const name = typeof record.name === "string" ? record.name.trim() : "";
   const linkedinUrl =
     typeof record.linkedinUrl === "string" ? record.linkedinUrl.trim() : "";
+  const companyName =
+    typeof record.companyName === "string" ? record.companyName.trim() : undefined;
+  const companyUrl =
+    typeof record.companyUrl === "string" ? record.companyUrl.trim() : undefined;
+  const note = typeof record.note === "string" ? record.note.trim() : undefined;
 
   if (!name) {
     return null;
   }
 
-  return { name, linkedinUrl };
+  return {
+    name,
+    linkedinUrl,
+    companyName: companyName || undefined,
+    companyUrl: companyUrl || undefined,
+    note: note || undefined,
+    active: parseActive(record.active),
+  };
 }
 
 function parseContributorsContent(raw: unknown): ContributorsContent | null {
@@ -67,6 +94,10 @@ function parseContributorsContent(raw: unknown): ContributorsContent | null {
     : [];
 
   return { intro, contributors };
+}
+
+export function getActiveContributors(content: ContributorsContent): ContributorEntry[] {
+  return content.contributors.filter((contributor) => contributor.active !== false);
 }
 
 export async function getContributorsContent(): Promise<ContributorsContent> {

@@ -8,6 +8,7 @@ const FOOTER_LINKS = [
   { href: "/docs", label: "API Docs" },
   { href: "/contact", label: "Contact" },
   { href: "/contributors", label: "Contributors" },
+  { href: "/release-notes", label: "Release Notes" },
 ];
 
 const ATTRIBUTION_LINKS = [

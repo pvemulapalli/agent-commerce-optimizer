@@ -1,3 +1,4 @@
+import { PlatformIcon } from "@/components/platform-icons";
 import type { PlatformReadinessStat } from "@/lib/platform-readiness-stats";
 
 export function PlatformReadinessCards({ stats }: { stats: PlatformReadinessStat[] }) {
@@ -13,13 +14,18 @@ export function PlatformReadinessCards({ stats }: { stats: PlatformReadinessStat
         Aggregated from recent audits on this deployment — not industry benchmarks.
       </p>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
         {stats.map((stat) => (
           <article
             key={stat.key}
-            className="flex min-h-[140px] flex-col rounded-xl border border-card-border bg-card-muted p-4"
+            className="flex min-h-[148px] flex-col rounded-xl border border-card-border bg-card-muted p-4"
           >
-            <h3 className="text-sm font-semibold text-text-primary">{stat.label}</h3>
+            <div className="flex items-start gap-3">
+              <PlatformIcon platformKey={stat.key} />
+              <h3 className="min-w-0 pt-1 text-sm font-semibold leading-snug text-text-primary">
+                {stat.label}
+              </h3>
+            </div>
             {stat.insufficientData ? (
               <p className="mt-3 text-sm text-text-secondary">Need more scans</p>
             ) : (

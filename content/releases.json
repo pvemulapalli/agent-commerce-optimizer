@@ -1,0 +1,195 @@
+{
+  "releases": [
+    {
+      "version": "3.2.6",
+      "date": "2026-05-30",
+      "title": "UI clarity, platform display, release notes, contributors",
+      "summary": "Simplified Other Platform display, platform readiness icons, grade badge fixes, automated release notes, and richer contributor profiles.",
+      "categories": ["UX", "Admin"],
+      "changes": [
+        "Renamed Unknown Platform to Other Platform with compact tooltip-only display on cards and tables",
+        "BuiltWith technology profile link only in Platform Detection on audit reports",
+        "Added platform icons and commercetools / Adobe Commerce to readiness-by-platform cards",
+        "Fixed grade badges to stay on one line with grade-aware colors",
+        "Added CHANGELOG.md, /release-notes page, and npm run release:add script",
+        "Contributors support optional company, URL, testimonial, and active flag"
+      ]
+    },
+    {
+      "version": "3.2.5",
+      "date": "2026-05-30",
+      "title": "User feedback: platform help, mobile CTA, differentiation",
+      "summary": "Addressed feedback on platform confidence, mobile homepage CTA, API docs version, free-tier messaging, and homepage differentiation.",
+      "categories": ["UX", "API"],
+      "changes": [
+        "Unknown Platform explanation and BuiltWith link on audit surfaces",
+        "Low-score scope note for popular brands",
+        "Mobile-first homepage hero with Run Free Audit CTA",
+        "AI Commerce Readiness by Platform section from scan data",
+        "Homepage copy reduction and Not Just Visibility differentiator",
+        "About page rewrite and friendly rate-limit messaging",
+        "Dynamic API docs and health version examples"
+      ]
+    },
+    {
+      "version": "3.2.4",
+      "date": "2026-05-30",
+      "title": "Other Platform label consistency",
+      "summary": "Unknown Platform shown as plain muted text instead of a badge, matching known platform typography.",
+      "categories": ["UX"],
+      "changes": [
+        "Other Platform (formerly Unknown) uses plain text with info tooltip",
+        "Removed pill styling from unrecognized platform values",
+        "Consistent platform display on recent audits and metadata"
+      ]
+    },
+    {
+      "version": "3.2.3",
+      "date": "2026-05-30",
+      "title": "UI polish and visual hierarchy",
+      "summary": "Presentation-only release improving readability, badges, dark mode, and score card layout.",
+      "categories": ["UX"],
+      "changes": [
+        "Balanced 60/40 overall score card layout",
+        "Confidence badges and uppercase finding titles",
+        "Missing Findings section tinting and dark-mode finding cards",
+        "Unknown Platform readable badge treatment (later refined in 3.2.4)"
+      ]
+    },
+    {
+      "version": "3.2.2",
+      "date": "2026-05-30",
+      "title": "Theme tokens and homepage positioning",
+      "summary": "Semantic theme tokens, dark mode card consistency, and AI Commerce Optimization Platform positioning.",
+      "categories": ["UX"],
+      "changes": [
+        "Semantic CSS theme tokens for cards and text",
+        "Banned domain scanning notice",
+        "Homepage differentiator and platform positioning copy"
+      ]
+    },
+    {
+      "version": "3.2.1",
+      "date": "2026-05-30",
+      "title": "Crash fix and local timezone",
+      "summary": "Fixed audit metadata timestamp formatting and timezone display.",
+      "categories": ["Fixes"],
+      "changes": [
+        "Resolved Invalid option error in audit metadata timestamps",
+        "Audit times shown in the user's local timezone"
+      ]
+    },
+    {
+      "version": "3.2.0",
+      "date": "2026-05-30",
+      "title": "Historical data and audit credibility",
+      "summary": "Foundation for historical audits, benchmarking, domain normalization, and enriched API responses.",
+      "categories": ["API", "Scoring"],
+      "changes": [
+        "Audit history storage and crawl hash",
+        "Benchmarking and audit confidence metadata",
+        "Domain normalization and /api/index",
+        "Dynamic API docs origin"
+      ]
+    },
+    {
+      "version": "3.1.4",
+      "date": "2026-05-30",
+      "title": "Dynamic API origin",
+      "summary": "API documentation examples use deployment origin automatically.",
+      "categories": ["API"],
+      "changes": [
+        "Dynamic base URL in API docs examples"
+      ]
+    },
+    {
+      "version": "3.1.2",
+      "date": "2026-05-30",
+      "title": "Scroll offset and mobile polish",
+      "summary": "Audit navigation scroll offset, mobile finding badges, and dark mode headers.",
+      "categories": ["UX"],
+      "changes": [
+        "Scroll offset helper for audit section anchors",
+        "Compact grade badge and mobile recent audit cards",
+        "Dark mode page headers"
+      ]
+    },
+    {
+      "version": "3.1.1",
+      "date": "2026-05-30",
+      "title": "Desktop and mobile UI fixes",
+      "summary": "Multiple UI/UX fixes across desktop and mobile layouts.",
+      "categories": ["UX", "Fixes"],
+      "changes": [
+        "Platform label and tooltip improvements",
+        "Recent audit card layout consistency",
+        "Mobile navigation and theme toggle",
+        "Contributors page and admin API"
+      ]
+    },
+    {
+      "version": "3.1.0",
+      "date": "2026-05-30",
+      "title": "Invalid domain handling",
+      "summary": "Improved validation and messaging for invalid scan URLs.",
+      "categories": ["Fixes"],
+      "changes": [
+        "Clearer invalid domain error handling"
+      ]
+    },
+    {
+      "version": "3.0.4",
+      "date": "2026-05-30",
+      "title": "Dimension score UX",
+      "summary": "Improved dimension score presentation on the readiness dashboard.",
+      "categories": ["UX"],
+      "changes": [
+        "Dimension score card UX improvements"
+      ]
+    },
+    {
+      "version": "3.0.3",
+      "date": "2026-05-30",
+      "title": "Scroll to overview",
+      "summary": "After running an audit, the page scrolls to the overview section.",
+      "categories": ["UX"],
+      "changes": [
+        "Auto-scroll to overview after audit completes"
+      ]
+    },
+    {
+      "version": "3.0.2",
+      "date": "2026-05-30",
+      "title": "Bug fixes and version display",
+      "summary": "Various bug fixes and application version labeling.",
+      "categories": ["Fixes"],
+      "changes": [
+        "Version label in header and footer",
+        "Miscellaneous audit and UI bug fixes"
+      ]
+    },
+    {
+      "version": "3.0.1",
+      "date": "2026-05-30",
+      "title": "Scoring and activity feed fixes",
+      "summary": "Removed artificial scoring, fixed activity feed, restored project focus.",
+      "categories": ["Scoring", "Fixes"],
+      "changes": [
+        "Evidence-backed scoring without artificial inflation",
+        "Activity feed reliability improvements"
+      ]
+    },
+    {
+      "version": "3.0.0",
+      "date": "2026-05-30",
+      "title": "AI Commerce Readiness scoring",
+      "summary": "Major release introducing readiness scoring, executive dashboard, and visual refresh.",
+      "categories": ["Scoring", "UX"],
+      "changes": [
+        "AI Commerce Readiness score and grade",
+        "Executive summary and recommendations dashboard",
+        "Merchant-friendly UX and visual refresh"
+      ]
+    }
+  ]
+}

@@ -152,7 +152,14 @@ export default function AdminClient() {
       );
       const data = (await response.json()) as {
         intro?: string;
-        contributors?: { name: string; linkedinUrl: string }[];
+        contributors?: {
+          name: string;
+          linkedinUrl: string;
+          companyName?: string;
+          companyUrl?: string;
+          note?: string;
+          active?: boolean;
+        }[];
         error?: string;
       };
 
@@ -163,7 +170,17 @@ export default function AdminClient() {
       setContributorsIntro(data.intro ?? "");
       setContributorsText(
         (data.contributors ?? [])
-          .map((entry) => `${entry.name} | ${entry.linkedinUrl}`)
+          .map(
+            (entry) =>
+              [
+                entry.name,
+                entry.linkedinUrl ?? "",
+                entry.companyName ?? "",
+                entry.companyUrl ?? "",
+                entry.note ?? "",
+                entry.active === false ? "false" : "true",
+              ].join(" | "),
+          )
           .join("\n"),
       );
     } catch (loadError) {
@@ -390,8 +407,25 @@ export default function AdminClient() {
       .map((line) => line.trim())
       .filter(Boolean)
       .map((line) => {
-        const [name, linkedinUrl = ""] = line.split("|").map((part) => part.trim());
-        return { name, linkedinUrl };
+        const [
+          name,
+          linkedinUrl = "",
+          companyName = "",
+          companyUrl = "",
+          note = "",
+          activeRaw = "true",
+        ] = line.split("|").map((part) => part.trim());
+        const active = !["false", "0", "no", "inactive"].includes(
+          activeRaw.toLowerCase(),
+        );
+        return {
+          name,
+          linkedinUrl,
+          companyName: companyName || undefined,
+          companyUrl: companyUrl || undefined,
+          note: note || undefined,
+          active,
+        };
       })
       .filter((entry) => entry.name);
 
@@ -408,7 +442,14 @@ export default function AdminClient() {
       const data = (await response.json()) as {
         status?: string;
         intro?: string;
-        contributors?: { name: string; linkedinUrl: string }[];
+        contributors?: {
+          name: string;
+          linkedinUrl: string;
+          companyName?: string;
+          companyUrl?: string;
+          note?: string;
+          active?: boolean;
+        }[];
         error?: string;
       };
 
@@ -419,7 +460,17 @@ export default function AdminClient() {
       setContributorsIntro(data.intro ?? contributorsIntro);
       setContributorsText(
         (data.contributors ?? contributors)
-          .map((entry) => `${entry.name} | ${entry.linkedinUrl}`)
+          .map(
+            (entry) =>
+              [
+                entry.name,
+                entry.linkedinUrl ?? "",
+                entry.companyName ?? "",
+                entry.companyUrl ?? "",
+                entry.note ?? "",
+                entry.active === false ? "false" : "true",
+              ].join(" | "),
+          )
           .join("\n"),
       );
       setStatus({
@@ -575,12 +626,15 @@ export default function AdminClient() {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold text-slate-900">Contributors Page</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Community Contributors</h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Edit the public Special Thanks page at{" "}
+          Edit the public page at{" "}
           <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">/contributors</code>.
-          Use one contributor per line in the format{" "}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">Name | LinkedIn URL</code>.
+          One line per contributor:{" "}
+          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+            Name | LinkedIn | Company | Company URL | Note | active
+          </code>
+          . Set active to <code className="text-xs">false</code> to hide on the public page.
         </p>
         <label className="mt-4 block text-sm font-medium text-slate-700">
           Intro text
@@ -597,7 +651,9 @@ export default function AdminClient() {
             value={contributorsText}
             onChange={(event) => setContributorsText(event.target.value)}
             rows={8}
-            placeholder={"Jane Doe | https://www.linkedin.com/in/jane\nJohn Smith | https://www.linkedin.com/in/john"}
+            placeholder={
+              "Jane Doe | https://www.linkedin.com/in/jane | Acme Corp | https://acme.com | Helped test audits | true"
+            }
             className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900"
           />
         </label>

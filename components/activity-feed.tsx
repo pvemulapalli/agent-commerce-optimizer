@@ -1,6 +1,6 @@
 "use client";
 
-import { PlatformDisplay } from "@/components/platform-display";
+import { PlatformLabel } from "@/components/platform-label";
 import type { RecentScanRecord } from "@/lib/scan-activity";
 import { useEffect, useRef, useState } from "react";
 
@@ -83,7 +83,7 @@ export function ActivityFeed({
           Grade {current.grade || "—"}
         </span>
         <span className="text-sm">
-          <PlatformDisplay platform={current.platform} auditUrl={current.url} helpVariant="compact" />
+          <PlatformLabel platform={current.platform} />
         </span>
       </div>
     </aside>

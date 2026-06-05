@@ -1,4 +1,4 @@
-import { PlatformDisplay } from "@/components/platform-display";
+import { PlatformLabel } from "@/components/platform-label";
 import type { AuditReportMetadata } from "@/lib/audit-metadata";
 
 function formatLocalTimestamp(iso: string): string {
@@ -27,13 +27,7 @@ function formatDuration(seconds: number | null): string {
   return `${seconds.toFixed(1)} sec`;
 }
 
-export function AuditMetadataCard({
-  metadata,
-  auditUrl,
-}: {
-  metadata: AuditReportMetadata;
-  auditUrl: string;
-}) {
+export function AuditMetadataCard({ metadata }: { metadata: AuditReportMetadata }) {
   const items = [
     { label: "Last Crawled", value: formatLocalTimestamp(metadata.lastCrawled) },
     { label: "Pages Crawled", value: String(metadata.pagesCrawled) },
@@ -69,11 +63,7 @@ export function AuditMetadataCard({
             Platform
           </dt>
           <dd className="mt-2 text-sm font-medium text-text-primary">
-            <PlatformDisplay
-              platform={metadata.platform}
-              auditUrl={auditUrl}
-              helpVariant="compact"
-            />
+            <PlatformLabel platform={metadata.platform} />
           </dd>
         </div>
       </dl>

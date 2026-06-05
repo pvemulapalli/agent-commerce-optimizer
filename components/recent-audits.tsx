@@ -1,7 +1,7 @@
 "use client";
 
 import { GradeBadge } from "@/components/grade-badge";
-import { PlatformDisplay } from "@/components/platform-display";
+import { PlatformLabel } from "@/components/platform-label";
 import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import type { PlatformReadinessStat } from "@/lib/platform-readiness-stats";
 import type { RecentAuditSortDirection, RecentAuditSortField } from "@/lib/recent-audits-query";
@@ -42,7 +42,7 @@ function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
             Platform
           </dt>
           <dd className="mt-1 font-medium text-slate-800 dark:text-slate-200">
-            <PlatformDisplay platform={entry.platform} auditUrl={entry.url} helpVariant="compact" />
+            <PlatformLabel platform={entry.platform} />
           </dd>
         </div>
         <div className="col-span-2">
@@ -147,7 +147,7 @@ export function RecentAuditsList({
                     {entry.readinessScore ?? "—"}
                   </td>
                   <td className="px-4 py-4 text-slate-800 dark:text-slate-200">
-                    <PlatformDisplay platform={entry.platform} auditUrl={entry.url} helpVariant="compact" />
+                    <PlatformLabel platform={entry.platform} />
                   </td>
                   <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.topGap || "—"}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-slate-700 dark:text-slate-300">
@@ -206,13 +206,9 @@ function RecentAuditCard({
         </div>
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Platform</p>
-          <p className="mt-1 font-medium text-slate-800 dark:text-slate-200">
-            <PlatformDisplay
-              platform={entry.platform}
-              auditUrl={entry.url}
-              helpVariant="compact"
-            />
-          </p>
+          <div className="mt-1 font-medium text-slate-800 dark:text-slate-200">
+            <PlatformLabel platform={entry.platform} />
+          </div>
         </div>
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Top Gap</p>
@@ -276,12 +272,10 @@ export function RecentAuditsPreview({
             <div className="mt-2 min-w-0">
               <p className="font-medium text-slate-900 dark:text-slate-100">{entries[0].merchant}</p>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                Grade {entries[0].grade} · Score {entries[0].readinessScore} ·{" "}
-                <PlatformDisplay
-                  platform={entries[0].platform}
-                  auditUrl={entries[0].url}
-                  helpVariant="compact"
-                />
+                Grade {entries[0].grade} · Score {entries[0].readinessScore}
+              </p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                <PlatformLabel platform={entries[0].platform} />
               </p>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Top gap: {entries[0].topGap} · {formatTimestamp(entries[0].scannedAt)}
