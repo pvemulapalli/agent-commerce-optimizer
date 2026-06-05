@@ -118,6 +118,17 @@ function findDiscoveredLinks(
   return matches;
 }
 
+function isStrongProductPageLink(link: LinkMatch): boolean {
+  const text = `${link.text} ${link.context ?? ""}`.toLowerCase();
+  const href = link.href.toLowerCase();
+
+  return (
+    /view product|add to cart|buy now|shop now|add to bag/.test(text) ||
+    /\/products?\//i.test(href) ||
+    /-p\d+/i.test(href)
+  );
+}
+
 function formatLinkEvidence(matches: LinkMatch[]): string {
   return matches
     .slice(0, 3)
@@ -292,6 +303,9 @@ function checkPageDiscovery(
   urlPatterns: RegExp[],
   contentPatterns: RegExp[],
   linkPatterns: RegExp[],
+  options?: {
+    isStrongLink?: (link: LinkMatch) => boolean;
+  },
 ): Finding {
   const crawlable = getCrawlablePages(data.pages);
 
@@ -333,18 +347,25 @@ function checkPageDiscovery(
   const links = findDiscoveredLinks(data.pages, linkPatterns);
   if (links.length > 0) {
     const best = links[0];
-    const confidence: ConfidenceLevel =
-      best.scope === "related-domain" ? "medium" : "low";
+    const strongLinks = options?.isStrongLink
+      ? links.filter((link) => options.isStrongLink!(link))
+      : [];
+    const hasStrongSameOriginLink = strongLinks.some((link) => link.scope === "same-origin");
 
-    if (confidence === "medium") {
+    if (hasStrongSameOriginLink || best.scope === "related-domain") {
+      const promoted = hasStrongSameOriginLink ? strongLinks[0] : best;
+      const promotedLinks = hasStrongSameOriginLink ? strongLinks : links;
+
       return detected(
         id,
         label,
-        confidence,
-        `Support or policy link discovered on merchant site: ${formatLinkEvidence(links.slice(0, 3))}`,
-        uniqueUrls(links.map((link) => link.href)),
-        best.href,
-        best.discoveredFromUrl,
+        "medium",
+        hasStrongSameOriginLink
+          ? `Product link discovered on merchant site: ${formatLinkEvidence(promotedLinks.slice(0, 3))}`
+          : `Related domain link discovered on merchant site: ${formatLinkEvidence(promotedLinks.slice(0, 3))}`,
+        uniqueUrls(promotedLinks.map((link) => link.href)),
+        promoted.href,
+        promoted.discoveredFromUrl,
       );
     }
 
@@ -444,6 +465,8 @@ function checkSupportSignal(
 function checkProductPages(data: CrawlData, platform: PlatformAnalysis): Finding {
   const shopifyPatterns =
     platform.platform === "Shopify" ? [/\/products\/[^/?#]+/i] : [];
+  const bigCommercePatterns =
+    platform.platform === "BigCommerce" ? [/-p\d+/i] : [];
 
   return checkPageDiscovery(
     "product-pages",
@@ -451,6 +474,7 @@ function checkProductPages(data: CrawlData, platform: PlatformAnalysis): Finding
     data,
     [
       ...shopifyPatterns,
+      ...bigCommercePatterns,
       /\/products?\//i,
       /\/product\//i,
       /\/p\/[^/?#]+/i,
@@ -458,7 +482,8 @@ function checkProductPages(data: CrawlData, platform: PlatformAnalysis): Finding
       /\/shop\/[^/?#]+/i,
     ],
     [/product detail/i, /\bproduct\b/i],
-    [/product/i, /\/products?\//i],
+    [/product/i, /\/products?\//i, /-p\d+/i],
+    { isStrongLink: isStrongProductPageLink },
   );
 }
 
@@ -581,6 +606,27 @@ function detectProductPrices(data: CrawlData): ProductPriceDetection {
       /\$[\d,.]+|\bUSD\b|\bEUR\b|\bGBP\b|£[\d,.]+|€[\d,.]+/.test(haystack)
     ) {
       pagesWithPriceMeta.push(page);
+    }
+  }
+
+  if (pagesWithPriceMeta.length === 0) {
+    for (const page of crawlable) {
+      const pricedProductLinks = page.discoveredLinks.filter(
+        (link) =>
+          link.scope === "same-origin" &&
+          isStrongProductPageLink({
+            href: link.href,
+            text: link.text,
+            discoveredFromUrl: link.discoveredFromUrl,
+            scope: link.scope,
+            context: link.context,
+          }) &&
+          /\$[\d,.]+|\bUSD\b|\bEUR\b|\bGBP\b|£[\d,.]+|€[\d,.]+/.test(link.text),
+      );
+
+      if (pricedProductLinks.length > 0) {
+        pagesWithPriceMeta.push(page);
+      }
     }
   }
 
