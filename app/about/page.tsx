@@ -8,6 +8,7 @@ import {
   LOW_SCORE_SCOPE_NOTE_SECONDARY,
 } from "@/lib/scan-messaging";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -40,6 +41,40 @@ export default function AboutPage() {
         title="Commerce Optimizer"
         description="A personal project to understand whether storefronts expose the signals AI systems need for commerce discovery."
       />
+
+      <section className="mt-10 rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+          <Image
+            src="/about/creator-headshot.jpg"
+            alt="Praveen Vemulapalli"
+            width={240}
+            height={240}
+            className="h-28 w-28 shrink-0 rounded-full border border-card-border bg-card-muted object-cover"
+            priority
+          />
+          <div className="min-w-0">
+            <h2 className="text-xl font-semibold text-text-primary">About the Creator</h2>
+            <p className="mt-1 text-sm font-medium text-text-secondary">Praveen Vemulapalli</p>
+            <div className="mt-4 space-y-3 text-sm leading-7 text-text-secondary">
+              <p>
+                I have spent years working on payments infrastructure, ecommerce platforms, and
+                merchant acceptance — the systems that move money, onboard sellers, and connect
+                storefronts to how customers actually pay and buy.
+              </p>
+              <p>
+                Commerce Optimizer grew out of a practical question in the AI commerce shift: when
+                assistants and agents try to discover products, policies, and merchant facts from a
+                public site, what can they actually crawl and understand?
+              </p>
+              <p>
+                This project applies that merchant and platform background to a focused storefront
+                audit — evidence from live crawls, not visibility hype — so operators can see what
+                is machine-readable today and what to improve next.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="mt-8 rounded-xl border border-card-border bg-card-muted px-5 py-4 text-sm leading-7 text-text-secondary">
         <p className="font-medium text-text-primary">{FREE_SCAN_PRIMARY}</p>

@@ -1,4 +1,4 @@
-export const OTHER_PLATFORM_LABEL = "Other Platform";
+export const OTHER_PLATFORM_LABEL = "Other Platforms";
 
 export const OTHER_PLATFORM_TOOLTIP =
   "Platform was not confidently identified from storefront signals. This may indicate a custom, proprietary, headless, or heavily modified commerce stack.";

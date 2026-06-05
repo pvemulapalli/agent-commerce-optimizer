@@ -1,7 +1,24 @@
-import { PlatformIcon } from "@/components/platform-icons";
+import { PlatformWordmark } from "@/components/platform-logos";
 import type { PlatformReadinessStat } from "@/lib/platform-readiness-stats";
 
+const FEATURED_PLATFORM_KEYS = new Set([
+  "Shopify",
+  "BigCommerce",
+  "Salesforce Commerce Cloud",
+  "WooCommerce",
+  "Wix",
+  "Squarespace",
+  "CommerceTools",
+  "Magento",
+]);
+
 export function PlatformReadinessCards({ stats }: { stats: PlatformReadinessStat[] }) {
+  const featured = stats.filter((stat) => FEATURED_PLATFORM_KEYS.has(stat.key));
+
+  if (featured.length === 0) {
+    return null;
+  }
+
   return (
     <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
       <p className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary">
@@ -14,53 +31,39 @@ export function PlatformReadinessCards({ stats }: { stats: PlatformReadinessStat
         Aggregated from recent audits on this deployment — not industry benchmarks.
       </p>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-        {stats.map((stat) => (
+      <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        {featured.map((stat) => (
           <article
             key={stat.key}
-            className="flex min-h-[148px] flex-col rounded-xl border border-card-border bg-card-muted p-4"
+            className="rounded-xl border border-card-border bg-card-muted px-3 py-2.5"
           >
-            <div className="flex items-start gap-3">
-              <PlatformIcon platformKey={stat.key} />
-              <h3 className="min-w-0 pt-1 text-sm font-semibold leading-snug text-text-primary">
-                {stat.label}
-              </h3>
+            <div className="mb-2 min-h-[1.25rem]">
+              <PlatformWordmark platformKey={stat.key} />
             </div>
             {stat.insufficientData ? (
-              <p className="mt-3 text-sm text-text-secondary">Need more scans</p>
+              <p className="text-xs text-text-secondary">Need more scans</p>
             ) : (
-              <dl className="mt-3 space-y-2 text-sm">
+              <dl className="grid grid-cols-3 gap-2 text-xs">
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-text-secondary">Scanned</dt>
+                  <dt className="uppercase tracking-wide text-text-secondary">Scans</dt>
                   <dd className="mt-0.5 font-semibold tabular-nums text-text-primary">
                     {stat.scanCount}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-text-secondary">
-                    Avg score
-                  </dt>
+                  <dt className="uppercase tracking-wide text-text-secondary">Avg</dt>
                   <dd className="mt-0.5 font-semibold tabular-nums text-text-primary">
                     {stat.averageScore}
                   </dd>
                 </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-text-secondary">Top gap</dt>
-                  <dd className="mt-0.5 line-clamp-2 font-medium text-text-primary">
+                <div className="min-w-0">
+                  <dt className="uppercase tracking-wide text-text-secondary">Top gap</dt>
+                  <dd className="mt-0.5 line-clamp-1 font-medium text-text-primary">
                     {stat.topGap ?? "—"}
                   </dd>
                 </div>
               </dl>
             )}
-            {!stat.insufficientData ? (
-              <p className="mt-auto pt-3 text-xs text-text-secondary">
-                {stat.scanCount} domain{stat.scanCount === 1 ? "" : "s"}
-              </p>
-            ) : stat.scanCount > 0 ? (
-              <p className="mt-auto pt-3 text-xs text-text-secondary">
-                {stat.scanCount} scan{stat.scanCount === 1 ? "" : "s"} so far
-              </p>
-            ) : null}
           </article>
         ))}
       </div>

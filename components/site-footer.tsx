@@ -6,9 +6,9 @@ const FOOTER_LINKS = [
   { href: "/", label: "Home" },
   { href: "/recent", label: "Recent Audits" },
   { href: "/docs", label: "API Docs" },
-  { href: "/contact", label: "Contact" },
-  { href: "/contributors", label: "Contributors" },
   { href: "/release-notes", label: "Release Notes" },
+  { href: "/contributors", label: "Contributors" },
+  { href: "/contact", label: "Contact" },
 ];
 
 const ATTRIBUTION_LINKS = [

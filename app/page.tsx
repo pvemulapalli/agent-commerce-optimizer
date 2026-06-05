@@ -4,6 +4,7 @@ import { ActivityFeed } from "@/components/activity-feed";
 import { AuditHero } from "@/components/audit-hero";
 import { AuditResultsSection } from "@/components/audit-results";
 import { MarketingSections } from "@/components/marketing-sections";
+import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import { RecentAuditsPreview } from "@/components/recent-audits";
 import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
@@ -200,13 +201,21 @@ export default function Home() {
           }}
         />
 
-        <RecentAuditsPreview
-          entries={activity.recentScans}
-          totalCount={activity.totalScans}
-          loading={activityLoading}
-          platformStats={activity.platformStats}
-          onSelectEntry={(entry) => void loadRecentAudit(entry)}
-        />
+        {!result && <MarketingSections />}
+
+        {!result && activity.platformStats.length > 0 ? (
+          <PlatformReadinessCards stats={activity.platformStats} />
+        ) : null}
+
+        {!result ? (
+          <RecentAuditsPreview
+            entries={activity.recentScans}
+            totalCount={activity.totalScans}
+            loading={activityLoading}
+            variant="homepage"
+            onSelectEntry={(entry) => void loadRecentAudit(entry)}
+          />
+        ) : null}
 
         {result && (
           <AuditResultsSection
@@ -217,8 +226,6 @@ export default function Home() {
             onRegenerateFixes={() => generateFixes(result.url, turnstileToken)}
           />
         )}
-
-        {!result && <MarketingSections />}
       </div>
 
       {activityFeedEnabled && (

@@ -1,8 +1,23 @@
 {
   "releases": [
     {
+      "version": "3.2.7",
+      "date": "2026-06-04",
+      "title": "Homepage hierarchy, platform logos, release notes UX",
+      "summary": "Reordered homepage for faster value comprehension, compact platform and recent-audit cards, grouped release notes, and About creator section.",
+      "categories": ["UX"],
+      "changes": [
+        "Homepage order: hero, differentiator, audit checks, assets, platform stats, recent audits",
+        "Platform readiness cards use local wordmarks and ~40% shorter layout",
+        "Renamed Other Platform to Other Platforms; homepage recent cards stay compact",
+        "Release notes grouped in v3/v2/v1 accordions with pre-3.0 historical backfill",
+        "About page creator section with local headshot support",
+        "Release Notes moved from header to footer navigation"
+      ]
+    },
+    {
       "version": "3.2.6",
-      "date": "2026-05-30",
+      "date": "2026-06-04",
       "title": "UI clarity, platform display, release notes, contributors",
       "summary": "Simplified Other Platform display, platform readiness icons, grade badge fixes, automated release notes, and richer contributor profiles.",
       "categories": ["UX", "Admin"],
@@ -17,7 +32,7 @@
     },
     {
       "version": "3.2.5",
-      "date": "2026-05-30",
+      "date": "2026-06-04",
       "title": "User feedback: platform help, mobile CTA, differentiation",
       "summary": "Addressed feedback on platform confidence, mobile homepage CTA, API docs version, free-tier messaging, and homepage differentiation.",
       "categories": ["UX", "API"],
@@ -33,7 +48,7 @@
     },
     {
       "version": "3.2.4",
-      "date": "2026-05-30",
+      "date": "2026-06-04",
       "title": "Other Platform label consistency",
       "summary": "Unknown Platform shown as plain muted text instead of a badge, matching known platform typography.",
       "categories": ["UX"],
@@ -45,7 +60,7 @@
     },
     {
       "version": "3.2.3",
-      "date": "2026-05-30",
+      "date": "2026-06-04",
       "title": "UI polish and visual hierarchy",
       "summary": "Presentation-only release improving readability, badges, dark mode, and score card layout.",
       "categories": ["UX"],
@@ -58,7 +73,7 @@
     },
     {
       "version": "3.2.2",
-      "date": "2026-05-30",
+      "date": "2026-06-04",
       "title": "Theme tokens and homepage positioning",
       "summary": "Semantic theme tokens, dark mode card consistency, and AI Commerce Optimization Platform positioning.",
       "categories": ["UX"],
@@ -70,7 +85,7 @@
     },
     {
       "version": "3.2.1",
-      "date": "2026-05-30",
+      "date": "2026-06-04",
       "title": "Crash fix and local timezone",
       "summary": "Fixed audit metadata timestamp formatting and timezone display.",
       "categories": ["Fixes"],
@@ -81,7 +96,7 @@
     },
     {
       "version": "3.2.0",
-      "date": "2026-05-30",
+      "date": "2026-06-04",
       "title": "Historical data and audit credibility",
       "summary": "Foundation for historical audits, benchmarking, domain normalization, and enriched API responses.",
       "categories": ["API", "Scoring"],
@@ -93,18 +108,18 @@
       ]
     },
     {
-      "version": "3.1.4",
-      "date": "2026-05-30",
+      "version": "3.1.3",
+      "date": "2026-06-03",
       "title": "Dynamic API origin",
       "summary": "API documentation examples use deployment origin automatically.",
       "categories": ["API"],
       "changes": [
-        "Dynamic base URL in API docs examples"
+        "Dynamic base URL in API docs examples based on localhost or server"
       ]
     },
     {
       "version": "3.1.2",
-      "date": "2026-05-30",
+      "date": "2026-06-03",
       "title": "Scroll offset and mobile polish",
       "summary": "Audit navigation scroll offset, mobile finding badges, and dark mode headers.",
       "categories": ["UX"],
@@ -116,7 +131,7 @@
     },
     {
       "version": "3.1.1",
-      "date": "2026-05-30",
+      "date": "2026-06-03",
       "title": "Desktop and mobile UI fixes",
       "summary": "Multiple UI/UX fixes across desktop and mobile layouts.",
       "categories": ["UX", "Fixes"],
@@ -129,7 +144,7 @@
     },
     {
       "version": "3.1.0",
-      "date": "2026-05-30",
+      "date": "2026-06-03",
       "title": "Invalid domain handling",
       "summary": "Improved validation and messaging for invalid scan URLs.",
       "categories": ["Fixes"],
@@ -139,7 +154,7 @@
     },
     {
       "version": "3.0.4",
-      "date": "2026-05-30",
+      "date": "2026-06-03",
       "title": "Dimension score UX",
       "summary": "Improved dimension score presentation on the readiness dashboard.",
       "categories": ["UX"],
@@ -149,7 +164,7 @@
     },
     {
       "version": "3.0.3",
-      "date": "2026-05-30",
+      "date": "2026-06-03",
       "title": "Scroll to overview",
       "summary": "After running an audit, the page scrolls to the overview section.",
       "categories": ["UX"],
@@ -159,7 +174,7 @@
     },
     {
       "version": "3.0.2",
-      "date": "2026-05-30",
+      "date": "2026-06-03",
       "title": "Bug fixes and version display",
       "summary": "Various bug fixes and application version labeling.",
       "categories": ["Fixes"],
@@ -170,7 +185,7 @@
     },
     {
       "version": "3.0.1",
-      "date": "2026-05-30",
+      "date": "2026-06-03",
       "title": "Scoring and activity feed fixes",
       "summary": "Removed artificial scoring, fixed activity feed, restored project focus.",
       "categories": ["Scoring", "Fixes"],
@@ -181,7 +196,7 @@
     },
     {
       "version": "3.0.0",
-      "date": "2026-05-30",
+      "date": "2026-06-02",
       "title": "AI Commerce Readiness scoring",
       "summary": "Major release introducing readiness scoring, executive dashboard, and visual refresh.",
       "categories": ["Scoring", "UX"],
@@ -189,6 +204,126 @@
         "AI Commerce Readiness score and grade",
         "Executive summary and recommendations dashboard",
         "Merchant-friendly UX and visual refresh"
+      ]
+    },
+    {
+      "version": "2.8.1",
+      "date": "2026-06-02",
+      "title": "Admin tools and audit management",
+      "summary": "Admin maintenance tools, single audit delete, banned domains, and recent scans UX.",
+      "categories": ["Admin", "UX"],
+      "changes": [
+        "Admin tools with server-verified token",
+        "Delete single audit by hostname",
+        "Banned domains admin override",
+        "Favicon and recent scans improvements"
+      ]
+    },
+    {
+      "version": "2.8.0",
+      "date": "2026-06-02",
+      "title": "Rate limits and audit deduplication",
+      "summary": "Scan rate limits, banned domains, and deduplicated recent audit storage.",
+      "categories": ["API", "Admin"],
+      "changes": [
+        "Scan rate limiting",
+        "Banned domain enforcement",
+        "Recent audit deduplication in Redis"
+      ]
+    },
+    {
+      "version": "2.6.0",
+      "date": "2026-06-02",
+      "title": "Product UX improvements",
+      "summary": "Merchant-facing UX refinements from early user feedback.",
+      "categories": ["UX"],
+      "changes": [
+        "Audit results layout improvements",
+        "Clearer finding presentation",
+        "Homepage and scan flow polish"
+      ]
+    },
+    {
+      "version": "2.5.0",
+      "date": "2026-06-02",
+      "title": "Production launch cleanup",
+      "summary": "Production readiness pass before public launch.",
+      "categories": ["Fixes", "API"],
+      "changes": [
+        "Production configuration cleanup",
+        "API health and docs stabilization",
+        "Deployment hardening"
+      ]
+    },
+    {
+      "version": "2.4.0",
+      "date": "2026-06-02",
+      "title": "Production readiness and shared activity",
+      "summary": "Shared scan activity, bot protection, and production cache behavior.",
+      "categories": ["API", "UX"],
+      "changes": [
+        "Shared recent scan activity in Redis",
+        "Turnstile bot protection support",
+        "Production cache fixes for Vercel"
+      ]
+    },
+    {
+      "version": "2.3.0",
+      "date": "2026-05-31",
+      "title": "Community and product experience",
+      "summary": "Contributors page foundations and community-facing polish.",
+      "categories": ["UX"],
+      "changes": [
+        "Contributors and contact pages",
+        "Community positioning copy",
+        "Improved public navigation"
+      ]
+    },
+    {
+      "version": "2.2.0",
+      "date": "2026-05-31",
+      "title": "Product experience and positioning",
+      "summary": "Clearer product narrative and audit presentation.",
+      "categories": ["UX"],
+      "changes": [
+        "Homepage positioning refresh",
+        "Audit report readability improvements",
+        "Marketing and about copy"
+      ]
+    },
+    {
+      "version": "2.1.0",
+      "date": "2026-05-31",
+      "title": "Generated assets UX",
+      "summary": "Improved downloadable fix assets experience.",
+      "categories": ["UX"],
+      "changes": [
+        "Generated fixes download UX",
+        "Asset section layout improvements"
+      ]
+    },
+    {
+      "version": "2.0.0",
+      "date": "2026-05-31",
+      "title": "AI commerce recommendations",
+      "summary": "Major milestone adding AI-ready recommendation and asset generation.",
+      "categories": ["UX", "API"],
+      "changes": [
+        "Generate fixes API and downloadable assets",
+        "llms.txt and schema template generation",
+        "Recommendations section in audit reports"
+      ]
+    },
+    {
+      "version": "1.5.0",
+      "date": "2026-05-30",
+      "title": "Validation reporting quality",
+      "summary": "Early merchant validation and reporting improvements.",
+      "categories": ["Fixes", "Scoring"],
+      "changes": [
+        "Improved validation fixture reporting",
+        "Early platform detection checks",
+        "Foundational audit engine improvements"
       ]
     }
   ]

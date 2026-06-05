@@ -15,7 +15,7 @@ export const PLATFORM_FILTER_OPTIONS = [
   { value: "Magento", label: "Adobe Commerce" },
   { value: "Squarespace", label: "Squarespace" },
   { value: "Wix", label: "Wix" },
-  { value: "Unknown", label: "Other Platform" },
+  { value: "Unknown", label: "Other Platforms" },
 ] as const;
 
 const GRADE_ORDER: Record<string, number> = {
