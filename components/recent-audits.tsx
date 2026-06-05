@@ -15,15 +15,35 @@ function formatTimestamp(timestamp: string): string {
   });
 }
 
+function RecentAuditSiteLink({
+  entry,
+  className = "",
+}: {
+  entry: RecentScanRecord;
+  className?: string;
+}) {
+  return (
+    <a
+      href={entry.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`break-all text-xs text-blue-900 hover:underline dark:text-blue-300 ${className}`}
+    >
+      {entry.hostname}
+    </a>
+  );
+}
+
 function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
   return (
     <div className="rounded-xl border border-card-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-medium text-slate-900 dark:text-slate-100">{entry.merchant}</p>
-          <p className="mt-1 break-all text-xs text-slate-500 dark:text-slate-400">
-            {entry.hostname}
-          </p>
+          <RecentAuditSiteLink
+            entry={entry}
+            className="mt-1 text-slate-500 hover:text-blue-900 dark:text-slate-400 dark:hover:text-blue-300"
+          />
         </div>
         <GradeBadge grade={entry.grade || "—"} />
       </div>
@@ -136,9 +156,10 @@ export function RecentAuditsList({
                 <tr key={`${entry.id}-${entry.scannedAt}-${index}`} className="align-top">
                   <td className="px-4 py-4">
                     <div className="font-medium text-slate-900 dark:text-slate-100">{entry.merchant}</div>
-                    <div className="mt-1 max-w-xs break-all text-xs text-slate-500 dark:text-slate-400">
-                      {entry.hostname}
-                    </div>
+                    <RecentAuditSiteLink
+                      entry={entry}
+                      className="mt-1 block max-w-xs text-slate-500 hover:text-blue-900 dark:text-slate-400 dark:hover:text-blue-300"
+                    />
                   </td>
                   <td className="px-4 py-4">
                     <GradeBadge grade={entry.grade || "—"} />
@@ -179,7 +200,7 @@ function RecentAuditCard({
     <CardTag
       type={isClickable ? "button" : undefined}
       onClick={isClickable ? () => onSelectEntry?.(entry) : undefined}
-      className={`flex w-full flex-col rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-left transition dark:border-slate-700 dark:bg-slate-900/70 ${
+      className={`flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-left transition dark:border-slate-700 dark:bg-slate-900/70 ${
         compact ? "min-h-[7.5rem]" : "min-h-[168px] p-4"
       } ${
         isClickable
@@ -201,31 +222,25 @@ function RecentAuditCard({
       ) : null}
 
       <div
-        className={`grid gap-2 text-sm ${compact ? "mt-3 grid-cols-2 sm:grid-cols-4" : "mt-auto grid-cols-3 gap-3 pt-4"}`}
+        className={`grid min-w-0 grid-cols-3 gap-x-3 gap-y-2 text-sm ${
+          compact ? "mt-3" : "mt-auto gap-3 pt-4"
+        }`}
       >
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Score</p>
-          <p className="mt-0.5 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+          <p className="mt-0.5 truncate font-semibold tabular-nums text-slate-900 dark:text-slate-100">
             {entry.readinessScore ?? "—"}
           </p>
         </div>
-        {compact ? (
-          <div className="min-w-0 sm:hidden">
-            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Grade</p>
-            <p className="mt-0.5 font-semibold text-slate-900 dark:text-slate-100">
-              {entry.grade || "—"}
-            </p>
-          </div>
-        ) : null}
-        <div className="min-w-0">
+        <div className="min-w-0 overflow-hidden">
           <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Platform</p>
-          <div className="mt-0.5 font-medium text-slate-800 dark:text-slate-200">
-            <PlatformLabel platform={entry.platform} />
+          <div className="mt-0.5 min-w-0 font-medium text-slate-800 dark:text-slate-200">
+            <PlatformLabel platform={entry.platform} truncate={compact} />
           </div>
         </div>
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Top Gap</p>
-          <p className="mt-0.5 line-clamp-1 font-medium text-slate-800 dark:text-slate-200">
+          <p className="mt-0.5 truncate font-medium text-slate-800 dark:text-slate-200">
             {entry.topGap || "—"}
           </p>
         </div>
