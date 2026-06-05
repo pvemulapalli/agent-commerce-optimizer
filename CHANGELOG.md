@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.3.1] - 2026-05-30
+
+### Changed
+- Simplified homepage hero: Merchant Signals label, outcome-focused headline, clearer product messaging
+- Restructured About page: creator first, why Merchant Signals, then Commerce Optimizer product summary
+- Restored independent-project disclaimer in footer, About, and Contact
+- Release notes navigation: newest first, collapsible groups by version family (3.3.x, 3.2.x, …)
+
 ## [3.3.0] - 2026-06-05
 
 ### Changed

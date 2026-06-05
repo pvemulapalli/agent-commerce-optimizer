@@ -2,7 +2,7 @@
 
 import { APP_VERSION } from "@/lib/app-version";
 import type { ReleaseCategory, ReleaseEntry } from "@/lib/releases";
-import { groupReleasesByMajorVersion } from "@/lib/releases";
+import { getVersionFamily, groupReleasesByVersionFamily } from "@/lib/releases";
 
 const CATEGORY_STYLES: Record<ReleaseCategory, string> = {
   UX: "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/40 dark:bg-blue-950/50 dark:text-blue-100",
@@ -61,25 +61,26 @@ function ReleaseArticle({ release }: { release: ReleaseEntry }) {
 }
 
 export function ReleaseNotesAccordion({ releases }: { releases: ReleaseEntry[] }) {
-  const groups = groupReleasesByMajorVersion(releases);
+  const groups = groupReleasesByVersionFamily(releases);
+  const currentFamily = getVersionFamily(APP_VERSION);
 
   return (
     <div className="mt-10 space-y-4">
       {groups.map((group) => (
         <details
-          key={group.majorVersion}
+          key={group.versionFamily}
           className="group rounded-2xl border border-card-border bg-card shadow-sm"
-          open={group.majorVersion === "3"}
+          open={group.versionFamily === currentFamily}
         >
           <summary className="cursor-pointer list-none px-6 py-4 marker:content-none sm:px-8">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-text-primary">
-                v{group.majorVersion}.x
+                v{group.versionFamily}.x
                 <span className="ml-2 text-sm font-normal text-text-secondary">
                   ({group.releases.length} release{group.releases.length === 1 ? "" : "s"})
                 </span>
               </h2>
-              <span className="text-sm text-text-secondary group-open:rotate-180 transition-transform">
+              <span className="text-sm text-text-secondary transition-transform group-open:rotate-180">
                 ▾
               </span>
             </div>

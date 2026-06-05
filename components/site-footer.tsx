@@ -1,8 +1,6 @@
-import {
-  DEFAULT_SITE_DESCRIPTION,
-  FOOTER_COPYRIGHT,
-  FOOTER_TAGLINE,
-} from "@/lib/brand";
+import { DEFAULT_SITE_DESCRIPTION, FOOTER_COPYRIGHT, PARENT_BRAND, PRODUCT_BYLINE } from "@/lib/brand";
+import { PROJECT_DISCLAIMER } from "@/lib/disclaimer";
+import { APP_VERSION_LABEL } from "@/lib/app-version";
 import Link from "next/link";
 import { Logo } from "./logo";
 
@@ -31,7 +29,8 @@ export function SiteFooter() {
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Logo showWordmark className="h-8 w-8" />
-            <p className="mt-4 max-w-md text-sm leading-7 text-text-secondary">
+            <p className="mt-3 text-sm font-medium text-text-primary">{PRODUCT_BYLINE}</p>
+            <p className="mt-3 max-w-md text-sm leading-7 text-text-secondary">
               {DEFAULT_SITE_DESCRIPTION}
             </p>
           </div>
@@ -65,7 +64,9 @@ export function SiteFooter() {
 
         <div className="mt-6 max-w-3xl space-y-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
           <p className="font-medium text-slate-700 dark:text-slate-300">{FOOTER_COPYRIGHT}</p>
-          <p>{FOOTER_TAGLINE}</p>
+          <p className="font-medium text-slate-700 dark:text-slate-300">{PARENT_BRAND}</p>
+          <p>{APP_VERSION_LABEL}</p>
+          <p>{PROJECT_DISCLAIMER}</p>
         </div>
       </div>
     </footer>

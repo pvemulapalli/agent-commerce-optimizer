@@ -1,3 +1,5 @@
+import { DIFFERENTIATOR_INTRO_COPY } from "@/lib/brand";
+
 const AUDIT_ITEMS = [
   { title: "Product discovery", description: "Catalog URLs, pricing, and product pages." },
   { title: "Merchant identity", description: "Organization schema and homepage metadata." },
@@ -42,6 +44,9 @@ export function MarketingSections() {
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
           Not Just Visibility. Optimization.
         </h2>
+        <p className="mt-4 max-w-3xl text-base font-medium leading-7 text-text-primary">
+          {DIFFERENTIATOR_INTRO_COPY}
+        </p>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-text-secondary sm:text-base">
           Many AI visibility tools monitor whether brands appear in AI answers. Commerce
           Optimizer focuses on the merchant storefront itself: what AI systems can crawl,
@@ -57,10 +62,6 @@ export function MarketingSections() {
             </article>
           ))}
         </div>
-        <p className="mt-6 text-sm font-medium text-text-primary">
-          Most tools tell you if you&apos;re visible. Commerce Optimizer helps explain why
-          and what to fix.
-        </p>
       </section>
 
       <section className="rounded-2xl border border-card-border bg-card p-8 shadow-sm sm:p-10">

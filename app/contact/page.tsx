@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contact Praveen Vemulapalli, creator of the AI Commerce Optimization Platform.",
+  description: "Contact Praveen Vemulapalli, creator of Commerce Optimizer by Merchant Signals.",
 };
 
 export default function ContactPage() {

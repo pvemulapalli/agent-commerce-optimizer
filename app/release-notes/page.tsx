@@ -18,7 +18,7 @@ export default function ReleaseNotesPage() {
       <PageHeader
         eyebrow="Changelog"
         title="Release Notes"
-        description={`Current version: ${APP_VERSION}. Newest releases first, grouped by major version.`}
+        description={`Current version: ${APP_VERSION}. Newest releases first, grouped by version family (3.3.x, 3.2.x, …).`}
       />
 
       <ReleaseNotesAccordion releases={releases} />

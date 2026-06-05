@@ -8,14 +8,14 @@ import {
   getClientTurnstileSiteKey,
 } from "@/components/turnstile-widget";
 import { isBannedDomainError } from "@/lib/banned-domain-messages";
-import { DEFAULT_SITE_DESCRIPTION, PARENT_BRAND, PRODUCT_NAME } from "@/lib/brand";
+import { HERO_HEADLINE, HERO_SUPPORTING_COPY, PARENT_BRAND } from "@/lib/brand";
 import { FREE_SCAN_PRIMARY, FREE_SCAN_SECONDARY } from "@/lib/scan-messaging";
 import { inputClass } from "@/lib/theme-classes";
 
 const BENEFITS = [
   "Live storefront crawl",
   "Evidence-backed findings",
-  "Generated fix files",
+  "Downloadable fixes",
 ];
 
 function ScanForm({
@@ -106,78 +106,44 @@ export function AuditHero({
 
   return (
     <section className="overflow-hidden rounded-2xl border border-card-border bg-card shadow-sm">
-      <div className="border-b border-card-border bg-card-muted px-6 py-4 sm:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary">
+      <div className="px-6 py-6 sm:px-8 lg:px-10">
+        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary/70">
           {PARENT_BRAND}
         </p>
-      </div>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl lg:text-4xl">
+          {HERO_HEADLINE}
+        </h1>
+        <p className="mt-3 max-w-2xl text-base leading-6 text-text-secondary">
+          {HERO_SUPPORTING_COPY}
+        </p>
 
-      <div className="px-6 py-6 sm:px-8 sm:py-10 lg:px-10">
-        {/* Mobile: scan-first above the fold */}
-        <div className="lg:hidden">
-          <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
-            {PRODUCT_NAME}{" "}
-            <span className="font-medium text-text-secondary">by {PARENT_BRAND}</span>
-          </h1>
-          <p className="mt-3 text-base leading-7 text-text-secondary">
-            {DEFAULT_SITE_DESCRIPTION}
-          </p>
-
-          <div className="mt-5">
-            <ScanForm
-              url={url}
-              loading={loading}
-              turnstileToken={turnstileToken}
-              onUrlChange={onUrlChange}
-              onSubmit={onSubmit}
-              onTurnstileTokenChange={onTurnstileTokenChange}
-              inputId="website-url-mobile"
-            />
-          </div>
+        <div className="mt-5 lg:mt-6">
+          <ScanForm
+            url={url}
+            loading={loading}
+            turnstileToken={turnstileToken}
+            onUrlChange={onUrlChange}
+            onSubmit={onSubmit}
+            onTurnstileTokenChange={onTurnstileTokenChange}
+          />
         </div>
 
-        {/* Desktop: richer hero, CTA still prominent */}
-        <div className="hidden lg:block">
-          <h1 className="text-4xl font-semibold tracking-tight text-text-primary xl:text-5xl">
-            {PRODUCT_NAME}{" "}
-            <span className="font-medium text-text-secondary">by {PARENT_BRAND}</span>
-          </h1>
-          <p className="mt-5 max-w-3xl text-lg leading-8 text-text-secondary">
-            {DEFAULT_SITE_DESCRIPTION}
-          </p>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-text-secondary">
-            Live storefront crawl with evidence-backed findings, recommended fixes, and
-            downloadable assets — free to try, no signup required.
-          </p>
-
-          <div className="mt-8">
-            <ScanForm
-              url={url}
-              loading={loading}
-              turnstileToken={turnstileToken}
-              onUrlChange={onUrlChange}
-              onSubmit={onSubmit}
-              onTurnstileTokenChange={onTurnstileTokenChange}
-            />
-          </div>
-
-          <ul className="mt-8 flex flex-wrap gap-3">
-            {BENEFITS.map((benefit) => (
-              <li
-                key={benefit}
-                className="flex items-center gap-2 rounded-lg border border-card-border bg-card-muted px-4 py-2.5 text-sm text-text-secondary"
-              >
-                <span className="text-emerald-600 dark:text-emerald-400" aria-hidden>
-                  ✓
-                </span>
-                <span>{benefit}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ul className="mt-5 flex flex-wrap gap-2.5">
+          {BENEFITS.map((benefit) => (
+            <li
+              key={benefit}
+              className="flex items-center gap-2 rounded-lg border border-card-border bg-card-muted px-3.5 py-2 text-sm text-text-secondary"
+            >
+              <span className="text-emerald-600 dark:text-emerald-400" aria-hidden>
+                ✓
+              </span>
+              <span>{benefit}</span>
+            </li>
+          ))}
+        </ul>
 
         {loading && (
-          <div className="mt-6 rounded-lg border border-card-border bg-card-muted px-4 py-3 text-sm text-text-secondary">
+          <div className="mt-5 rounded-lg border border-card-border bg-card-muted px-4 py-3 text-sm text-text-secondary">
             Crawling discovery files, parsing sitemaps, and analyzing storefront
             signals…
           </div>
@@ -195,7 +161,7 @@ export function AuditHero({
         ) : null}
 
         {error && !restrictedDomain && !nonEcommerceMessage ? (
-          <div className="mt-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/50 dark:text-rose-200">
+          <div className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/50 dark:text-rose-200">
             {error}
           </div>
         ) : null}

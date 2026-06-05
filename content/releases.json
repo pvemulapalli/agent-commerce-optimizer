@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "version": "3.3.1",
+      "date": "2026-05-30",
+      "title": "Brand clarity and homepage messaging",
+      "summary": "Simpler hero and About page, restored disclaimer, and easier release-notes navigation — no audit or API changes.",
+      "categories": [
+        "UX"
+      ],
+      "changes": [
+        "Homepage hero sells the outcome with Merchant Signals label and clearer Commerce Optimizer copy",
+        "About page reordered: creator, why Merchant Signals, product summary",
+        "Independent-project disclaimer restored site-wide",
+        "Release notes grouped by version family (3.3.x, 3.2.x, …) with newest first"
+      ]
+    },
+    {
       "version": "3.3.0",
       "date": "2026-06-05",
       "title": "Brand Architecture Update with MerchantSignals.com",
@@ -9,7 +24,10 @@
         "UX"
       ],
       "changes": [
-        "Update Header with parent brand and product name"
+        "Update Header with parent brand and product name",
+        "Update Footer with parent brand and product name",
+        "Update About page with parent brand and product name",
+        "Update Site metadata/Open Graph with parent brand and product name"
       ]
     },
     {
