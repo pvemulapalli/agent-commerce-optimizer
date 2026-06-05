@@ -31,19 +31,19 @@ export function PlatformReadinessCards({ stats }: { stats: PlatformReadinessStat
         Aggregated from recent audits on this deployment — not industry benchmarks.
       </p>
 
-      <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {featured.map((stat) => (
           <article
             key={stat.key}
-            className="rounded-xl border border-card-border bg-card-muted px-3 py-2.5"
+            className="rounded-xl border border-card-border bg-card-muted px-3 py-2"
           >
-            <div className="mb-2 min-h-[1.25rem]">
-              <PlatformWordmark platformKey={stat.key} />
+            <div className="flex min-h-[2.25rem] items-center pb-1.5">
+              <PlatformWordmark platformKey={stat.key} variant="card" />
             </div>
             {stat.insufficientData ? (
               <p className="text-xs text-text-secondary">Need more scans</p>
             ) : (
-              <dl className="grid grid-cols-3 gap-2 text-xs">
+              <dl className="grid grid-cols-3 gap-x-2 gap-y-1 text-xs">
                 <div>
                   <dt className="uppercase tracking-wide text-text-secondary">Scans</dt>
                   <dd className="mt-0.5 font-semibold tabular-nums text-text-primary">

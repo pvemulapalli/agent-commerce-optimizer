@@ -1,8 +1,8 @@
 import { PageHeader } from "@/components/page-header";
 import {
-  ABOUT_CREATOR_MERCHANT_SIGNALS,
-  ABOUT_CREATOR_SUMMARY,
-  ABOUT_PRODUCT_DESCRIPTION,
+  ABOUT_CREATOR_BIO,
+  ABOUT_PRODUCT_BODY,
+  ABOUT_PRODUCT_INTRO,
   PARENT_BRAND,
   PRODUCT_NAME,
 } from "@/lib/brand";
@@ -14,7 +14,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "About Merchant Signals and Commerce Optimizer — evidence-backed storefront optimization for AI commerce.",
+    "About Merchant Signals and Commerce Optimizer — LLM discoverability and evidence-backed storefront optimization.",
 };
 
 export default function AboutPage() {
@@ -39,9 +39,10 @@ export default function AboutPage() {
           <div className="min-w-0">
             <h2 className="text-xl font-semibold text-text-primary">About the Creator</h2>
             <p className="mt-1 text-sm font-medium text-text-secondary">Praveen Vemulapalli</p>
-            <div className="mt-4 space-y-3 text-sm leading-7 text-text-secondary">
-              <p>{ABOUT_CREATOR_SUMMARY}</p>
-              <p>{ABOUT_CREATOR_MERCHANT_SIGNALS}</p>
+            <div className="mt-4 space-y-4 text-sm leading-7 text-text-secondary">
+              {ABOUT_CREATOR_BIO.map((paragraph) => (
+                <p key={paragraph.slice(0, 48)}>{paragraph}</p>
+              ))}
             </div>
           </div>
         </div>
@@ -72,7 +73,12 @@ export default function AboutPage() {
 
       <section className="mt-8 rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
         <h2 className="text-xl font-semibold text-text-primary">About {PRODUCT_NAME}</h2>
-        <p className="mt-4 text-sm leading-7 text-text-secondary">{ABOUT_PRODUCT_DESCRIPTION}</p>
+        <div className="mt-4 space-y-4 text-sm leading-7 text-text-secondary">
+          <p>{ABOUT_PRODUCT_INTRO}</p>
+          {ABOUT_PRODUCT_BODY.map((paragraph) => (
+            <p key={paragraph.slice(0, 48)}>{paragraph}</p>
+          ))}
+        </div>
       </section>
 
       <section className="mt-8 rounded-2xl border border-card-border bg-card-muted p-6">
