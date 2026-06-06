@@ -16,7 +16,7 @@ export const HERO_SUPPORTING_COPY =
   "Crawl your storefront, uncover AI commerce gaps, and get downloadable fixes.";
 
 export const DIFFERENTIATOR_INTRO_COPY =
-  "Most tools tell you whether you're visible. Commerce Optimizer helps you understand why and what to fix.";
+  "Most tools tell you if you're visible. Commerce Optimizer shows why and what\u00A0to\u00A0fix.";
 
 export const DEFAULT_SITE_DESCRIPTION = HERO_SUPPORTING_COPY;
 
@@ -25,14 +25,14 @@ export const FOOTER_COPYRIGHT = `© ${new Date().getFullYear()} ${PARENT_BRAND}`
 export const ABOUT_CREATOR_BIO = [
   "Praveen Vemulapalli is a payments and commerce technology leader with experience spanning ecommerce, merchant acceptance, marketplace platforms, omnichannel commerce, and payment infrastructure.",
   "Throughout his career he has worked across software engineering, solution consulting, sales engineering, and leadership roles helping merchants and partners solve complex commerce challenges. Today he leads Sales Engineering initiatives focused on enterprise merchants and emerging commerce technologies.",
-  "Outside of work, Praveen is driven by curiosity, continuous learning, and building. He enjoys exploring emerging technologies, sharing practical insights with others, and turning ideas into working prototypes. Merchant Signals reflects that mindset: learning by building, testing ideas in public, and helping others understand how technology is changing commerce.",
+  "Outside of work, Praveen is driven by curiosity and building at the intersection of commerce and emerging technology. Merchant Signals and Commerce Optimizer reflect that focus: practical tools that help merchants improve AI discoverability and prepare for agent-driven shopping.",
 ] as const;
 
 export const ABOUT_PRODUCT_INTRO =
-  `${PRODUCT_NAME} is an assessment and optimization platform for LLM discoverability — helping merchants understand how AI assistants and shopping agents evaluate storefronts differently than traditional search engines.`;
+  `${PARENT_BRAND} performs an automated storefront scan and generates an evidence-backed assessment of AI commerce readiness.`;
 
 export const ABOUT_PRODUCT_BODY = [
-  "ChatGPT, Gemini, Claude, Perplexity, and emerging AI shopping agents increasingly influence how products, policies, and merchant facts are discovered and interpreted. They rely on machine-readable signals — structured data, catalog URLs, discovery files, and commerce metadata — not just marketing copy.",
+  "ChatGPT, Gemini, Claude, Perplexity, and emerging AI shopping agents increasingly influence how products, policies, and merchant facts are discovered and interpreted. They rely on machine-readable signals like structured data, catalog URLs, discovery files, and commerce metadata, not just marketing copy.",
   `${PRODUCT_NAME} runs a live crawl of your public storefront and helps merchants identify discoverability gaps, missing structured signals, and missing commerce metadata. It generates remediation assets and supports ongoing improvement of AI readiness over time.`,
   `${PRODUCT_NAME} doesn't simply identify issues. It helps merchants understand what to fix and provides downloadable assets to accelerate remediation.`,
 ] as const;

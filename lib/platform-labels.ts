@@ -11,6 +11,9 @@ export const PLATFORM_NOT_IDENTIFIED_TOOLTIP = OTHER_PLATFORM_TOOLTIP;
 
 const PLATFORM_DISPLAY_LABELS: Record<string, string> = {
   CommerceTools: "commercetools",
+  Magento: "Adobe Commerce",
+  VTEX: "VTEX",
+  Fenicio: "Fenicio",
 };
 
 export function formatPlatformDisplay(platform: string | null | undefined): string {
@@ -23,4 +26,11 @@ export function formatPlatformDisplay(platform: string | null | undefined): stri
 
 export function isPlatformNotIdentified(platform: string | null | undefined): boolean {
   return !platform || platform === "Unknown";
+}
+
+export function shouldShowPlatformFeedback(input: {
+  platform: string;
+  confidence: string;
+}): boolean {
+  return isPlatformNotIdentified(input.platform) || input.confidence === "low";
 }

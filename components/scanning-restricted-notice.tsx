@@ -5,7 +5,7 @@ const RESTRICTED_EXAMPLES = [
   "Government websites",
   "Authentication portals",
   "Sites protected from automated crawling",
-  "Domains that prohibit third-party auditing",
+  "Domains that prohibit third-party scanning",
 ];
 
 export function ScanningRestrictedNotice({

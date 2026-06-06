@@ -1,10 +1,10 @@
 import type { PageData } from "./types";
 
 export const SITE_ERROR_MESSAGE =
-  "This website returned a server error and could not be audited. Please verify the URL and try again later.";
+  "This website returned a server error and could not be scanned. Please verify the URL and try again later.";
 
 export const SSL_CERTIFICATE_MESSAGE =
-  "This website's SSL certificate could not be verified. The audit cannot run until the site's certificate is valid.";
+  "This website's SSL certificate could not be verified. The scan cannot run until the site's certificate is valid.";
 
 const GATEWAY_ERROR_PATTERNS = [
   /502 bad gateway/i,

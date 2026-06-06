@@ -3,7 +3,7 @@
 import { GradeBadge } from "@/components/grade-badge";
 import { PlatformLabel } from "@/components/platform-label";
 import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
-import type { PlatformReadinessStat } from "@/lib/platform-readiness-stats";
+import type { PlatformLeaderboardStat } from "@/lib/platform-leaderboard";
 import type { RecentAuditSortDirection, RecentAuditSortField } from "@/lib/recent-audits-query";
 import type { RecentScanRecord } from "@/lib/scan-activity";
 import Link from "next/link";
@@ -45,7 +45,7 @@ function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
             className="mt-1 text-slate-500 hover:text-blue-900 dark:text-slate-400 dark:hover:text-blue-300"
           />
         </div>
-        <GradeBadge grade={entry.grade || "—"} />
+        <GradeBadge grade={entry.grade || "-"} />
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
@@ -54,7 +54,7 @@ function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
             Score
           </dt>
           <dd className="mt-1 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-            {entry.readinessScore ?? "—"}
+            {entry.readinessScore ?? "-"}
           </dd>
         </div>
         <div>
@@ -69,7 +69,7 @@ function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
           <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
             Top Gap
           </dt>
-          <dd className="mt-1 text-slate-700 dark:text-slate-300">{entry.topGap || "—"}</dd>
+          <dd className="mt-1 text-slate-700 dark:text-slate-300">{entry.topGap || "-"}</dd>
         </div>
       </dl>
 
@@ -82,7 +82,7 @@ function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
 
 export function RecentAuditsList({
   entries,
-  emptyMessage = "No scans recorded yet. Run the first audit from the homepage.",
+  emptyMessage = "No scans recorded yet. Run the first scan from the homepage.",
   sort,
   direction,
   onSortChange,
@@ -121,7 +121,7 @@ export function RecentAuditsList({
           href="/"
           className="mt-4 inline-block text-sm font-medium text-blue-900 hover:underline dark:text-blue-300"
         >
-          Run an audit
+          Run a scan
         </Link>
       </div>
     );
@@ -162,15 +162,15 @@ export function RecentAuditsList({
                     />
                   </td>
                   <td className="px-4 py-4">
-                    <GradeBadge grade={entry.grade || "—"} />
+                    <GradeBadge grade={entry.grade || "-"} />
                   </td>
                   <td className="px-4 py-4 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-                    {entry.readinessScore ?? "—"}
+                    {entry.readinessScore ?? "-"}
                   </td>
                   <td className="px-4 py-4 text-slate-800 dark:text-slate-200">
                     <PlatformLabel platform={entry.platform} />
                   </td>
-                  <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.topGap || "—"}</td>
+                  <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.topGap || "-"}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-slate-700 dark:text-slate-300">
                     {formatTimestamp(entry.scannedAt)}
                   </td>
@@ -218,7 +218,7 @@ function RecentAuditCard({
               className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-900 border-t-transparent dark:border-blue-300 dark:border-t-transparent"
               aria-hidden
             />
-            Loading audit…
+            Loading scan…
           </span>
         </div>
       ) : null}
@@ -226,7 +226,7 @@ function RecentAuditCard({
         <p className="line-clamp-1 min-w-0 flex-1 font-semibold text-slate-900 dark:text-slate-100">
           {entry.merchant}
         </p>
-        <GradeBadge grade={entry.grade || "—"} />
+        <GradeBadge grade={entry.grade || "-"} />
       </div>
 
       {!compact ? (
@@ -243,7 +243,7 @@ function RecentAuditCard({
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Score</p>
           <p className="mt-0.5 truncate font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-            {entry.readinessScore ?? "—"}
+            {entry.readinessScore ?? "-"}
           </p>
         </div>
         <div className="min-w-0 overflow-hidden">
@@ -255,7 +255,7 @@ function RecentAuditCard({
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Top Gap</p>
           <p className="mt-0.5 truncate font-medium text-slate-800 dark:text-slate-200">
-            {entry.topGap || "—"}
+            {entry.topGap || "-"}
           </p>
         </div>
       </div>
@@ -276,7 +276,7 @@ export function RecentAuditsPreview({
   entries: RecentScanRecord[];
   totalCount: number;
   loading: boolean;
-  platformStats?: PlatformReadinessStat[];
+  platformStats?: PlatformLeaderboardStat[];
   variant?: "homepage" | "full";
   onSelectEntry?: (entry: RecentScanRecord) => void;
   loadingEntryId?: string | null;
@@ -296,13 +296,13 @@ export function RecentAuditsPreview({
           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
             Global activity
           </p>
-          <h2 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">Recent audits</h2>
+          <h2 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">Recent scans</h2>
         </div>
         <Link
           href="/recent"
           className="text-sm font-medium text-blue-900 hover:underline dark:text-blue-300"
         >
-          View all recent audits
+          View all recent scans
         </Link>
       </div>
 
@@ -310,16 +310,16 @@ export function RecentAuditsPreview({
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-card-border bg-card-muted px-4 py-5">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              Unique Merchant Domains Audited
+              Unique Merchant Domains Scanned
             </p>
             <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-              {loading ? "—" : totalCount.toLocaleString()}
+              {loading ? "-" : totalCount.toLocaleString()}
             </p>
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 sm:col-span-2 dark:border-slate-700 dark:bg-slate-800/50">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              Latest audit
+              Latest scan
             </p>
             {!loading && entries[0] ? (
               <div className="mt-2 min-w-0">
@@ -336,7 +336,7 @@ export function RecentAuditsPreview({
               <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                 {loading
                   ? "Loading scan activity…"
-                  : "No scans yet. Run the first audit above."}
+                  : "No scans yet. Run the first scan above."}
               </p>
             )}
           </div>
@@ -344,7 +344,7 @@ export function RecentAuditsPreview({
       ) : null}
 
       {loading && isHomepage ? (
-        <p className="mt-6 text-sm text-text-secondary">Loading recent audits…</p>
+        <p className="mt-6 text-sm text-text-secondary">Loading recent scans…</p>
       ) : null}
 
       {!loading && entries.length > 0 && (
@@ -363,7 +363,7 @@ export function RecentAuditsPreview({
 
       {!loading && entries.length === 0 && isHomepage ? (
         <p className="mt-6 text-sm text-text-secondary">
-          No scans yet. Run the first audit above.
+          No scans yet. Run the first scan above.
         </p>
       ) : null}
     </section>

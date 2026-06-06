@@ -1,5 +1,6 @@
 import { computeCrawlHash } from "./crawl-hash";
-import { getMerchantDisplayName, normalizeDomainFromUrl } from "./domain-normalization";
+import { normalizeDomainFromUrl } from "./domain-normalization";
+import { resolveMerchantDisplayName } from "./merchant-name";
 import { buildReadinessReport } from "./readiness-score";
 import { getRedis, isRedisConfigured } from "./redis";
 import type { AuditApiResponse } from "./types";
@@ -46,6 +47,7 @@ function buildFindingsSummary(audit: AuditApiResponse): AuditHistoryFindingsSumm
 export function createAuditHistoryRecord(input: {
   audit: AuditApiResponse;
   confidenceScore: number;
+  merchantName?: string;
 }): AuditHistoryRecord {
   const report = buildReadinessReport(input.audit);
   const dimensionScores = Object.fromEntries(
@@ -55,7 +57,8 @@ export function createAuditHistoryRecord(input: {
   return {
     domain: new URL(input.audit.url).hostname,
     normalizedDomain: normalizeDomainFromUrl(input.audit.url),
-    merchantName: getMerchantDisplayName(input.audit.url),
+    merchantName:
+      input.merchantName ?? resolveMerchantDisplayName({ url: input.audit.url }),
     score: report.score,
     grade: report.grade,
     platform: input.audit.platform.platform,
@@ -135,9 +138,54 @@ export async function getAuditHistoryForPlatform(
   return records.filter((record) => record.platform === platform);
 }
 
+export async function updateAuditHistoryPlatform(
+  domainInput: string,
+  platform: string,
+): Promise<number> {
+  const normalizedDomain = normalizeDomainFromUrl(
+    domainInput.includes("://") ? domainInput : `https://${domainInput}/`,
+  );
+
+  try {
+    const records = await readHistoryRecords();
+    let updated = 0;
+    const next = records.map((record) => {
+      if (record.normalizedDomain !== normalizedDomain) {
+        return record;
+      }
+
+      updated += 1;
+      return { ...record, platform };
+    });
+
+    if (updated === 0) {
+      return 0;
+    }
+
+    if (isRedisConfigured()) {
+      const redis = getRedis();
+      await redis.del(HISTORY_KEY);
+      if (next.length > 0) {
+        await redis.lpush(
+          HISTORY_KEY,
+          ...next.toReversed().map((record) => JSON.stringify(record)),
+        );
+      }
+    } else {
+      memoryHistory = next;
+    }
+
+    return updated;
+  } catch (error) {
+    console.error("[audit-history] platform update failed:", error);
+    return 0;
+  }
+}
+
 export async function recordAuditHistory(input: {
   audit: AuditApiResponse;
   confidenceScore: number;
+  merchantName?: string;
 }): Promise<AuditHistoryRecord | null> {
   const record = createAuditHistoryRecord(input);
   await appendAuditHistory(record);

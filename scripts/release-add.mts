@@ -64,11 +64,40 @@ export const APP_VERSION_LABEL = \`Version \${APP_VERSION}\`;
 
 function prependChangelog(entry: ReleaseEntry): void {
   const existing = readFileSync(changelogPath, "utf8");
+
+  const sections = {
+    Added: [] as string[],
+    Changed: [] as string[],
+    Fixed: [] as string[],
+  };
+
+  for (const change of entry.changes) {
+    const added = change.match(/^\[(Added)\]\s*(.+)$/i);
+    const fixed = change.match(/^\[(Fixed)\]\s*(.+)$/i);
+    const changed = change.match(/^\[(Changed)\]\s*(.+)$/i);
+
+    if (added) {
+      sections.Added.push(added[2]);
+    } else if (fixed) {
+      sections.Fixed.push(fixed[2]);
+    } else if (changed) {
+      sections.Changed.push(changed[2]);
+    } else {
+      sections.Changed.push(change);
+    }
+  }
+
+  const sectionBlocks = (["Added", "Changed", "Fixed"] as const)
+    .filter((key) => sections[key].length > 0)
+    .map(
+      (key) =>
+        `### ${key}\n${sections[key].map((change) => `- ${change}`).join("\n")}\n`,
+    )
+    .join("\n");
+
   const block = `## [${entry.version}] - ${entry.date}
 
-### Changed
-${entry.changes.map((change) => `- ${change}`).join("\n")}
-
+${sectionBlocks}
 `;
   const marker = "## [";
   const insertAt = existing.indexOf(marker);
@@ -135,7 +164,7 @@ async function main() {
     const dateInput = (await rl.question(datePrompt)).trim();
     const categoriesInput = (await rl.question("Categories (comma-separated, default UX): ")).trim();
     const changesInput = await rl.question(
-      "Changes (one per line, blank line to finish):\n",
+      "Changes (one per line; prefix with [Added], [Changed], or [Fixed] — blank line to finish):\n",
     );
 
     if (!version || !title || !summary) {
@@ -180,6 +209,7 @@ async function main() {
     prependChangelog(entry);
 
     console.log(`\nAdded release ${version} to content/releases.json and CHANGELOG.md (date: ${resolvedDate}).`);
+    console.log("Release Notes page reads content/releases.json automatically — no manual page edits needed.");
 
     if (docsOnly) {
       console.log(

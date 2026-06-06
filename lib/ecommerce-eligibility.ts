@@ -14,7 +14,7 @@ export const ECOMMERCE_CONFIDENCE_THRESHOLD = 50;
 export const INVALID_NON_ECOMMERCE_SCAN_STATUS = "invalid_non_ecommerce_site";
 
 export const NON_ECOMMERCE_SCAN_MESSAGE =
-  "We could not verify that this domain operates an ecommerce storefront.\n\nCommerce Optimizer is designed for online stores that sell products or services through a storefront, shopping cart, or checkout experience.\n\nThis domain does not currently appear to contain enough ecommerce signals for a valid commerce audit.\n\nExamples of supported sites include Shopify, BigCommerce, WooCommerce, Salesforce Commerce Cloud, Adobe Commerce, commercetools, and other online storefronts.\n\nIf you believe this result is incorrect, please contact us using the Contact page.";
+  "This does not appear to be a supported ecommerce storefront.\n\nMerchant Signals currently scans ecommerce storefronts and commerce-enabled websites.\n\nIf you believe this was flagged incorrectly, please contact us through the Contact page.";
 
 export interface EcommerceEligibilityAssessment {
   eligible: boolean;
@@ -78,6 +78,8 @@ const DEDICATED_ECOMMERCE_PLATFORMS = new Set<CommercePlatform>([
   "BigCommerce",
   "WooCommerce",
   "Magento",
+  "VTEX",
+  "Fenicio",
   "Salesforce Commerce Cloud",
   "CommerceTools",
 ]);
@@ -255,6 +257,16 @@ function computeConfidenceScore(
     signals.push("product_pages");
   }
 
+  if (isFindingDetected(findings, "catalog-pages")) {
+    score += 25;
+    signals.push("catalog_pages");
+  }
+
+  if (isFindingDetected(findings, "product-prices")) {
+    score += 20;
+    signals.push("product_prices");
+  }
+
   if (isFindingDetected(findings, "product-schema")) {
     score += 20;
     signals.push("product_schema");
@@ -334,9 +346,16 @@ export function assessEcommerceEligibility(input: {
   }
 
   const { score, signals } = computeConfidenceScore(input.findings, input.platform);
+  const hasCoreSignals = hasCoreStorefrontSignal(input.findings);
+  const dedicatedPlatformIdentified =
+    input.platform.platform !== "Unknown" &&
+    DEDICATED_ECOMMERCE_PLATFORMS.has(input.platform.platform) &&
+    input.platform.confidence !== "low";
+
   const eligible =
-    hasCoreStorefrontSignal(input.findings) &&
-    score >= ECOMMERCE_CONFIDENCE_THRESHOLD;
+    hasCoreSignals &&
+    (score >= ECOMMERCE_CONFIDENCE_THRESHOLD ||
+      (dedicatedPlatformIdentified && score >= 10));
 
   return {
     eligible,

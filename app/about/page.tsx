@@ -14,7 +14,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "About Merchant Signals and Commerce Optimizer — LLM discoverability and evidence-backed storefront optimization.",
+    "About Merchant Signals and Commerce Optimizer: LLM discoverability and evidence-backed storefront optimization.",
 };
 
 export default function AboutPage() {
@@ -56,7 +56,7 @@ export default function AboutPage() {
           <p>
             AI systems are increasingly shaping how shoppers discover products, compare options,
             and decide what to buy. That shift puts new pressure on merchants to expose
-            machine-readable storefront signals — not just polished marketing pages.
+            machine-readable storefront signals, not just polished marketing pages.
           </p>
           <p>
             Most existing tools focus on whether a brand shows up in AI answers. Merchants also
@@ -65,7 +65,7 @@ export default function AboutPage() {
           </p>
           <p>
             {PARENT_BRAND} focuses on evidence-backed optimization: live crawls, inspectable
-            findings, and practical fixes — so operators can improve readiness for AI-driven
+            findings, and practical fixes, so operators can improve readiness for AI-driven
             commerce without guessing.
           </p>
         </div>
@@ -93,7 +93,7 @@ export default function AboutPage() {
           href="/"
           className="text-sm font-medium text-blue-900 hover:underline dark:text-blue-300"
         >
-          ← Run a Commerce Optimizer audit
+          ← Run a Commerce Optimizer scan
         </Link>
       </p>
     </main>

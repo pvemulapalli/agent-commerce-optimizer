@@ -90,6 +90,64 @@ export function AdobeCommerceWordmark({ className = "" }: LogoProps) {
   );
 }
 
+export function VtexWordmark({ className = "" }: LogoProps) {
+  return (
+    <svg viewBox="0 0 80 28" className={`h-6 w-auto ${className}`} aria-hidden>
+      <text x="0" y="21" fill="currentColor" className="fill-pink-700 dark:fill-pink-300" fontSize="18" fontWeight="700" fontFamily="system-ui, sans-serif">
+        VTEX
+      </text>
+    </svg>
+  );
+}
+
+export function FenicioWordmark({ className = "" }: LogoProps) {
+  return (
+    <svg viewBox="0 0 100 28" className={`h-6 w-auto ${className}`} aria-hidden>
+      <text x="0" y="21" fill="currentColor" className="fill-orange-700 dark:fill-orange-300" fontSize="16" fontWeight="700" fontFamily="system-ui, sans-serif">
+        Fenicio
+      </text>
+    </svg>
+  );
+}
+
+export function OtherPlatformsWordmark({ className = "" }: LogoProps) {
+  return (
+    <svg viewBox="0 0 130 28" className={`h-6 w-auto ${className}`} aria-hidden>
+      <text x="0" y="21" fill="currentColor" className="fill-slate-600 dark:fill-slate-300" fontSize="14" fontWeight="600" fontFamily="system-ui, sans-serif">
+        Other Platforms
+      </text>
+    </svg>
+  );
+}
+
+const PLATFORM_LOGOS: Record<string, ComponentType<LogoProps>> = {
+  Shopify: ShopifyWordmark,
+  BigCommerce: BigCommerceWordmark,
+  "Salesforce Commerce Cloud": SalesforceCommerceWordmark,
+  WooCommerce: WooCommerceWordmark,
+  Wix: WixWordmark,
+  Squarespace: SquarespaceWordmark,
+  CommerceTools: CommercetoolsWordmark,
+  Magento: AdobeCommerceWordmark,
+  VTEX: VtexWordmark,
+  Fenicio: FenicioWordmark,
+  Unknown: OtherPlatformsWordmark,
+};
+
+const PLATFORM_ACCENT: Record<string, string> = {
+  Shopify: "border-l-emerald-500",
+  BigCommerce: "border-l-blue-700",
+  "Salesforce Commerce Cloud": "border-l-sky-600",
+  WooCommerce: "border-l-purple-700",
+  Wix: "border-l-slate-900 dark:border-l-slate-100",
+  Squarespace: "border-l-slate-700 dark:border-l-slate-300",
+  CommerceTools: "border-l-rose-700",
+  Magento: "border-l-red-600",
+  VTEX: "border-l-pink-600",
+  Fenicio: "border-l-orange-600",
+  Unknown: "border-l-slate-400",
+};
+
 function cardLogoClassName(platformKey: string): string {
   if (platformKey === "Salesforce Commerce Cloud") {
     return "h-10 max-w-[14rem]";
@@ -107,22 +165,36 @@ export function PlatformWordmark({
   className?: string;
   variant?: "default" | "card";
 }) {
-  const logos: Record<string, ComponentType<LogoProps>> = {
-    Shopify: ShopifyWordmark,
-    BigCommerce: BigCommerceWordmark,
-    "Salesforce Commerce Cloud": SalesforceCommerceWordmark,
-    WooCommerce: WooCommerceWordmark,
-    Wix: WixWordmark,
-    Squarespace: SquarespaceWordmark,
-    CommerceTools: CommercetoolsWordmark,
-    Magento: AdobeCommerceWordmark,
-  };
-
-  const Logo = logos[platformKey];
+  const Logo = PLATFORM_LOGOS[platformKey];
   if (!Logo) {
     return null;
   }
 
   const sizeClass = variant === "card" ? cardLogoClassName(platformKey) : "";
   return <Logo className={`${sizeClass} ${className}`.trim()} />;
+}
+
+/** Branded platform mark for leaderboard rows — wordmark + accent stripe. */
+export function PlatformTableMark({
+  platformKey,
+  label,
+}: {
+  platformKey: string;
+  label: string;
+}) {
+  const Logo = PLATFORM_LOGOS[platformKey];
+  const accent = PLATFORM_ACCENT[platformKey] ?? "border-l-slate-400";
+
+  return (
+    <div
+      className={`flex min-h-[2.75rem] min-w-[9.5rem] items-center rounded-lg border border-card-border/80 bg-card-muted/70 py-1.5 pl-2.5 ${accent} border-l-4`}
+    >
+      {Logo ? (
+        <PlatformWordmark platformKey={platformKey} variant="card" />
+      ) : (
+        <span className="text-sm font-semibold text-text-primary">{label}</span>
+      )}
+      <span className="sr-only">{label}</span>
+    </div>
+  );
 }

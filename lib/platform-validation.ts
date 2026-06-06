@@ -30,6 +30,8 @@ const testSiteSchema = z.object({
     "Wix",
     "Squarespace",
     "Magento",
+    "VTEX",
+    "Fenicio",
     "CommerceTools",
     "Unknown",
   ]),

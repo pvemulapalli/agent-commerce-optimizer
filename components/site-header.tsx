@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "./logo";
+import { HeaderNewsletterButton } from "./header-newsletter-button";
 import { ThemeToggle } from "./theme-toggle";
 
 const NAV_LINKS = [
   { href: "/about", label: "About" },
-  { href: "/recent", label: "Recent Audits" },
+  { href: "/recent", label: "Recent Scans" },
   { href: "/docs", label: "API Docs" },
   { href: "/contact", label: "Contact" },
 ];
@@ -37,7 +38,8 @@ export function SiteHeader() {
           <Logo showWordmark className="h-9 w-9" />
         </Link>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-2 md:flex">
+          <HeaderNewsletterButton />
           <ThemeToggle compact />
           <nav aria-label="Primary" className="flex items-center gap-1">
             {NAV_LINKS.map((link) => (
@@ -77,7 +79,10 @@ export function SiteHeader() {
           className="border-t border-card-border bg-background md:hidden"
         >
           <div className="mx-auto max-w-6xl space-y-4 px-4 py-4 sm:px-6">
-            <ThemeToggle />
+            <div className="flex items-center justify-between gap-3">
+              <ThemeToggle />
+              <HeaderNewsletterButton compact />
+            </div>
             <nav aria-label="Mobile primary" className="flex flex-col gap-1">
               {NAV_LINKS.map((link) => (
                 <Link

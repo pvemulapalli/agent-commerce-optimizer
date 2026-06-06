@@ -123,8 +123,10 @@ function isStrongProductPageLink(link: LinkMatch): boolean {
   const href = link.href.toLowerCase();
 
   return (
-    /view product|add to cart|buy now|shop now|add to bag/.test(text) ||
+    /view product|add to cart|buy now|shop now|add to bag|comprar|agregar/.test(text) ||
     /\/products?\//i.test(href) ||
+    /\/catalogo\//i.test(href) ||
+    /\/producto\//i.test(href) ||
     /-p\d+/i.test(href)
   );
 }
@@ -467,6 +469,8 @@ function checkProductPages(data: CrawlData, platform: PlatformAnalysis): Finding
     platform.platform === "Shopify" ? [/\/products\/[^/?#]+/i] : [];
   const bigCommercePatterns =
     platform.platform === "BigCommerce" ? [/-p\d+/i] : [];
+  const fenicioPatterns =
+    platform.platform === "Fenicio" ? [/\/catalogo\/[^/?#]+/i] : [];
 
   return checkPageDiscovery(
     "product-pages",
@@ -475,8 +479,10 @@ function checkProductPages(data: CrawlData, platform: PlatformAnalysis): Finding
     [
       ...shopifyPatterns,
       ...bigCommercePatterns,
+      ...fenicioPatterns,
       /\/products?\//i,
       /\/product\//i,
+      /\/catalogo\/[^/?#]+/i,
       /\/p\/[^/?#]+/i,
       /\/catalog\/product\//i,
       /\/shop\/[^/?#]+/i,
@@ -523,6 +529,8 @@ function checkCategoryPages(data: CrawlData, platform: PlatformAnalysis): Findin
 function checkCatalogPages(data: CrawlData, platform: PlatformAnalysis): Finding {
   const magentoPatterns =
     platform.platform === "Magento" ? [/\/catalog\/(category|product)\//i] : [];
+  const fenicioPatterns =
+    platform.platform === "Fenicio" ? [/\/catalogo\b/i] : [];
 
   return checkPageDiscovery(
     "catalog-pages",
@@ -530,8 +538,10 @@ function checkCatalogPages(data: CrawlData, platform: PlatformAnalysis): Finding
     data,
     [
       ...magentoPatterns,
+      ...fenicioPatterns,
       /\/catalog\b/i,
       /\/catalog\//i,
+      /\/catalogo\b/i,
       /\/shop\b/i,
       /\/store\b/i,
     ],
@@ -602,8 +612,10 @@ function detectProductPrices(data: CrawlData): ProductPriceDetection {
   for (const page of crawlable) {
     const haystack = pageSearchText(page);
     if (
-      /\/products?\//i.test(page.url) &&
-      /\$[\d,.]+|\bUSD\b|\bEUR\b|\bGBP\b|£[\d,.]+|€[\d,.]+/.test(haystack)
+      (/\/products?\//i.test(page.url) || /\/catalogo\//i.test(page.url)) &&
+      /\$[\d,.]+|\bUSD\b|\bEUR\b|\bGBP\b|£[\d,.]+|€[\d,.]+|S\/\s*[\d,.]+|R\$\s*[\d,.]+/.test(
+        haystack,
+      )
     ) {
       pagesWithPriceMeta.push(page);
     }
@@ -621,7 +633,7 @@ function detectProductPrices(data: CrawlData): ProductPriceDetection {
             scope: link.scope,
             context: link.context,
           }) &&
-          /\$[\d,.]+|\bUSD\b|\bEUR\b|\bGBP\b|£[\d,.]+|€[\d,.]+/.test(link.text),
+          /\$[\d,.]+|\bUSD\b|\bEUR\b|\bGBP\b|£[\d,.]+|€[\d,.]+|S\/\s*[\d,.]+|R\$\s*[\d,.]+/.test(link.text),
       );
 
       if (pricedProductLinks.length > 0) {
@@ -788,6 +800,7 @@ function checkCartCheckout(data: CrawlData, platform: PlatformAnalysis): Finding
     ...platformPatterns,
     /\/cart\b/i,
     /\/checkout\b/i,
+    /\/carrito\b/i,
     /\/bag\b/i,
     /add-to-cart/i,
   ]);
@@ -810,8 +823,11 @@ function checkCartCheckout(data: CrawlData, platform: PlatformAnalysis): Finding
     /checkout/i,
     /\/cart\b/i,
     /\bcart\b/i,
+    /\/carrito\b/i,
+    /carrito/i,
     /\/bag\b/i,
     /add-to-cart/i,
+    /mis compras/i,
   ]);
 
   if (links.length > 0) {

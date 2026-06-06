@@ -19,10 +19,8 @@ export function normalizeDomainFromUrl(url: string): string {
 
 function getDomainLabel(normalizedDomain: string): string {
   const parts = normalizedDomain.split(".");
-  if (parts.length >= 2) {
-    return parts[parts.length - 2] ?? normalizedDomain;
-  }
-  return normalizedDomain;
+  // First label of registrable domain: juleriaque.com.ar → juleriaque
+  return parts[0] ?? normalizedDomain;
 }
 
 function capitalizeWord(word: string): string {

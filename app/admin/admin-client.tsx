@@ -50,7 +50,7 @@ async function verifyAdminToken(token: string): Promise<{ ok: true } | { ok: fal
         data.error ??
         (response.status === 503
           ? "Admin token is not configured on the server."
-          : "Unauthorized — token does not match server ADMIN_RESET_TOKEN."),
+          : "Unauthorized. Token does not match server ADMIN_RESET_TOKEN."),
     };
   }
 
@@ -87,6 +87,17 @@ export default function AdminClient() {
   const [bannedDomainsText, setBannedDomainsText] = useState("");
   const [contributorsIntro, setContributorsIntro] = useState("");
   const [contributorsText, setContributorsText] = useState("");
+  const [subscriberEmails, setSubscriberEmails] = useState<string[]>([]);
+  const [platformFeedback, setPlatformFeedback] = useState<
+    Array<{
+      domain: string;
+      platform: string | null;
+      comments: string | null;
+      timestamp: string;
+    }>
+  >([]);
+  const [reclassifyDomain, setReclassifyDomain] = useState("");
+  const [reclassifyPlatform, setReclassifyPlatform] = useState("Magento");
   const [status, setStatus] = useState<{
     message: string;
     tone: "success" | "error" | "info";
@@ -194,6 +205,64 @@ export default function AdminClient() {
     }
   }, []);
 
+  const loadEmailSubscribers = useCallback(async (adminToken: string) => {
+    try {
+      const trimmed = adminToken.trim();
+      const response = await fetch(
+        `/api/admin/email-subscribers?token=${encodeURIComponent(trimmed)}`,
+        { headers: adminHeaders(trimmed) },
+      );
+      const data = (await response.json()) as { emails?: string[]; error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Failed to load email subscribers");
+      }
+
+      setSubscriberEmails(data.emails ?? []);
+    } catch (loadError) {
+      setStatus({
+        tone: "error",
+        message:
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load email subscribers",
+      });
+    }
+  }, []);
+
+  const loadPlatformFeedback = useCallback(async (adminToken: string) => {
+    try {
+      const trimmed = adminToken.trim();
+      const response = await fetch(
+        `/api/admin/platform-feedback?token=${encodeURIComponent(trimmed)}&limit=100`,
+        { headers: adminHeaders(trimmed) },
+      );
+      const data = (await response.json()) as {
+        feedback?: Array<{
+          domain: string;
+          platform: string | null;
+          comments: string | null;
+          timestamp: string;
+        }>;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Failed to load platform feedback");
+      }
+
+      setPlatformFeedback(data.feedback ?? []);
+    } catch (loadError) {
+      setStatus({
+        tone: "error",
+        message:
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load platform feedback",
+      });
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -215,7 +284,12 @@ export default function AdminClient() {
 
       if (verification.ok) {
         setToken(stored);
-        await Promise.all([loadBannedDomains(stored), loadContributors(stored)]);
+        await Promise.all([
+          loadBannedDomains(stored),
+          loadContributors(stored),
+          loadEmailSubscribers(stored),
+          loadPlatformFeedback(stored),
+        ]);
       } else {
         storeAdminToken("");
         setStatus({ tone: "error", message: verification.error });
@@ -229,7 +303,7 @@ export default function AdminClient() {
     return () => {
       cancelled = true;
     };
-  }, [loadBannedDomains, loadContributors]);
+  }, [loadBannedDomains, loadContributors, loadEmailSubscribers, loadPlatformFeedback]);
 
   async function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -253,7 +327,12 @@ export default function AdminClient() {
 
     storeAdminToken(nextToken);
     setToken(nextToken);
-    await Promise.all([loadBannedDomains(nextToken), loadContributors(nextToken)]);
+    await Promise.all([
+      loadBannedDomains(nextToken),
+      loadContributors(nextToken),
+      loadEmailSubscribers(nextToken),
+      loadPlatformFeedback(nextToken),
+    ]);
     setUnlocking(false);
   }
 
@@ -488,6 +567,61 @@ export default function AdminClient() {
     }
   }
 
+  async function handleReclassifyPlatform(domain?: string, platform?: string) {
+    const nextDomain = (domain ?? reclassifyDomain).trim();
+    const nextPlatform = platform ?? reclassifyPlatform;
+
+    if (!token || !nextDomain || !nextPlatform) {
+      return;
+    }
+
+    setBusy("reclassify");
+    setStatus(null);
+
+    try {
+      const response = await fetch("/api/admin/reclassify-platform", {
+        method: "POST",
+        headers: adminHeaders(token),
+        body: JSON.stringify({
+          token: token.trim(),
+          domain: nextDomain,
+          platform: nextPlatform,
+        }),
+      });
+      const data = (await response.json()) as {
+        status?: string;
+        domain?: string;
+        platform?: string;
+        updatedRecentScan?: boolean;
+        updatedHistoryRecords?: number;
+        updatedBenchmarkSamples?: number;
+        updatedCachedAudit?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Reclassification failed");
+      }
+
+      setStatus({
+        tone: "success",
+        message: JSON.stringify(data, null, 2),
+      });
+      setReclassifyDomain("");
+      await Promise.all([loadPlatformFeedback(token), loadEmailSubscribers(token)]);
+    } catch (reclassifyError) {
+      setStatus({
+        tone: "error",
+        message:
+          reclassifyError instanceof Error
+            ? reclassifyError.message
+            : "Reclassification failed",
+      });
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (checkingStoredToken) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-600">
@@ -673,6 +807,141 @@ export default function AdminClient() {
             className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
           >
             {busy === "contributors" ? "Saving…" : "Save Contributors"}
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <h2 className="text-lg font-semibold text-slate-900">Newsletter Signups</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Email addresses collected from the header and Contact page signup forms.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            disabled={busy === "subscribers"}
+            onClick={() => void loadEmailSubscribers(token)}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+          >
+            Reload signups
+          </button>
+        </div>
+        <textarea
+          readOnly
+          value={subscriberEmails.join("\n")}
+          rows={8}
+          placeholder="No signups yet"
+          className="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900"
+        />
+        <p className="mt-2 text-sm text-slate-600">{subscriberEmails.length} subscriber(s)</p>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <h2 className="text-lg font-semibold text-slate-900">Platform Detection Feedback</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          User-submitted corrections when platform detection is unknown or low confidence.
+          Apply a platform override to update recent audits, history, benchmark samples, and cached audits.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            disabled={busy === "feedback"}
+            onClick={() => void loadPlatformFeedback(token)}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+          >
+            Reload feedback
+          </button>
+        </div>
+        <div className="mt-4 max-h-80 overflow-auto rounded-lg border border-slate-200">
+          <table className="min-w-full text-left text-sm">
+            <thead className="sticky top-0 bg-slate-50">
+              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                <th className="px-3 py-2">When</th>
+                <th className="px-3 py-2">Domain</th>
+                <th className="px-3 py-2">Suggested</th>
+                <th className="px-3 py-2">Comments</th>
+                <th className="px-3 py-2">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {platformFeedback.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-3 py-4 text-slate-500">
+                    No feedback submitted yet.
+                  </td>
+                </tr>
+              ) : (
+                platformFeedback.map((entry) => (
+                  <tr key={`${entry.timestamp}-${entry.domain}`} className="border-b border-slate-100">
+                    <td className="px-3 py-2 whitespace-nowrap text-slate-600">
+                      {new Date(entry.timestamp).toLocaleString()}
+                    </td>
+                    <td className="px-3 py-2 font-medium text-slate-900">{entry.domain}</td>
+                    <td className="px-3 py-2 text-slate-700">{entry.platform ?? "-"}</td>
+                    <td className="max-w-xs px-3 py-2 text-slate-600">
+                      {entry.comments ?? "-"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <button
+                        type="button"
+                        disabled={busy === "reclassify"}
+                        onClick={() => {
+                          setReclassifyDomain(entry.domain);
+                          if (entry.platform) {
+                            setReclassifyPlatform(entry.platform);
+                          }
+                        }}
+                        className="text-sm font-medium text-blue-900 hover:underline"
+                      >
+                        Use
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <h2 className="text-lg font-semibold text-slate-900">Reclassify Platform</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Change a domain from Other Platforms (or any incorrect label) to the correct commerce platform.
+          Sets a persistent override for future audits.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <input
+            type="text"
+            value={reclassifyDomain}
+            onChange={(event) => setReclassifyDomain(event.target.value)}
+            placeholder="zadig-et-voltaire.com"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+          />
+          <select
+            value={reclassifyPlatform}
+            onChange={(event) => setReclassifyPlatform(event.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+          >
+            <option value="Shopify">Shopify</option>
+            <option value="BigCommerce">BigCommerce</option>
+            <option value="Salesforce Commerce Cloud">Salesforce Commerce Cloud</option>
+            <option value="Magento">Adobe Commerce</option>
+            <option value="VTEX">VTEX</option>
+            <option value="Fenicio">Fenicio</option>
+            <option value="WooCommerce">WooCommerce</option>
+            <option value="Squarespace">Squarespace</option>
+            <option value="Wix">Wix</option>
+            <option value="CommerceTools">commercetools</option>
+            <option value="Unknown">Other Platforms</option>
+          </select>
+          <button
+            type="button"
+            disabled={busy === "reclassify" || !reclassifyDomain.trim()}
+            onClick={() => void handleReclassifyPlatform()}
+            className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
+          >
+            {busy === "reclassify" ? "Applying…" : "Apply Platform"}
           </button>
         </div>
       </section>

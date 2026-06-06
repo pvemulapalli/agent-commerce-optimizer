@@ -60,7 +60,7 @@ export function computeAuditConfidence(metadata: AuditReportMetadata): AuditConf
   if (metadata.dataSource === "Live Crawl") {
     signals.push("Live crawl completed successfully");
   } else {
-    signals.push("Results served from cached audit data");
+    signals.push("Results served from cached scan data");
   }
 
   return {

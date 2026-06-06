@@ -58,9 +58,9 @@ I work in payments and commerce infrastructure and have been exploring how AI ag
 
 While there is growing discussion around AI-powered shopping and agentic commerce, there are relatively few practical tools that help merchants understand how discoverable and understandable their websites are to AI systems today.
 
-I built Commerce Optimizer as a personal project to explore this space and to provide a practical way to audit merchant websites, identify discoverability gaps, and generate machine-readable assets from real storefront data.
+I built Commerce Optimizer to provide a practical way to audit merchant websites, identify discoverability gaps, and generate machine-readable assets from real storefront data.
 
-This project is intended for educational and experimentation purposes and is not affiliated with, endorsed by, or supported by any employer, company, or organization.
+Not affiliated with, endorsed by, or supported by any company or firm.
 
 ---
 
@@ -380,11 +380,9 @@ Request:
 
 ## Disclaimer
 
-This is a personal educational project created by Praveen Vemulapalli.
+Commerce Optimizer is created by Praveen Vemulapalli.
 
-This project is not affiliated with, endorsed by, supported by, or representative of any employer, company, organization, or payment network.
-
-Any opinions, code, demonstrations, examples, or workflows are personal and provided for educational purposes only.
+Not affiliated with, endorsed by, or supported by any company or firm.
 
 ---
 

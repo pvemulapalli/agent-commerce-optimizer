@@ -6,7 +6,7 @@ import type { AuditConfidenceReport } from "./audit-confidence";
 import type { AuditReportMetadata } from "./audit-metadata";
 import type { PlatformBenchmark } from "./benchmarking";
 import { buildReadinessReport } from "./readiness-score";
-import type { AuditApiResponse } from "./types";
+import type { AuditApiResponse, GenerationContext } from "./types";
 import type { CrawlSummary } from "./crawl-quality";
 
 export interface EnrichedAuditResponse extends AuditApiResponse {
@@ -21,14 +21,18 @@ export async function enrichAuditResponse(input: {
   audit: AuditApiResponse;
   crawlSummary: CrawlSummary;
   crawlDurationSec: number | null;
+  generationContext?: GenerationContext;
 }): Promise<EnrichedAuditResponse> {
   const auditMetadata = buildAuditReportMetadata({
     audit: input.audit,
     crawlSummary: input.crawlSummary,
     crawlDurationSec: input.crawlDurationSec,
+    generationContext: input.generationContext,
   });
   const auditConfidence = computeAuditConfidence(auditMetadata);
-  const report = buildReadinessReport(input.audit);
+  const report = buildReadinessReport(input.audit, {
+    merchantName: auditMetadata.merchantName,
+  });
 
   const benchmark = await getPlatformBenchmark({
     platform: input.audit.platform.platform,
@@ -39,6 +43,7 @@ export async function enrichAuditResponse(input: {
     await recordAuditHistory({
       audit: input.audit,
       confidenceScore: auditConfidence.score,
+      merchantName: auditMetadata.merchantName,
     });
   }
 

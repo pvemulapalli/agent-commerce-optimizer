@@ -1,6 +1,7 @@
 "use client";
 
 import { DimensionScoreCards } from "@/components/dimension-score-cards";
+import { AuditNextStepsInline } from "@/components/audit-next-steps";
 import { LowScoreScopeNote } from "@/components/low-score-scope-note";
 import { AUDIT_SECTION_SCROLL_CLASS } from "@/lib/scroll-utils";
 import { FUTURE_AUTOMATION_NOTE } from "@/lib/scan-messaging";
@@ -77,12 +78,16 @@ function ScoreEvidenceNote() {
 export function ReadinessDashboard({
   report,
   merchantName,
+  normalizedDomain,
+  auditedUrl,
   detectedCount,
   missingCount,
   needsReviewCount,
 }: {
   report: ReadinessReport;
   merchantName?: string;
+  normalizedDomain?: string;
+  auditedUrl?: string;
   detectedCount: number;
   missingCount: number;
   needsReviewCount: number;
@@ -96,9 +101,35 @@ export function ReadinessDashboard({
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
           AI Commerce Readiness
         </p>
-        {merchantName ? (
-          <p className="mt-2 text-lg font-semibold text-text-primary">{merchantName}</p>
-        ) : null}
+        {(merchantName || normalizedDomain) && (
+          <div className="mt-2 min-w-0">
+            {merchantName ? (
+              <h2 className="text-xl font-semibold text-text-primary sm:text-2xl">
+                {merchantName}
+              </h2>
+            ) : normalizedDomain ? (
+              <h2 className="truncate text-xl font-semibold text-text-primary sm:text-2xl">
+                {normalizedDomain}
+              </h2>
+            ) : null}
+            {normalizedDomain && merchantName ? (
+              <p className="mt-1 truncate text-sm text-text-secondary">
+                {auditedUrl ? (
+                  <a
+                    href={auditedUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-text-primary hover:underline"
+                  >
+                    {normalizedDomain}
+                  </a>
+                ) : (
+                  normalizedDomain
+                )}
+              </p>
+            ) : null}
+          </div>
+        )}
         <div className="mt-4 grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-center">
           <div className="min-w-0">
             <div className="flex items-end gap-3">
@@ -131,6 +162,9 @@ export function ReadinessDashboard({
           <div className="mt-5">
             <DimensionScoreCards dimensions={report.dimensions} />
           </div>
+          <div className="mt-6">
+            <AuditNextStepsInline />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -148,7 +182,7 @@ export function ExecutiveSummaryPanel({ report }: { report: ReadinessReport }) {
   return (
     <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
-        Executive Summary
+        Scan Summary
       </p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

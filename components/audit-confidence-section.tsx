@@ -8,7 +8,7 @@ export function AuditConfidenceSection({
   return (
     <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
-        Audit Confidence
+        Scan Confidence
       </p>
       <div className="mt-4 flex flex-wrap items-end gap-4">
         <div>

@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.4.0] - 2026-06-05
+
+### Added
+- VTEX and Fenicio platform detection with verified LATAM domain hints
+- Platform Leaderboard table replacing fixed platform benchmark cards
+- Platform detection feedback modal (stored in Redis)
+- Footer email signup for product updates (stored in Redis)
+- Post-audit Recommended Next Steps with direct action buttons
+- Benchmark sample persistence in Redis (platform, score, top gap, timestamp)
+
+### Changed
+- Improved Adobe Commerce (Magento) detection using storefront assets, mage-init, and catalog fingerprints
+- Footer cleanup: removed duplicate branding, updated disclaimer, version 3.4.0
+- Release notes: latest release expanded, older releases collapsed
+- Invalid non-ecommerce scans show clearer messaging and are excluded from benchmarks
+- `release:add` auto-categorizes changelog entries with [Added]/[Changed]/[Fixed] prefixes
+
 ## [3.3.2] - 2026-06-05
 
 ### Changed

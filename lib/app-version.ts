@@ -1,4 +1,4 @@
 /** Bump when shipping a new version of the optimizer. */
-export const APP_VERSION = "3.3.2";
+export const APP_VERSION = "3.4.0";
 
 export const APP_VERSION_LABEL = `Version ${APP_VERSION}`;

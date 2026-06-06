@@ -44,7 +44,7 @@ export function MarketingSections() {
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
           Not Just Visibility. Optimization.
         </h2>
-        <p className="mt-4 max-w-3xl text-base font-medium leading-7 text-text-primary">
+        <p className="mt-4 text-base font-medium leading-7 text-text-primary">
           {DIFFERENTIATOR_INTRO_COPY}
         </p>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-text-secondary sm:text-base">
@@ -66,7 +66,7 @@ export function MarketingSections() {
 
       <section className="rounded-2xl border border-card-border bg-card p-8 shadow-sm sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary">
-          What We Audit
+          What We Scan
         </p>
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
           Evidence-backed storefront checks

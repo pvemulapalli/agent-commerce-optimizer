@@ -27,7 +27,7 @@ function ScanForm({
   onSubmit,
   onTurnstileTokenChange,
   inputId = "website-url",
-  ctaLabel = "Run Free Audit",
+  ctaLabel = "Run Free Scan",
 }: {
   url: string;
   loading: boolean;
@@ -66,7 +66,7 @@ function ScanForm({
           disabled={submitDisabled}
           className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-900 px-8 py-3.5 text-base font-semibold text-white hover:bg-blue-950 disabled:cursor-not-allowed disabled:bg-slate-400 dark:disabled:bg-slate-600"
         >
-          {loading ? "Running Audit…" : ctaLabel}
+          {loading ? "Running Scan…" : ctaLabel}
         </button>
       </div>
 

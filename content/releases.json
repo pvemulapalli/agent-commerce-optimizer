@@ -1,6 +1,26 @@
 {
   "releases": [
     {
+      "version": "3.4.0",
+      "date": "2026-06-05",
+      "title": "International platform detection and benchmark scalability",
+      "summary": "Adobe Commerce detection improvements, VTEX and Fenicio support, scalable platform leaderboard, user retention features, and benchmark data foundation.",
+      "categories": [
+        "UX",
+        "Fixes"
+      ],
+      "changes": [
+        "Improved Adobe Commerce detection with Magento storefront fingerprints",
+        "Added VTEX and Fenicio platform detection for international storefronts",
+        "Replaced fixed platform cards with a scalable Platform Leaderboard table",
+        "Invalid non-ecommerce scans no longer pollute benchmarks or recent audits",
+        "Platform detection feedback loop and footer email signup (Redis-backed)",
+        "Post-audit Recommended Next Steps guide users after every completed scan",
+        "Benchmark samples persisted in Redis for future trend reporting",
+        "Footer branding cleanup and release notes automation improvements"
+      ]
+    },
+    {
       "version": "3.3.2",
       "date": "2026-06-05",
       "title": "Audit loading feedback",

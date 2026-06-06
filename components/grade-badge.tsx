@@ -30,10 +30,10 @@ type GradeBadgeProps = {
 };
 
 export function GradeBadge({ grade, className = "" }: GradeBadgeProps) {
-  const letter = grade.trim().charAt(0).toUpperCase() || "—";
+  const letter = grade.trim().charAt(0).toUpperCase() || "-";
   const tone = getGradeTone(grade);
   const colors = toneClasses[tone];
-  const accessibleLabel = letter === "—" ? "Grade unavailable" : `Grade ${letter}`;
+  const accessibleLabel = letter === "-" ? "Grade unavailable" : `Grade ${letter}`;
 
   return (
     <>

@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/page-header";
+import { EmailSignupForm } from "@/components/email-signup-form";
 import { PROJECT_DISCLAIMER } from "@/lib/disclaimer";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -16,7 +17,7 @@ export default function ContactPage() {
         title="Get in touch"
         description={
           <>
-            Questions, feedback, or ideas about AI commerce discoverability — reach
+            Questions, feedback, or ideas about AI commerce discoverability? Reach
             out to{" "}
             <a
               href="https://www.linkedin.com/in/praveenvemulapalli/"
@@ -30,6 +31,20 @@ export default function ContactPage() {
           </>
         }
       />
+
+      <section
+        id="newsletter"
+        className="mt-10 rounded-2xl border border-blue-200 bg-blue-50/70 p-8 shadow-sm dark:border-blue-500/30 dark:bg-blue-950/30"
+      >
+        <h2 className="text-xl font-semibold text-text-primary">Product updates</h2>
+        <p className="mt-2 text-sm leading-6 text-text-secondary">
+          Get occasional email when we add platform support, publish benchmarks, or ship
+          major releases.
+        </p>
+        <div className="mt-5">
+          <EmailSignupForm idPrefix="contact-newsletter" />
+        </div>
+      </section>
 
       <section className="mt-10 rounded-2xl border border-card-border bg-card p-8 shadow-sm">
         <h2 className="text-xl font-semibold text-text-primary">
@@ -97,7 +112,7 @@ export default function ContactPage() {
           href="/"
           className="text-sm font-medium text-blue-900 hover:underline dark:text-blue-300"
         >
-          ← Back to audit
+          ← Back to scan
         </Link>
       </p>
     </main>

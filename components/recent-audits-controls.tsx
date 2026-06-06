@@ -70,7 +70,7 @@ export function RecentAuditsControls({
             ["score", "Score"],
             ["grade", "Grade"],
             ["platform", "Platform"],
-            ["scannedAt", "Audit Date"],
+            ["scannedAt", "Scan Date"],
           ] as const
         ).map(([field, label]) => {
           const isActive = sort === field;

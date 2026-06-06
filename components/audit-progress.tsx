@@ -10,7 +10,7 @@ const PROGRESS_STEPS = [
 ];
 
 export function AuditProgressBar({
-  label = "Running audit",
+  label = "Running scan",
 }: {
   label?: string;
 }) {
@@ -33,7 +33,7 @@ export function AuditProgressBar({
     >
       <div className="flex items-center justify-between gap-3 text-sm">
         <p className="font-medium text-text-primary">{label}</p>
-        <p className="text-xs text-text-secondary">Usually 5–15 seconds</p>
+        <p className="text-xs text-text-secondary">Usually 5-15 seconds</p>
       </div>
 
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">

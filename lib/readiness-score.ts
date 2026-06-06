@@ -1,4 +1,4 @@
-import { getMerchantDisplayName } from "./domain-normalization";
+import { resolveMerchantDisplayName } from "./merchant-name";
 import { formatPlatformDisplay } from "./platform-labels";
 import type {
   AuditApiResponse,
@@ -40,7 +40,7 @@ export interface ReadinessReport {
 }
 
 export const SCORE_EVIDENCE_NOTE =
-  "Scores are derived from evidence-backed findings collected during the audit.";
+  "Scores are derived from evidence-backed findings collected during the scan.";
 
 const DIMENSION_LABELS: Record<ReadinessDimensionId, string> = {
   discoverability: "Discoverability",
@@ -214,8 +214,11 @@ export function getReadinessSummaryLabel(score: number): string {
   }
 }
 
-function getMerchantName(audit: AuditApiResponse): string {
-  return getMerchantDisplayName(audit.url);
+function getMerchantName(
+  audit: AuditApiResponse,
+  merchantName?: string,
+): string {
+  return merchantName ?? resolveMerchantDisplayName({ url: audit.url });
 }
 
 function buildRecommendations(
@@ -339,7 +342,10 @@ export function getTopGap(
   return "Structured Data";
 }
 
-export function buildReadinessReport(audit: AuditApiResponse): ReadinessReport {
+export function buildReadinessReport(
+  audit: AuditApiResponse,
+  options?: { merchantName?: string },
+): ReadinessReport {
   const dimensions = computeDimensionScores(audit.findings, audit.platform);
 
   const score =
@@ -360,7 +366,7 @@ export function buildReadinessReport(audit: AuditApiResponse): ReadinessReport {
     .slice(0, 3)
     .map((dimension) => dimension.label);
 
-  const merchant = getMerchantName(audit);
+  const merchant = getMerchantName(audit, options?.merchantName);
   const executiveSummary = buildExecutiveSummaryText(
     merchant,
     strengths,

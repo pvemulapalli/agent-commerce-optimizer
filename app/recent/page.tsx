@@ -3,9 +3,9 @@ import { Suspense } from "react";
 import RecentAuditsPage from "./recent-client";
 
 export const metadata: Metadata = {
-  title: "Recent Audits",
+  title: "Recent Scans",
   description:
-    "Public scan summaries for recently audited merchant domains.",
+    "Public scan summaries for recently scanned merchant domains.",
 };
 
 export default function RecentAuditsRoute() {

@@ -62,8 +62,8 @@ export default function RecentAuditsPage() {
     <main className="mx-auto w-full min-w-0 max-w-6xl overflow-x-hidden px-6 py-10 lg:px-8 lg:py-14">
       <PageHeader
         eyebrow="Global scan history"
-        title="Recent Audits"
-        description="Shared scan summaries across all users, stored in Redis. Recent audits show public scan summaries only. Full reports are available only from the original scan flow."
+        title="Recent Scans"
+        description="Shared scan summaries across all users, stored in Redis. Recent scans show public summaries only. Full reports are available only from the original scan flow."
       />
 
       {activity.platformStats.length > 0 ? (
@@ -103,8 +103,8 @@ export default function RecentAuditsPage() {
             onSortChange={handleSortChange}
             emptyMessage={
               activity.recentScans.length > 0
-                ? "No audits match your search or filters."
-                : "No scans recorded yet. Run the first audit from the homepage."
+                ? "No scans match your search or filters."
+                : "No scans recorded yet. Run the first scan from the homepage."
             }
           />
         )}
@@ -115,7 +115,7 @@ export default function RecentAuditsPage() {
           href="/"
           className="text-sm font-medium text-blue-900 hover:underline dark:text-blue-300"
         >
-          ← Back to audit
+          ← Back to scan
         </Link>
       </p>
     </main>

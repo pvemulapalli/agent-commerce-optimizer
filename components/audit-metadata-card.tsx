@@ -21,7 +21,7 @@ function formatLocalTimestamp(iso: string): string {
 
 function formatDuration(seconds: number | null): string {
   if (seconds === null) {
-    return "—";
+    return "-";
   }
 
   return `${seconds.toFixed(1)} sec`;
@@ -29,7 +29,7 @@ function formatDuration(seconds: number | null): string {
 
 export function AuditMetadataCard({ metadata }: { metadata: AuditReportMetadata }) {
   const items = [
-    { label: "Last Crawled", value: formatLocalTimestamp(metadata.lastCrawled) },
+    { label: "Last Scanned", value: formatLocalTimestamp(metadata.lastCrawled) },
     { label: "Pages Crawled", value: String(metadata.pagesCrawled) },
     { label: "Products Sampled", value: String(metadata.productsSampled) },
     { label: "Policy Pages Found", value: String(metadata.policyPagesFound) },
@@ -40,7 +40,7 @@ export function AuditMetadataCard({ metadata }: { metadata: AuditReportMetadata 
   return (
     <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
-        Audit Metadata
+        Scan Metadata
       </p>
       <h2 className="mt-2 text-xl font-semibold text-text-primary">
         {metadata.merchantName}

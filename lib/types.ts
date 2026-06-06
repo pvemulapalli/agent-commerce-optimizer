@@ -10,6 +10,8 @@ export type CommercePlatform =
   | "Wix"
   | "Squarespace"
   | "Magento"
+  | "VTEX"
+  | "Fenicio"
   | "CommerceTools"
   | "Unknown";
 

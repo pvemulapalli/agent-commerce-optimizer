@@ -83,7 +83,7 @@ export function DimensionScoreCards({
   if (dimensions.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed border-card-border bg-card-muted px-6 py-10 text-center text-sm text-text-secondary">
-        No scored dimensions — run a full audit to collect evidence-backed signals.
+        No scored dimensions yet. Run a full scan to collect evidence-backed signals.
       </p>
     );
   }

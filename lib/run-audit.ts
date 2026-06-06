@@ -20,12 +20,24 @@ import {
   buildGenerationContext,
   buildGenerationContextFromFindings,
 } from "@/lib/generation-context";
+import {
+  applyPlatformOverride,
+  getPlatformOverride,
+} from "@/lib/platform-overrides";
 
-import type { AuditApiResponse, GenerationContext } from "@/lib/types";
+import type { AuditApiResponse, GenerationContext, PlatformAnalysis } from "@/lib/types";
 
 export interface AuditRunResult extends AuditApiResponse {
   crawlSummary: CrawlSummary;
   generationContext: GenerationContext;
+}
+
+async function resolvePlatformAnalysis(
+  url: string,
+  platform: PlatformAnalysis,
+): Promise<PlatformAnalysis> {
+  const override = await getPlatformOverride(url);
+  return override ? applyPlatformOverride(platform, override) : platform;
 }
 
 export async function runAudit(url: string): Promise<AuditRunResult> {
@@ -34,20 +46,21 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
   if (isCacheEnabled()) {
     const cached = await readCachedAudit(url);
     if (cached) {
-      const findings = finalizeFindings(cached.findings, cached.platform);
+      const platform = await resolvePlatformAnalysis(cached.url, cached.platform);
+      const findings = finalizeFindings(cached.findings, platform);
       const generationContext =
         cached.generationContext ??
         buildGenerationContextFromFindings(
           cached.url,
           cached.crawledAt,
-          cached.platform,
+          platform,
           findings,
         );
 
       try {
         assertEcommerceEligible({
           findings,
-          platform: cached.platform,
+          platform,
           generationPages: generationContext.pages,
         });
       } catch (error) {
@@ -60,6 +73,7 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
 
       return {
         ...cached,
+        platform,
         findings,
         grouped: groupFindings(findings),
         cacheStatus: "HIT",
@@ -75,7 +89,9 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
   const crawlData = await crawlSite(url);
   assertMinimumCrawlHealth(crawlData);
   const crawlSummary = buildCrawlSummary(crawlData);
-  const { platform, findings } = runChecks(crawlData);
+  const checks = runChecks(crawlData);
+  const platform = await resolvePlatformAnalysis(crawlData.entryUrl, checks.platform);
+  const findings = checks.findings;
   const finalizedFindings = finalizeFindings(findings, platform);
   const grouped = groupFindings(finalizedFindings);
 

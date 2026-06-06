@@ -120,7 +120,7 @@ function generateLlmsTxt(context: GenerationContext): string {
 
   if (context.llmsTxt.status === 200 && context.llmsTxt.content?.trim()) {
     lines.push(
-      `- Existing llms.txt found at ${context.llmsTxt.url} — review and merge with this draft`,
+      `- Existing llms.txt found at ${context.llmsTxt.url}. Review and merge with this draft`,
     );
   }
 
@@ -225,13 +225,13 @@ function generateMerchantProfile(context: GenerationContext): string {
 
   lines.push("", "## Discovery files", "");
   lines.push(
-    `- robots.txt: ${context.robotsTxt.status === 200 ? context.robotsTxt.url : `TODO — checked ${context.robotsTxt.url}`}`,
+    `- robots.txt: ${context.robotsTxt.status === 200 ? context.robotsTxt.url : `TODO: checked ${context.robotsTxt.url}`}`,
   );
   lines.push(
-    `- sitemap.xml: ${context.sitemapXml.status === 200 ? context.sitemapXml.url : `TODO — checked ${context.sitemapXml.url}`}`,
+    `- sitemap.xml: ${context.sitemapXml.status === 200 ? context.sitemapXml.url : `TODO: checked ${context.sitemapXml.url}`}`,
   );
   lines.push(
-    `- llms.txt: ${context.llmsTxt.status === 200 ? context.llmsTxt.url : `TODO — checked ${context.llmsTxt.url}`}`,
+    `- llms.txt: ${context.llmsTxt.status === 200 ? context.llmsTxt.url : `TODO: checked ${context.llmsTxt.url}`}`,
   );
 
   return `${lines.join("\n")}\n`;
@@ -353,7 +353,7 @@ function generateAgentCommerceReadiness(context: GenerationContext): string {
   const lines: string[] = [
     "# Agent Commerce Readiness",
     "",
-    "_Evidence-backed audit summary for AI agent discoverability. No scores — only what the crawl found._",
+    "_Evidence-backed audit summary for AI agent discoverability. No scores; only what the crawl found._",
     "",
     `**Audited URL:** ${context.auditedUrl}`,
     `**Crawl timestamp:** ${context.crawledAt}`,

@@ -1,4 +1,7 @@
 import { getCommercetoolsDomainHint } from "./commercetools-domain-hints";
+import { getFenicioDomainHint } from "./fenicio-domain-hints";
+import { getMagentoDomainHint } from "./magento-domain-hints";
+import { getVtexDomainHint } from "./vtex-domain-hints";
 import type { CommercePlatform, ConfidenceLevel, CrawlData } from "./types";
 import { aggregateConfidence, uniqueUrls } from "./schema-utils";
 
@@ -16,7 +19,9 @@ const PLATFORM_LABELS: Record<CommercePlatform, string> = {
   WooCommerce: "WooCommerce",
   Wix: "Wix",
   Squarespace: "Squarespace",
-  Magento: "Magento",
+  Magento: "Adobe Commerce",
+  VTEX: "VTEX",
+  Fenicio: "Fenicio",
   CommerceTools: "CommerceTools",
   Unknown: "Unknown",
 };
@@ -137,11 +142,124 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
       });
     }
 
-    if (/mage\/cookies|magento|mage-cache-storage|catalog\/product/i.test(content)) {
+    if (
+      /data-mage-init|text\/x-magento-init|Magento_Ui|mage\/requirejs|requirejs-config\.js/i.test(
+        content,
+      )
+    ) {
       signals.push({
         platform: "Magento",
-        label: "Magento assets or catalog structures detected",
+        label: "Magento RequireJS or mage-init bootstrap detected",
         weight: 3,
+        sourceUrl: source.url,
+      });
+    }
+
+    if (
+      /\/static\/frontend\/|\/pub\/static\/|mage-cache-storage|form-key|x-magento-vary/i.test(
+        content + urlLower,
+      )
+    ) {
+      signals.push({
+        platform: "Magento",
+        label: "Magento static frontend or cache signatures detected",
+        weight: 3,
+        sourceUrl: source.url,
+      });
+    }
+
+    if (
+      /mage\/cookies|magento|catalog\/product\/view|customer\/section\/load|price-box|data-product-id/i.test(
+        content,
+      )
+    ) {
+      signals.push({
+        platform: "Magento",
+        label: "Magento catalog, customer, or product runtime detected",
+        weight: 3,
+        sourceUrl: source.url,
+      });
+    }
+
+    if (
+      /adobe-client-data-layer|adobeDataLayer|@adobe\/magento|commerce\.adobe|hyva-themes|checkoutConfig|secure_base_url/i.test(
+        content,
+      )
+    ) {
+      signals.push({
+        platform: "Magento",
+        label: "Adobe Commerce / Magento storefront runtime detected",
+        weight: 3,
+        sourceUrl: source.url,
+      });
+    }
+
+    if (
+      /\/rest\/(?:default\/)?V1\/|\/graphql\b|media\/catalog\/product|magentoStorefrontEvents/i.test(
+        content + urlLower,
+      )
+    ) {
+      signals.push({
+        platform: "Magento",
+        label: "Magento REST, GraphQL, or catalog media endpoints detected",
+        weight: 3,
+        sourceUrl: source.url,
+      });
+    }
+
+    if (
+      /vtexassets\.com|vteximg\.com|vtexcommercestable|vtexcdn\.com|vtexio\.net|checkout\.vtex\.com/i.test(
+        content + urlLower,
+      )
+    ) {
+      signals.push({
+        platform: "VTEX",
+        label: "VTEX CDN or commerce runtime assets detected",
+        weight: 3,
+        sourceUrl: source.url,
+      });
+    }
+
+    if (
+      /__RUNTIME__|vtex\.pixel|render-runtime|vtex\.store|vtex\.id|io\.vtex|vtexcms|vtex\.js/i.test(
+        content,
+      )
+    ) {
+      signals.push({
+        platform: "VTEX",
+        label: "VTEX IO runtime or storefront scripts detected",
+        weight: 3,
+        sourceUrl: source.url,
+      });
+    }
+
+    if (/api\/catalog_system|vtex\.minicart|vtexcommerce/i.test(content + urlLower)) {
+      signals.push({
+        platform: "VTEX",
+        label: "VTEX catalog API or minicart integration detected",
+        weight: 3,
+        sourceUrl: source.url,
+      });
+    }
+
+    if (
+      /fnstatic\.com|fno-api|fnotecommerce|store\.fenicio|fenicio-store|fncommerce|fenicio ecommerce/i.test(
+        content + urlLower,
+      )
+    ) {
+      signals.push({
+        platform: "Fenicio",
+        label: "Fenicio storefront assets or API endpoints detected",
+        weight: 3,
+        sourceUrl: source.url,
+      });
+    }
+
+    if (/\bfenicio\b/i.test(content) && /\/cart|checkout|product|tienda/i.test(content)) {
+      signals.push({
+        platform: "Fenicio",
+        label: "Fenicio commerce runtime markers detected",
+        weight: 2,
         sourceUrl: source.url,
       });
     }
@@ -280,10 +398,23 @@ function collectUrlSignals(data: CrawlData): PlatformSignal[] {
       });
     }
 
-    if (/\/catalog\/product\/|\/catalog\/category\//i.test(lower)) {
+    if (
+      /\/catalog\/product\/|\/catalog\/category\/|\/checkout\/cart|\/customer\/account/i.test(
+        lower,
+      )
+    ) {
       signals.push({
         platform: "Magento",
-        label: "Magento catalog URL structure detected",
+        label: "Magento catalog or checkout URL structure detected",
+        weight: 2,
+        sourceUrl: url,
+      });
+    }
+
+    if (/\/p\b|\/checkout\/#\/|\/account\/#/i.test(lower)) {
+      signals.push({
+        platform: "VTEX",
+        label: "VTEX product or checkout URL pattern detected",
         weight: 2,
         sourceUrl: url,
       });
@@ -334,43 +465,84 @@ function scoreToConfidence(score: number, evidenceCount: number): ConfidenceLeve
   return "low";
 }
 
-function shouldApplyCommercetoolsDomainHint(
-  ranked: {
-    platform: CommercePlatform;
-    score: number;
-  } | null,
+function shouldApplyDomainHint(
+  ranked: { platform: CommercePlatform; score: number } | null,
+  platform: CommercePlatform,
 ): boolean {
   if (!ranked) {
     return true;
   }
 
-  if (ranked.platform === "CommerceTools") {
+  if (ranked.platform === platform) {
     return true;
   }
 
   return ranked.score < 6;
 }
 
+function applyDomainHintOverride(input: {
+  entryUrl: string;
+  ranked: ReturnType<typeof scorePlatform>;
+  hint: string;
+  platform: CommercePlatform;
+}) {
+  const evidence =
+    input.ranked?.platform === input.platform
+      ? [...input.ranked.evidence, input.hint]
+      : [input.hint, ...(input.ranked?.evidence ?? [])];
+
+  const score = input.ranked?.platform === input.platform ? input.ranked.score + 2 : 4;
+
+  return {
+    platform: input.platform,
+    confidence: scoreToConfidence(score, evidence.length),
+    evidence: [...new Set(evidence)],
+    sourceUrls: uniqueUrls([input.entryUrl, ...(input.ranked?.sourceUrls ?? [])]),
+  };
+}
+
 export function detectPlatform(data: CrawlData) {
   const signals = [...collectHtmlSignals(data), ...collectUrlSignals(data)];
   const ranked = scorePlatform(signals);
-  const domainHint = getCommercetoolsDomainHint(data.entryUrl);
 
-  if (domainHint && shouldApplyCommercetoolsDomainHint(ranked)) {
-    const evidence = ranked?.platform === "CommerceTools"
-      ? [...ranked.evidence, domainHint]
-      : [domainHint, ...(ranked?.evidence ?? [])];
+  const commercetoolsHint = getCommercetoolsDomainHint(data.entryUrl);
+  if (commercetoolsHint && shouldApplyDomainHint(ranked, "CommerceTools")) {
+    return applyDomainHintOverride({
+      entryUrl: data.entryUrl,
+      ranked,
+      hint: commercetoolsHint,
+      platform: "CommerceTools",
+    });
+  }
 
-    const score = ranked?.platform === "CommerceTools"
-      ? ranked.score + 2
-      : 4;
+  const vtexHint = getVtexDomainHint(data.entryUrl);
+  if (vtexHint && shouldApplyDomainHint(ranked, "VTEX")) {
+    return applyDomainHintOverride({
+      entryUrl: data.entryUrl,
+      ranked,
+      hint: vtexHint,
+      platform: "VTEX",
+    });
+  }
 
-    return {
-      platform: "CommerceTools" as CommercePlatform,
-      confidence: scoreToConfidence(score, evidence.length),
-      evidence: [...new Set(evidence)],
-      sourceUrls: uniqueUrls([data.entryUrl, ...(ranked?.sourceUrls ?? [])]),
-    };
+  const fenicioHint = getFenicioDomainHint(data.entryUrl);
+  if (fenicioHint && shouldApplyDomainHint(ranked, "Fenicio")) {
+    return applyDomainHintOverride({
+      entryUrl: data.entryUrl,
+      ranked,
+      hint: fenicioHint,
+      platform: "Fenicio",
+    });
+  }
+
+  const magentoHint = getMagentoDomainHint(data.entryUrl);
+  if (magentoHint && shouldApplyDomainHint(ranked, "Magento")) {
+    return applyDomainHintOverride({
+      entryUrl: data.entryUrl,
+      ranked,
+      hint: magentoHint,
+      platform: "Magento",
+    });
   }
 
   if (!ranked) {

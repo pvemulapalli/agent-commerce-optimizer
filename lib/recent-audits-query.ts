@@ -13,6 +13,8 @@ export const PLATFORM_FILTER_OPTIONS = [
   { value: "WooCommerce", label: "WooCommerce" },
   { value: "Salesforce Commerce Cloud", label: "Salesforce Commerce Cloud" },
   { value: "Magento", label: "Adobe Commerce" },
+  { value: "VTEX", label: "VTEX" },
+  { value: "Fenicio", label: "Fenicio" },
   { value: "Squarespace", label: "Squarespace" },
   { value: "Wix", label: "Wix" },
   { value: "Unknown", label: "Other Platforms" },

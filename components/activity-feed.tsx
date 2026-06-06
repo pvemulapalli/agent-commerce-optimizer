@@ -73,14 +73,14 @@ export function ActivityFeed({
       <p className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary">
         Live activity
       </p>
-      <p className="mt-2 text-sm font-medium text-text-primary">New audit completed</p>
+      <p className="mt-2 text-sm font-medium text-text-primary">New scan completed</p>
       <p className="mt-1 break-all text-sm text-blue-900 dark:text-blue-300">{current.hostname}</p>
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
         <span className="rounded-full bg-slate-900 px-2.5 py-1 font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
-          Score {current.readinessScore ?? "—"}
+          Score {current.readinessScore ?? "-"}
         </span>
         <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-          Grade {current.grade || "—"}
+          Grade {current.grade || "-"}
         </span>
         <span className="text-sm">
           <PlatformLabel platform={current.platform} />

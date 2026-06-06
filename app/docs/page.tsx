@@ -7,7 +7,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "API Documentation",
   description:
-    "REST API reference for running merchant audits and generating AI-ready fix assets.",
+    "REST API reference for running merchant scans and generating AI-ready fix assets.",
 };
 
 function CodeBlock({ children }: { children: string }) {
@@ -90,7 +90,7 @@ export default async function DocsPage() {
         eyebrow="API Reference"
         eyebrowClassName="text-indigo-600 dark:text-indigo-400"
         title="Documentation"
-        description="Run evidence-backed merchant audits and generate downloadable fix assets programmatically. No authentication required."
+        description="Run evidence-backed merchant scans and generate downloadable fix assets programmatically. No authentication required."
       />
 
       <div className="mt-10 space-y-8">
@@ -131,7 +131,7 @@ export default async function DocsPage() {
           <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
             <h2 className="text-lg font-semibold text-text-primary">OpenAPI specification</h2>
             <p className="mt-2 text-sm leading-7 text-text-secondary">
-              Machine-readable API description for health, audit, and generate-fixes
+              Machine-readable API description for health, scan, and generate-fixes
               endpoints.
             </p>
             <div className="mt-4 min-w-0">
@@ -142,7 +142,7 @@ export default async function DocsPage() {
           <EndpointSection
             method="POST"
             path="/api/audit"
-            title="Run audit"
+            title="Run scan"
             description="Crawls a merchant URL and returns platform analysis, evidence-backed findings grouped by status, and cache metadata. Findings are derived only from crawled pages and discovery files."
             requestExample={`{
   "url": "https://www.allbirds.com"
@@ -185,7 +185,7 @@ export default async function DocsPage() {
             method="POST"
             path="/api/generate-fixes"
             title="Generate fixes"
-            description="Reuses the audit crawl and cache, then returns six downloadable assets built only from crawled evidence. TODO placeholders mark missing facts — nothing is invented."
+            description="Reuses the scan crawl and cache, then returns six downloadable assets built only from crawled evidence. TODO placeholders mark missing facts; nothing is invented."
             requestExample={`{
   "url": "https://www.allbirds.com"
 }`}
@@ -249,7 +249,7 @@ export default async function DocsPage() {
 
         <p className="mt-10 text-sm text-text-secondary">
           <Link href="/" className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300">
-            ← Back to audit
+            ← Back to scan
           </Link>
         </p>
     </main>

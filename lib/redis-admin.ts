@@ -8,6 +8,9 @@ const ACO_KEY_PREFIXES = [
   "aco:audit:",
   "aco:ratelimit:",
   "aco:admin:",
+  "aco:benchmark:",
+  "aco:email:",
+  "aco:platform:feedback",
 ];
 
 export async function clearCommerceOptimizerRedisKeys(): Promise<number> {

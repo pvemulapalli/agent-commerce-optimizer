@@ -21,7 +21,7 @@ function measureHeaderHeightPx(): number {
 }
 
 function measureAuditTabHeightPx(): number {
-  const tabNav = document.querySelector('nav[aria-label="Audit report sections"]');
+  const tabNav = document.querySelector('nav[aria-label="Scan report sections"]');
   if (!tabNav) {
     return DEFAULT_TAB_HEIGHT_PX;
   }
@@ -75,4 +75,27 @@ export function scrollToElementById(
     return;
   }
   scrollToElementWithOffset(element, behavior);
+}
+
+/** Scroll audit overview into view after a scan; retries while layout settles. */
+export function scrollToAuditOverview(behavior: ScrollBehavior = "instant"): void {
+  const performScroll = (): boolean => {
+    const element = document.getElementById("overview");
+    if (!element) {
+      return false;
+    }
+    scrollToElementWithOffset(element, behavior);
+    return true;
+  };
+
+  const scheduleRetries = () => {
+    performScroll();
+    window.setTimeout(performScroll, 0);
+    window.setTimeout(performScroll, 50);
+    window.setTimeout(performScroll, 150);
+  };
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(scheduleRetries);
+  });
 }

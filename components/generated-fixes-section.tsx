@@ -269,7 +269,7 @@ export function GeneratedFixesSection({
             </span>
           </div>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-violet-900/80 dark:text-violet-100/80">
-            Downloadable assets derived only from crawled audit evidence. TODO
+            Downloadable assets derived only from crawled scan evidence. TODO
             placeholders mark information that was not found during the crawl.
           </p>
         </div>
@@ -302,7 +302,7 @@ export function GeneratedFixesSection({
           <dl className="grid min-w-0 gap-4 rounded-xl border border-violet-200/70 bg-card/70 p-4 sm:grid-cols-2 lg:grid-cols-3 dark:border-violet-500/30">
             <div className="min-w-0">
               <dt className="text-xs font-medium uppercase tracking-wide text-violet-600/80">
-                Audited URL
+                Scanned URL
               </dt>
               <dd className="mt-1 break-all text-sm text-text-primary">
                 {fixes.auditedUrl}
@@ -319,7 +319,7 @@ export function GeneratedFixesSection({
             {fixes.cacheStatus && (
               <div className="min-w-0">
                 <dt className="text-xs font-medium uppercase tracking-wide text-violet-600/80 dark:text-violet-300/80">
-                  Audit Cache
+                  Scan Cache
                 </dt>
                 <dd className="mt-1 text-sm font-medium text-text-primary">
                   {fixes.cacheStatus}

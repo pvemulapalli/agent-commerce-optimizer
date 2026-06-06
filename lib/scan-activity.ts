@@ -1,8 +1,11 @@
-import { getMerchantDisplayName, normalizeDomainFromUrl } from "./domain-normalization";
+import { normalizeDomainFromUrl } from "./domain-normalization";
+import { resolveMerchantDisplayName } from "./merchant-name";
+import type { AuditReportMetadata } from "./audit-metadata";
 import {
-  computePlatformReadinessStats,
-  type PlatformReadinessStat,
-} from "./platform-readiness-stats";
+  computePlatformLeaderboard,
+  type PlatformLeaderboardStat,
+} from "./platform-leaderboard";
+import { recordBenchmarkSample } from "./benchmark-samples";
 import type { AuditApiResponse } from "./types";
 import { buildReadinessReport } from "./readiness-score";
 import { getRedis, isRedisConfigured } from "./redis";
@@ -25,7 +28,7 @@ export interface RecentScanRecord {
 export interface ScanActivityResponse {
   totalScans: number;
   recentScans: RecentScanRecord[];
-  platformStats: PlatformReadinessStat[];
+  platformStats: PlatformLeaderboardStat[];
 }
 
 const TOTAL_KEY = "aco:scan:total";
@@ -115,8 +118,11 @@ export function dedupeRecentScans(records: RecentScanRecord[]): RecentScanRecord
   );
 }
 
-export function extractMerchantName(url: string): string {
-  return getMerchantDisplayName(url);
+export function extractMerchantName(
+  url: string,
+  merchantName?: string,
+): string {
+  return merchantName ?? resolveMerchantDisplayName({ url });
 }
 
 export function buildAuditSummary(audit: AuditApiResponse): string {
@@ -125,7 +131,10 @@ export function buildAuditSummary(audit: AuditApiResponse): string {
   return `${detected.length} detected · ${missing.length} missing · ${needsReview.length} needs review`;
 }
 
-export function createScanRecord(audit: AuditApiResponse): RecentScanRecord {
+export function createScanRecord(
+  audit: AuditApiResponse,
+  merchantName?: string,
+): RecentScanRecord {
   const hostname = new URL(audit.url).hostname;
   const report = buildReadinessReport(audit);
 
@@ -133,7 +142,7 @@ export function createScanRecord(audit: AuditApiResponse): RecentScanRecord {
     id: normalizeHostname(hostname),
     url: audit.url,
     hostname,
-    merchant: extractMerchantName(audit.url),
+    merchant: extractMerchantName(audit.url, merchantName),
     platform: audit.platform.platform,
     confidence: audit.platform.confidence,
     scannedAt: audit.crawledAt,
@@ -245,14 +254,48 @@ export function shouldRecordCompletedScan(audit: AuditApiResponse): boolean {
   return audit.cacheStatus !== "HIT";
 }
 
+export async function updateRecentScanPlatform(
+  domainInput: string,
+  platform: string,
+): Promise<boolean> {
+  const hostKey = normalizeDomainFromUrl(
+    domainInput.includes("://") ? domainInput : `https://${domainInput}/`,
+  );
+
+  try {
+    const existing = await getExistingRecentScans();
+    const index = existing.findIndex(
+      (item) => normalizeHostname(item.hostname) === hostKey,
+    );
+
+    if (index === -1) {
+      return false;
+    }
+
+    const next = [...existing];
+    next[index] = { ...next[index], platform };
+
+    if (isRedisConfigured()) {
+      await replaceRecentScanList(next);
+    } else {
+      memoryRecentScans = next;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("[scan-activity] platform update failed:", error);
+    return false;
+  }
+}
+
 export async function recordCompletedScan(
-  audit: AuditApiResponse,
+  audit: AuditApiResponse & { auditMetadata?: AuditReportMetadata },
 ): Promise<RecentScanRecord | null> {
   if (!shouldRecordCompletedScan(audit)) {
     return null;
   }
 
-  const record = createScanRecord(audit);
+  const record = createScanRecord(audit, audit.auditMetadata?.merchantName);
 
   try {
     const existing = await getExistingRecentScans();
@@ -266,6 +309,8 @@ export async function recordCompletedScan(
         await redis.incr(TOTAL_KEY);
       }
 
+      await recordBenchmarkSample(audit);
+
       return record;
     }
 
@@ -274,6 +319,8 @@ export async function recordCompletedScan(
     if (isNewHostname) {
       memoryTotalScans += 1;
     }
+
+    await recordBenchmarkSample(audit);
 
     return record;
   } catch (error) {
@@ -292,7 +339,7 @@ function buildScanActivityResponse(
   return {
     totalScans,
     recentScans: deduped.slice(0, limit),
-    platformStats: computePlatformReadinessStats(deduped),
+    platformStats: computePlatformLeaderboard(deduped),
   };
 }
 

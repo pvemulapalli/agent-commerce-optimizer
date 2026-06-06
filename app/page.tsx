@@ -10,7 +10,7 @@ import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
 import { isNonEcommerceScanResponse } from "@/lib/non-ecommerce-messages";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
-import { scrollToElementById } from "@/lib/scroll-utils";
+import { scrollToAuditOverview, scrollToElementById } from "@/lib/scroll-utils";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import type { GenerateFixesApiResponse } from "@/lib/types";
 import type { RecentScanRecord } from "@/lib/scan-activity";
@@ -52,12 +52,8 @@ export default function Home() {
       return;
     }
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        scrollToElementById("overview");
-      });
-    });
-  }, [result?.url, result?.crawledAt]);
+    scrollToAuditOverview("instant");
+  }, [result?.url, result?.crawledAt, fixesLoading]);
 
   async function generateFixes(targetUrl: string, token: string | null) {
     setFixesLoading(true);
@@ -130,11 +126,12 @@ export default function Home() {
 
       setResult(data);
       await generateFixes(data.url, turnstileToken);
+      scrollToAuditOverview("instant");
     } catch (loadError) {
       setError(
         loadError instanceof Error
           ? loadError.message
-          : "Something went wrong loading the audit",
+          : "Something went wrong loading the scan",
       );
     } finally {
       setLoading(false);
@@ -181,8 +178,8 @@ export default function Home() {
       markOwnScan(data.scanRecord?.id);
       await refresh();
       setResult(data);
-
       await generateFixes(data.url, turnstileToken);
+      scrollToAuditOverview("instant");
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -225,10 +222,6 @@ export default function Home() {
 
         {!result && <MarketingSections />}
 
-        {!result && activity.platformStats.length > 0 ? (
-          <PlatformReadinessCards stats={activity.platformStats} />
-        ) : null}
-
         {!result ? (
           <RecentAuditsPreview
             entries={activity.recentScans}
@@ -239,6 +232,10 @@ export default function Home() {
             loadingEntryId={loadingRecentId}
             auditLoading={loading}
           />
+        ) : null}
+
+        {!result && activity.platformStats.length > 0 ? (
+          <PlatformReadinessCards stats={activity.platformStats} />
         ) : null}
 
         {result && (

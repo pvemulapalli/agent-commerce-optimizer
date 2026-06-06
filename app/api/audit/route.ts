@@ -55,6 +55,7 @@ export async function POST(request: Request) {
       audit: auditRun,
       crawlSummary: auditRun.crawlSummary,
       crawlDurationSec,
+      generationContext: auditRun.generationContext,
     });
     const scanRecord = await recordCompletedScan(response);
 

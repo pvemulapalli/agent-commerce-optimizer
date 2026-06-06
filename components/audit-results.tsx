@@ -1,5 +1,6 @@
 "use client";
 
+import { AuditNextSteps } from "@/components/audit-next-steps";
 import { AuditConfidenceSection } from "@/components/audit-confidence-section";
 import { AuditMetadataCard } from "@/components/audit-metadata-card";
 import { AuditStickyNav } from "@/components/audit-sticky-nav";
@@ -8,7 +9,9 @@ import {
   OtherPlatformDetectionDetails,
   PlatformValue,
 } from "@/components/other-platform-detection";
-import { isPlatformNotIdentified } from "@/lib/platform-labels";
+import { PlatformFeedbackModal } from "@/components/platform-feedback-modal";
+import { isPlatformNotIdentified, shouldShowPlatformFeedback } from "@/lib/platform-labels";
+import { normalizeDomainFromUrl } from "@/lib/domain-normalization";
 import { FindingCard } from "@/components/finding-card";
 import { GeneratedFixesSection } from "@/components/generated-fixes-section";
 import {
@@ -46,7 +49,10 @@ function PlatformAnalysisSection({
   auditUrl: string;
 }) {
   return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
+    <section
+      id="platform-detection"
+      className={`${AUDIT_SECTION_SCROLL_CLASS} min-w-0 overflow-hidden rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8`}
+    >
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
         Platform Detection
       </p>
@@ -72,6 +78,18 @@ function PlatformAnalysisSection({
 
       {isPlatformNotIdentified(platform.platform) ? (
         <OtherPlatformDetectionDetails auditUrl={auditUrl} />
+      ) : shouldShowPlatformFeedback(platform) ? (
+        <div className="mt-6 rounded-xl border border-card-border bg-card-muted p-4">
+          <p className="text-sm text-text-secondary">
+            Platform confidence is low. If this detection looks wrong, help us improve coverage.
+          </p>
+          <div className="mt-3">
+            <PlatformFeedbackModal
+              domain={normalizeDomainFromUrl(auditUrl)}
+              defaultPlatform={platform.platform}
+            />
+          </div>
+        </div>
       ) : null}
 
       <div className="mt-6">
@@ -161,6 +179,8 @@ export function AuditResultsSection({
 
   const visibleSections = [
     "overview",
+    "next-steps",
+    "platform-detection",
     detectedCount > 0 ? "findings-detected" : null,
     missingCount > 0 ? "findings-missing" : null,
     needsReviewCount > 0 ? "findings-needs-review" : null,
@@ -169,7 +189,7 @@ export function AuditResultsSection({
   ].filter((section): section is string => Boolean(section));
 
   return (
-    <div className="min-w-0 space-y-8">
+    <div className="min-w-0 space-y-8 [overflow-anchor:none]">
       <AuditStickyNav
         visibleSections={visibleSections}
         resetKey={`${result.url}-${result.crawledAt}`}
@@ -178,6 +198,8 @@ export function AuditResultsSection({
       <ReadinessDashboard
         report={report}
         merchantName={result.auditMetadata.merchantName}
+        normalizedDomain={result.auditMetadata.normalizedDomain}
+        auditedUrl={result.url}
         detectedCount={detectedCount}
         missingCount={missingCount}
         needsReviewCount={needsReviewCount}
@@ -195,7 +217,7 @@ export function AuditResultsSection({
         </p>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="min-w-0">
-            <dt className="text-sm font-medium text-text-secondary">Audited URL</dt>
+            <dt className="text-sm font-medium text-text-secondary">Scanned URL</dt>
             <dd className="mt-1 break-all text-text-primary">{result.url}</dd>
           </div>
           <div>
@@ -212,6 +234,8 @@ export function AuditResultsSection({
           )}
         </dl>
       </section>
+
+      <AuditNextSteps sectionId="next-steps" />
 
       <PlatformAnalysisSection platform={result.platform} auditUrl={result.url} />
 
@@ -249,6 +273,8 @@ export function AuditResultsSection({
       </div>
 
       <RecommendationsSection report={report} />
+
+      <AuditNextSteps sectionId="next-steps-bottom" showIntro={false} />
     </div>
   );
 }

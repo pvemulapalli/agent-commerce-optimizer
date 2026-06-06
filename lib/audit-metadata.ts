@@ -1,5 +1,6 @@
-import type { AuditApiResponse, Finding } from "./types";
-import { getMerchantDisplayName, normalizeDomainFromUrl } from "./domain-normalization";
+import type { AuditApiResponse, Finding, GenerationContext } from "./types";
+import { normalizeDomainFromUrl } from "./domain-normalization";
+import { resolveMerchantDisplayName } from "./merchant-name";
 import type { CrawlSummary } from "./crawl-quality";
 
 const POLICY_FINDING_IDS = new Set([
@@ -32,7 +33,7 @@ export interface AuditReportMetadata {
   policyPagesFound: number;
   platform: string;
   crawlDurationSec: number | null;
-  dataSource: "Live Crawl" | "Cached Audit";
+  dataSource: "Live Crawl" | "Cached Scan";
   merchantName: string;
   normalizedDomain: string;
   structuredDataCoverage: number;
@@ -83,8 +84,9 @@ export function buildAuditReportMetadata(input: {
   audit: AuditApiResponse;
   crawlSummary: CrawlSummary;
   crawlDurationSec: number | null;
+  generationContext?: GenerationContext;
 }): AuditReportMetadata {
-  const { audit, crawlSummary, crawlDurationSec } = input;
+  const { audit, crawlSummary, crawlDurationSec, generationContext } = input;
   const productsSampled = countProductsSampled(audit.findings);
   const policyPagesFound = countPolicyPages(audit.findings);
 
@@ -95,8 +97,12 @@ export function buildAuditReportMetadata(input: {
     policyPagesFound,
     platform: audit.platform.platform,
     crawlDurationSec,
-    dataSource: audit.cacheStatus === "HIT" ? "Cached Audit" : "Live Crawl",
-    merchantName: getMerchantDisplayName(audit.url),
+    dataSource: audit.cacheStatus === "HIT" ? "Cached Scan" : "Live Crawl",
+    merchantName: resolveMerchantDisplayName({
+      url: audit.url,
+      generationPages: generationContext?.pages,
+      homepage: generationContext?.homepage,
+    }),
     normalizedDomain: normalizeDomainFromUrl(audit.url),
     structuredDataCoverage: computeStructuredDataCoverage(audit.findings),
   };

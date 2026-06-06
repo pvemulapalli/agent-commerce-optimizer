@@ -6,6 +6,7 @@ import { getRedis, isRedisConfigured } from "./redis";
 import type {
   AuditApiResponse,
   AuditResult,
+  CommercePlatform,
   GenerationContext,
   GroupedFindings,
 } from "./types";
@@ -310,4 +311,88 @@ export async function deleteCachedAuditsForHostname(
   }
 
   return deletedKeys;
+}
+
+export async function updateCachedAuditPlatform(
+  hostname: string,
+  platform: string,
+): Promise<boolean> {
+  if (!isCacheEnabled()) {
+    return false;
+  }
+
+  try {
+    if (shouldUseRedisCache()) {
+      const redis = getRedis();
+      const auditKeys = await redis.keys(`${REDIS_AUDIT_PREFIX}*`);
+      let updated = false;
+
+      for (const key of auditKeys) {
+        const cacheKey = key.slice(REDIS_AUDIT_PREFIX.length);
+        if (!cacheKeyMatchesHostname(cacheKey, hostname)) {
+          continue;
+        }
+
+        const raw = await redis.get(key);
+        const entry = payloadFromCacheRead(raw);
+        if (!entry || !isCacheEntryValid(entry)) {
+          continue;
+        }
+
+        entry.result.platform = {
+          ...entry.result.platform,
+          platform: platform as CommercePlatform,
+          confidence: "high",
+          evidence: [
+            `Admin platform override applied (${platform})`,
+            ...entry.result.platform.evidence,
+          ],
+        };
+
+        const ttlMinutes = getCacheTtlMinutes();
+        await writeRedisCachedAudit(cacheKey, entry, ttlMinutes);
+        updated = true;
+      }
+
+      return updated;
+    }
+
+    if (shouldUseFileCache()) {
+      const { readdir, readFile, writeFile } = await import("fs/promises");
+      const files = await readdir(CACHE_DIR).catch(() => [] as string[]);
+      let updated = false;
+
+      for (const file of files) {
+        if (!file.endsWith(".json")) {
+          continue;
+        }
+
+        const cacheKey = file.replace(/\.json$/, "");
+        if (!cacheKeyMatchesHostname(cacheKey, hostname)) {
+          continue;
+        }
+
+        const filePath = getCacheFilePath(cacheKey);
+        const entry = JSON.parse(await readFile(filePath, "utf8")) as CachedAuditPayload;
+        entry.result.platform = {
+          ...entry.result.platform,
+          platform: platform as CommercePlatform,
+          confidence: "high",
+          evidence: [
+            `Admin platform override applied (${platform})`,
+            ...entry.result.platform.evidence,
+          ],
+        };
+
+        await writeFile(filePath, JSON.stringify(entry, null, 2), "utf8");
+        updated = true;
+      }
+
+      return updated;
+    }
+  } catch (error) {
+    console.error("[audit-cache] platform update failed:", error);
+  }
+
+  return false;
 }
