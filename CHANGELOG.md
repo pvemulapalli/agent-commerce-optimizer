@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.5.2] - 2026-06-07
+
+### [Platform]
+- Added dynamic `robots.txt` with explicit AI crawler allowances and Content-Signal preferences
+- Added dynamic `sitemap.xml` for core public pages with canonical URLs
+
+### [AI Discoverability]
+- Added RFC8288 Link headers on the homepage for sitemap, service documentation, and API catalog discovery
+- Added `/.well-known/api-catalog` in RFC9727 `application/linkset+json` format
+- Added `Accept: text/markdown` support for the homepage and About page
+- Added informational `/agent-readiness` debug page for live discoverability checks
+
+### [Infrastructure]
+- Added `/api-docs` alias for API documentation discoverability
+- Documented deferred agent discoverability patterns (OAuth, MCP, A2A, WebMCP, DNS-AID, and related specs)
+
 ## [3.5.1] - 2026-06-07
 
 ### [Fixes]

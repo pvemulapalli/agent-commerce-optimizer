@@ -1,6 +1,28 @@
 {
   "releases": [
     {
+      "version": "3.5.2",
+      "date": "2026-06-07",
+      "title": "AI Discoverability Foundation",
+      "summary": "Added robots.txt, sitemap generation, AI crawler directives, RFC8288 link headers, API catalog support, and foundational agent discoverability capabilities for Merchant Signals.",
+      "categories": [
+        "Platform",
+        "AI Discoverability",
+        "Infrastructure"
+      ],
+      "changes": [
+        "Added dynamic robots.txt with GPTBot, OAI-SearchBot, Claude-Web, and Google-Extended allowances",
+        "Added Content-Signal preferences for ai-train, search, and ai-input",
+        "Added dynamic sitemap.xml covering core public pages with canonical URLs",
+        "Added RFC8288 Link headers on the homepage for sitemap, service-doc, and api-catalog discovery",
+        "Added /.well-known/api-catalog in RFC9727 application/linkset+json format",
+        "Added Accept: text/markdown responses for the homepage and About page",
+        "Added /agent-readiness informational page with live discoverability checks",
+        "Added /api-docs alias for API documentation discoverability",
+        "Documented deferred OAuth, MCP, A2A, WebMCP, DNS-AID, and related agent discovery specs"
+      ]
+    },
+    {
       "version": "3.5.1",
       "date": "2026-06-07",
       "title": "Bug Fixes: Share Button, Bot Protection, and Admin",
