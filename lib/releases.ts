@@ -3,9 +3,11 @@ import releasesDocument from "@/content/releases.json";
 export type ReleaseCategory =
   | "Platform Detection"
   | "UX"
+  | "Optimization"
+  | "Admin"
+  | "Data Quality"
   | "Infrastructure"
   | "API"
-  | "Admin"
   | "Scoring"
   | "Fixes";
 

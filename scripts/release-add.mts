@@ -16,9 +16,11 @@ const appVersionPath = path.join(root, "lib/app-version.ts");
 type ReleaseCategory =
   | "Platform Detection"
   | "UX"
+  | "Optimization"
+  | "Admin"
+  | "Data Quality"
   | "Infrastructure"
   | "API"
-  | "Admin"
   | "Scoring"
   | "Fixes";
 
@@ -38,9 +40,11 @@ interface ReleasesDocument {
 const VALID_CATEGORIES = new Set<ReleaseCategory>([
   "Platform Detection",
   "UX",
+  "Optimization",
+  "Admin",
+  "Data Quality",
   "Infrastructure",
   "API",
-  "Admin",
   "Scoring",
   "Fixes",
 ]);

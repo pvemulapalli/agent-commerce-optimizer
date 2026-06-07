@@ -85,6 +85,19 @@ export default function AdminClient() {
   const [unlocking, setUnlocking] = useState(false);
   const [deleteDomain, setDeleteDomain] = useState("");
   const [bannedDomainsText, setBannedDomainsText] = useState("");
+  const [nonEcommerceDomains, setNonEcommerceDomains] = useState<
+    Array<{
+      domain: string;
+      reason: string;
+      firstDetectedAt: string;
+      reviewed: boolean;
+      reviewedBy: string | null;
+      notes: string | null;
+    }>
+  >([]);
+  const [nonEcommerceSearch, setNonEcommerceSearch] = useState("");
+  const [nonEcommerceAddDomain, setNonEcommerceAddDomain] = useState("");
+  const [loadingNonEcommerce, setLoadingNonEcommerce] = useState(false);
   const [contributorsIntro, setContributorsIntro] = useState("");
   const [contributorsText, setContributorsText] = useState("");
   const [subscriberEmails, setSubscriberEmails] = useState<string[]>([]);
@@ -153,6 +166,91 @@ export default function AdminClient() {
       setLoadingBanned(false);
     }
   }, []);
+
+  const loadNonEcommerceDomains = useCallback(async (adminToken: string, search?: string) => {
+    setLoadingNonEcommerce(true);
+    setStatus(null);
+
+    try {
+      const trimmed = adminToken.trim();
+      const query = search?.trim() ? `&search=${encodeURIComponent(search.trim())}` : "";
+      const response = await fetch(
+        `/api/admin/non-ecommerce-domains?token=${encodeURIComponent(trimmed)}${query}`,
+        { headers: adminHeaders(trimmed) },
+      );
+      const data = (await response.json()) as {
+        domains?: typeof nonEcommerceDomains;
+        error?: string;
+        redisConfigured?: boolean;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Failed to load non-ecommerce domains");
+      }
+
+      setNonEcommerceDomains(data.domains ?? []);
+
+      if (!data.redisConfigured) {
+        setStatus({
+          tone: "info",
+          message:
+            "Redis is not configured. Non-ecommerce domain quarantine requires Redis.",
+        });
+      }
+    } catch (loadError) {
+      setStatus({
+        tone: "error",
+        message:
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load non-ecommerce domains",
+      });
+    } finally {
+      setLoadingNonEcommerce(false);
+    }
+  }, []);
+
+  async function handleNonEcommerceAction(
+    action: "remove" | "approve" | "notes" | "add",
+    domain: string,
+    notes?: string | null,
+  ) {
+    if (!token) {
+      return;
+    }
+
+    setBusy(`non-ecommerce-${action}-${domain}`);
+    setStatus(null);
+
+    try {
+      const response = await fetch("/api/admin/non-ecommerce-domains", {
+        method: "POST",
+        headers: adminHeaders(token),
+        body: JSON.stringify({
+          token,
+          action,
+          domain,
+          notes: notes ?? null,
+        }),
+      });
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Action failed");
+      }
+
+      await loadNonEcommerceDomains(token, nonEcommerceSearch);
+      setStatus({ tone: "success", message: `Updated ${domain}.` });
+    } catch (actionError) {
+      setStatus({
+        tone: "error",
+        message:
+          actionError instanceof Error ? actionError.message : "Action failed unexpectedly",
+      });
+    } finally {
+      setBusy(null);
+    }
+  }
 
   const loadContributors = useCallback(async (adminToken: string) => {
     try {
@@ -286,6 +384,7 @@ export default function AdminClient() {
         setToken(stored);
         await Promise.all([
           loadBannedDomains(stored),
+          loadNonEcommerceDomains(stored),
           loadContributors(stored),
           loadEmailSubscribers(stored),
           loadPlatformFeedback(stored),
@@ -303,7 +402,7 @@ export default function AdminClient() {
     return () => {
       cancelled = true;
     };
-  }, [loadBannedDomains, loadContributors, loadEmailSubscribers, loadPlatformFeedback]);
+  }, [loadBannedDomains, loadContributors, loadEmailSubscribers, loadNonEcommerceDomains, loadPlatformFeedback]);
 
   async function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -329,6 +428,7 @@ export default function AdminClient() {
     setToken(nextToken);
     await Promise.all([
       loadBannedDomains(nextToken),
+      loadNonEcommerceDomains(nextToken),
       loadContributors(nextToken),
       loadEmailSubscribers(nextToken),
       loadPlatformFeedback(nextToken),
@@ -756,6 +856,132 @@ export default function AdminClient() {
           >
             {busy === "banned" ? "Saving…" : "Save Banned Domains"}
           </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <h2 className="text-lg font-semibold text-slate-900">Non-Ecommerce Domains</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Domains quarantined after non-storefront classification. Future scans against these
+          domains are blocked immediately and excluded from benchmarks and recent audits.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <input
+            type="text"
+            value={nonEcommerceSearch}
+            onChange={(event) => setNonEcommerceSearch(event.target.value)}
+            placeholder="Search domain, reason, or notes"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+          />
+          <button
+            type="button"
+            disabled={loadingNonEcommerce}
+            onClick={() => void loadNonEcommerceDomains(token, nonEcommerceSearch)}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+          >
+            {loadingNonEcommerce ? "Loading…" : "Search"}
+          </button>
+        </div>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <input
+            type="text"
+            value={nonEcommerceAddDomain}
+            onChange={(event) => setNonEcommerceAddDomain(event.target.value)}
+            placeholder="Add domain manually (example.com)"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+          />
+          <button
+            type="button"
+            disabled={busy !== null || !nonEcommerceAddDomain.trim()}
+            onClick={() => {
+              const domain = nonEcommerceAddDomain.trim();
+              setNonEcommerceAddDomain("");
+              void handleNonEcommerceAction("add", domain);
+            }}
+            className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
+          >
+            Add Domain
+          </button>
+        </div>
+        <div className="mt-4 max-h-96 overflow-auto rounded-lg border border-slate-200">
+          <table className="min-w-full text-left text-sm">
+            <thead className="sticky top-0 bg-slate-50">
+              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                <th className="px-3 py-2">Domain</th>
+                <th className="px-3 py-2">Reason</th>
+                <th className="px-3 py-2">First Detected</th>
+                <th className="px-3 py-2">Reviewed</th>
+                <th className="px-3 py-2">Notes</th>
+                <th className="px-3 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {nonEcommerceDomains.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-3 py-4 text-slate-500">
+                    No quarantined domains yet.
+                  </td>
+                </tr>
+              ) : (
+                nonEcommerceDomains.map((entry) => (
+                  <tr key={entry.domain} className="border-b border-slate-100 align-top">
+                    <td className="px-3 py-3 font-medium text-slate-900">{entry.domain}</td>
+                    <td className="px-3 py-3 text-slate-700">{entry.reason}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-slate-600">
+                      {new Date(entry.firstDetectedAt).toLocaleString()}
+                    </td>
+                    <td className="px-3 py-3 text-slate-700">
+                      {entry.reviewed
+                        ? `Yes${entry.reviewedBy ? ` (${entry.reviewedBy})` : ""}`
+                        : "No"}
+                    </td>
+                    <td className="max-w-xs px-3 py-3 text-slate-600">
+                      <textarea
+                        defaultValue={entry.notes ?? ""}
+                        rows={2}
+                        className="w-full rounded border border-slate-200 px-2 py-1 text-xs"
+                        onBlur={(event) => {
+                          const nextNotes = event.target.value.trim();
+                          if (nextNotes === (entry.notes ?? "")) {
+                            return;
+                          }
+                          void handleNonEcommerceAction("notes", entry.domain, nextNotes || null);
+                        }}
+                      />
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <div className="flex flex-col gap-2">
+                        <button
+                          type="button"
+                          disabled={busy !== null || entry.reviewed}
+                          onClick={() => void handleNonEcommerceAction("approve", entry.domain)}
+                          className="text-sm font-medium text-blue-900 hover:underline disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy !== null}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Remove ${entry.domain} from the quarantine list? Future scans will be allowed.`,
+                              )
+                            ) {
+                              void handleNonEcommerceAction("remove", entry.domain);
+                            }
+                          }}
+                          className="text-sm font-medium text-rose-700 hover:underline disabled:opacity-50"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
 

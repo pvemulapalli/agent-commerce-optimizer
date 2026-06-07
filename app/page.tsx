@@ -19,6 +19,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type AuditResponse = EnrichedAuditResponse & {
   scanRecord?: { id: string; hostname: string };
+  reportId?: string;
+  shareUrl?: string;
 };
 type FixesResponse = GenerateFixesApiResponse;
 
@@ -57,15 +59,24 @@ export default function Home() {
     scrollToAuditOverview("instant");
   }, [result?.url, result?.crawledAt, fixesLoading]);
 
-  async function generateFixes(targetUrl: string, token: string | null) {
+  async function generateFixes(
+    targetUrl: string,
+    token: string | null,
+    reportId?: string,
+  ) {
     setFixesLoading(true);
     setFixesError(null);
     setFixes(null);
 
     try {
-      const payload: { url: string; turnstileToken?: string } = { url: targetUrl };
+      const payload: { url: string; turnstileToken?: string; reportId?: string } = {
+        url: targetUrl,
+      };
       if (token) {
         payload.turnstileToken = token;
+      }
+      if (reportId) {
+        payload.reportId = reportId;
       }
 
       const response = await fetch("/api/generate-fixes", {
@@ -128,7 +139,7 @@ export default function Home() {
       }
 
       setResult(data);
-      await generateFixes(data.url, turnstileToken);
+      await generateFixes(data.url, turnstileToken, data.reportId);
       scrollToAuditOverview("instant");
     } catch (loadError) {
       setError(
@@ -220,7 +231,7 @@ export default function Home() {
       markOwnScan(data.scanRecord?.id);
       await refresh();
       setResult(data);
-      await generateFixes(data.url, turnstileToken);
+      await generateFixes(data.url, turnstileToken, data.reportId);
       scrollToAuditOverview("instant");
     } catch (submitError) {
       setError(
@@ -286,7 +297,11 @@ export default function Home() {
             fixes={fixes}
             fixesLoading={fixesLoading}
             fixesError={fixesError}
-            onRegenerateFixes={() => generateFixes(result.url, turnstileToken)}
+            onRegenerateFixes={() =>
+              generateFixes(result.url, turnstileToken, result.reportId)
+            }
+            reportId={result.reportId}
+            shareUrl={result.shareUrl}
           />
         )}
       </div>

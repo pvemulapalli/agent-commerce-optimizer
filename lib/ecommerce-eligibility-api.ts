@@ -2,6 +2,7 @@ import {
   INVALID_NON_ECOMMERCE_SCAN_STATUS,
   type EcommerceEligibilityAssessment,
 } from "./ecommerce-eligibility";
+import { QUARANTINED_NON_ECOMMERCE_MESSAGE } from "./non-ecommerce-quarantine-messages";
 import { NextResponse } from "next/server";
 
 export interface IneligibleEcommerceScanResponse {
@@ -19,7 +20,7 @@ export function createIneligibleEcommerceResponse(
       scanStatus: INVALID_NON_ECOMMERCE_SCAN_STATUS,
       ecommerceConfidence: assessment.ecommerceConfidence,
       reason: assessment.reason,
-      message: assessment.message,
+      message: QUARANTINED_NON_ECOMMERCE_MESSAGE,
     },
     { status: 422 },
   );

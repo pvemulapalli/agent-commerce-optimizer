@@ -3,14 +3,21 @@ import { EcommerceIneligibleError } from "@/lib/ecommerce-eligibility";
 import { recordEcommerceRejection } from "@/lib/ecommerce-rejection-log";
 import { DomainUnreachableError } from "@/lib/domain-reachability";
 import { generateFixAssets } from "@/lib/generate-assets";
+import { addNonEcommerceDomain } from "@/lib/non-ecommerce-domains";
 import { runAudit } from "@/lib/run-audit";
 import { validateScanRequest } from "@/lib/scan-request";
 import { scanUrlSchema } from "@/lib/scan-request-schema";
+import { updateShareableReportFixes } from "@/lib/shareable-reports";
 import type { GenerateFixesApiResponse } from "@/lib/types";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
+
+const generateFixesSchema = scanUrlSchema.extend({
+  reportId: z.string().trim().min(1).optional(),
+});
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -24,7 +31,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = scanUrlSchema.safeParse(body);
+  const parsed = generateFixesSchema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -54,6 +61,10 @@ export async function POST(request: Request) {
       cacheStatus: audit.cacheStatus,
     };
 
+    if (parsed.data.reportId) {
+      await updateShareableReportFixes(parsed.data.reportId, response);
+    }
+
     return NextResponse.json(response);
   } catch (error) {
     if (error instanceof EcommerceIneligibleError) {
@@ -61,6 +72,10 @@ export async function POST(request: Request) {
         url: parsed.data.url,
         reason: error.assessment.reason,
         ecommerceConfidence: error.assessment.ecommerceConfidence,
+      });
+      await addNonEcommerceDomain({
+        domain: parsed.data.url,
+        reason: error.assessment.reason,
       });
       return createIneligibleEcommerceResponse(error.assessment);
     }

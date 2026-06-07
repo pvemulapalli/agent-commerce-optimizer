@@ -1,6 +1,8 @@
 import { normalizeSchemaType } from "./schema-utils";
 import type { GeneratedAsset, GenerationContext, GroupedFindings } from "./types";
 
+export const GENERATED_FIX_ASSET_COUNT = 6;
+
 function extractJsonLdByType(
   blocks: unknown[],
   typeName: string,

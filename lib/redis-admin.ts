@@ -11,6 +11,7 @@ const ACO_KEY_PREFIXES = [
   "aco:benchmark:",
   "aco:email:",
   "aco:platform:feedback",
+  "aco:report:",
 ];
 
 export async function clearCommerceOptimizerRedisKeys(): Promise<number> {

@@ -2,11 +2,13 @@ import { enrichAuditResponse } from "@/lib/enrich-audit-response";
 import { createIneligibleEcommerceResponse } from "@/lib/ecommerce-eligibility-api";
 import { EcommerceIneligibleError } from "@/lib/ecommerce-eligibility";
 import { recordEcommerceRejection } from "@/lib/ecommerce-rejection-log";
+import { addNonEcommerceDomain } from "@/lib/non-ecommerce-domains";
 import { DomainUnreachableError } from "@/lib/domain-reachability";
 import { runAudit } from "@/lib/run-audit";
 import { validateScanRequest } from "@/lib/scan-request";
 import { scanUrlSchema } from "@/lib/scan-request-schema";
 import { recordCompletedScan } from "@/lib/scan-activity";
+import { ensureShareableReport } from "@/lib/shareable-reports";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -57,11 +59,15 @@ export async function POST(request: Request) {
       crawlDurationSec,
       generationContext: auditRun.generationContext,
     });
+    const shareable = await ensureShareableReport(response);
     const scanRecord = await recordCompletedScan(response);
 
     return NextResponse.json({
       ...response,
       ...(scanRecord ? { scanRecord } : {}),
+      ...(shareable
+        ? { reportId: shareable.reportId, shareUrl: shareable.shareUrl }
+        : {}),
     });
   } catch (error) {
     if (error instanceof EcommerceIneligibleError) {
@@ -69,6 +75,10 @@ export async function POST(request: Request) {
         url: parsed.data.url,
         reason: error.assessment.reason,
         ecommerceConfidence: error.assessment.ecommerceConfidence,
+      });
+      await addNonEcommerceDomain({
+        domain: parsed.data.url,
+        reason: error.assessment.reason,
       });
       return createIneligibleEcommerceResponse(error.assessment);
     }

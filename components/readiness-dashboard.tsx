@@ -1,11 +1,14 @@
 "use client";
 
+import { BusinessSummarySection } from "@/components/business-summary-section";
 import { DimensionScoreCards } from "@/components/dimension-score-cards";
 import { AuditNextStepsInline } from "@/components/audit-next-steps";
 import { LowScoreScopeNote } from "@/components/low-score-scope-note";
+import { ShareReportButton } from "@/components/share-report-button";
 import { AUDIT_SECTION_SCROLL_CLASS } from "@/lib/scroll-utils";
 import { FUTURE_AUTOMATION_NOTE } from "@/lib/scan-messaging";
 import { SCORE_EVIDENCE_NOTE, type ReadinessReport } from "@/lib/readiness-score";
+import type { CommercePlatform, Finding } from "@/lib/types";
 
 function ScoreGauge({ score, grade }: { score: number; grade: string }) {
   const circumference = 2 * Math.PI * 54;
@@ -83,6 +86,12 @@ export function ReadinessDashboard({
   detectedCount,
   missingCount,
   needsReviewCount,
+  isSharedReport = false,
+  reportId,
+  shareUrl,
+  actionableFindings = [],
+  platform,
+  assetCount = 0,
 }: {
   report: ReadinessReport;
   merchantName?: string;
@@ -91,16 +100,33 @@ export function ReadinessDashboard({
   detectedCount: number;
   missingCount: number;
   needsReviewCount: number;
+  isSharedReport?: boolean;
+  reportId?: string;
+  shareUrl?: string;
+  actionableFindings?: Finding[];
+  platform?: CommercePlatform;
+  assetCount?: number;
 }) {
   return (
     <section
       id="overview"
       className={`${AUDIT_SECTION_SCROLL_CLASS} overflow-hidden rounded-2xl border border-card-border bg-card shadow-sm`}
     >
-      <div className="border-b border-card-border bg-card-muted px-6 py-5 sm:px-8">
+      <div className="relative border-b border-card-border bg-card-muted px-6 py-5 sm:px-8">
+        {reportId || shareUrl ? (
+          <div className="absolute right-6 top-5 z-10 sm:right-8">
+            <ShareReportButton reportId={reportId} shareUrl={shareUrl} />
+          </div>
+        ) : null}
+        <div className={reportId || shareUrl ? "pr-28 sm:pr-32" : undefined}>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
           AI Commerce Readiness
         </p>
+        {isSharedReport ? (
+          <span className="mt-2 inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-900 dark:border-indigo-500/40 dark:bg-indigo-950/50 dark:text-indigo-100">
+            Shared Report
+          </span>
+        ) : null}
         {(merchantName || normalizedDomain) && (
           <div className="mt-2 min-w-0">
             {merchantName ? (
@@ -149,9 +175,12 @@ export function ReadinessDashboard({
         <div className="mt-5">
           <ScoreEvidenceNote />
         </div>
+        </div>
       </div>
 
       <div className="space-y-8 px-6 py-8 sm:px-8">
+        <BusinessSummarySection report={report} missingCount={missingCount} />
+
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
             Dimension scores
@@ -163,7 +192,11 @@ export function ReadinessDashboard({
             <DimensionScoreCards dimensions={report.dimensions} />
           </div>
           <div className="mt-6">
-            <AuditNextStepsInline />
+            <AuditNextStepsInline
+              actionableFindings={actionableFindings}
+              platform={platform}
+              assetCount={assetCount}
+            />
           </div>
         </div>
 

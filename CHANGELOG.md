@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.5.0] - 2026-06-07
+
+### [UX]
+- Added Business Summary section with merchant-friendly readiness explanation above technical findings
+- Added Share Report functionality with permanent `/report/{id}` URLs
+
+### [Optimization]
+- Added Copy Fix Prompt on every finding card with platform-aware remediation guidance
+- Added View Evidence label on finding cards for clearer technical detail access
+
+### [Admin]
+- Added Non-Ecommerce Domains quarantine list with search, approve, remove, and notes workflow
+- Added admin API for managing quarantined non-storefront domains
+
+### [Data Quality]
+- Automatically quarantine non-ecommerce domains after classification
+- Block repeat scans of quarantined domains before crawl or cache lookup
+- Exclude quarantined domains from benchmarks, recent audits, and platform statistics
+
 ## [3.4.1] - 2026-06-06
 
 ### [Platform Detection]

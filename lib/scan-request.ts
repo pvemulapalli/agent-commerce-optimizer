@@ -3,6 +3,10 @@ import {
   createBannedDomainResponse,
   isBannedScanUrl,
 } from "./banned-domains";
+import {
+  createQuarantinedNonEcommerceResponse,
+  isQuarantinedNonEcommerceUrl,
+} from "./non-ecommerce-domains";
 import { ensureDomainReachable, DomainUnreachableError } from "./domain-reachability";
 import { enforceScanRateLimit } from "./rate-limit";
 import { verifyTurnstileToken } from "./turnstile";
@@ -38,6 +42,10 @@ export async function validateScanRequest(
 ): Promise<Response | null> {
   if (await isBannedScanUrl(url)) {
     return createBannedDomainResponse();
+  }
+
+  if (await isQuarantinedNonEcommerceUrl(url)) {
+    return createQuarantinedNonEcommerceResponse();
   }
 
   const normalizedUrl = normalizeAuditUrl(url);

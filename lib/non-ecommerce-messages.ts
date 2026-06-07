@@ -1,13 +1,23 @@
 import { INVALID_NON_ECOMMERCE_SCAN_STATUS } from "./ecommerce-eligibility";
+import {
+  isQuarantinedNonEcommerceScanResponse,
+  QUARANTINED_NON_ECOMMERCE_SCAN_STATUS,
+} from "./non-ecommerce-quarantine-messages";
 
 export function isNonEcommerceScanResponse(
   data: unknown,
 ): data is {
-  scanStatus: typeof INVALID_NON_ECOMMERCE_SCAN_STATUS;
+  scanStatus:
+    | typeof INVALID_NON_ECOMMERCE_SCAN_STATUS
+    | typeof QUARANTINED_NON_ECOMMERCE_SCAN_STATUS;
   message: string;
-  ecommerceConfidence: number;
-  reason: string;
+  ecommerceConfidence?: number;
+  reason?: string;
 } {
+  if (isQuarantinedNonEcommerceScanResponse(data)) {
+    return true;
+  }
+
   if (!data || typeof data !== "object") {
     return false;
   }

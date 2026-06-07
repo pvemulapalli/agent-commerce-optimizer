@@ -1,14 +1,34 @@
 "use client";
 
+import { buildFixPromptForFinding } from "@/lib/fix-prompts";
 import { getFindingGuidance } from "@/lib/finding-guidance";
 import {
   getFindingImpactLevel,
   getFindingStatusLabel,
 } from "@/lib/readiness-score";
-import type { Finding } from "@/lib/types";
+import type { CommercePlatform, Finding } from "@/lib/types";
+import { CopyToast, useCopyToast } from "@/components/copy-toast";
 
 function formatFindingTitle(label: string): string {
   return label.toUpperCase();
+}
+
+function CopyIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
 }
 
 function ImpactBadge({ impact }: { impact: "High" | "Medium" | "Low" }) {
@@ -43,10 +63,55 @@ function StatusBadge({ status }: { status: "Passed" | "Missing" | "Needs Review"
   );
 }
 
-export function FindingCard({ finding }: { finding: Finding }) {
+function CopyFixPromptButton({
+  finding,
+  platform,
+}: {
+  finding: Finding;
+  platform?: CommercePlatform;
+}) {
+  const { toastMessage, clearToast, copyWithToast } = useCopyToast();
+
+  async function handleCopyFixPrompt() {
+    const prompt = buildFixPromptForFinding(finding, platform);
+    await copyWithToast(prompt, "Fix prompt copied.");
+  }
+
+  return (
+    <>
+      <div className="group relative">
+        <button
+          type="button"
+          onClick={() => void handleCopyFixPrompt()}
+          className="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-medium text-violet-900 transition hover:bg-violet-100 dark:border-violet-500/40 dark:bg-violet-950/40 dark:text-violet-100 dark:hover:bg-violet-950/60"
+        >
+          <CopyIcon />
+          Copy Fix Prompt
+        </button>
+        <div
+          role="tooltip"
+          className="pointer-events-none absolute bottom-[calc(100%+0.65rem)] left-1/2 z-20 w-max max-w-xs -translate-x-1/2 rounded-lg border border-card-border bg-slate-900 px-3 py-2 text-center text-xs leading-5 text-slate-100 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-slate-950 dark:text-slate-100"
+        >
+          Paste into your AI coding assistant to address this finding
+          <span className="absolute left-1/2 top-full -translate-x-1/2 border-8 border-transparent border-t-slate-900 dark:border-t-slate-950" />
+        </div>
+      </div>
+      {toastMessage ? <CopyToast message={toastMessage} onDone={clearToast} /> : null}
+    </>
+  );
+}
+
+export function FindingCard({
+  finding,
+  platform,
+}: {
+  finding: Finding;
+  platform?: CommercePlatform;
+}) {
   const guidance = getFindingGuidance(finding);
   const impact = getFindingImpactLevel(finding);
   const statusLabel = getFindingStatusLabel(finding.status);
+  const showFixPrompt = finding.status !== "detected";
 
   return (
     <article className="min-w-0 overflow-hidden rounded-xl border border-card-border bg-card p-5 shadow-sm">
@@ -83,49 +148,53 @@ export function FindingCard({ finding }: { finding: Finding }) {
         </div>
       </div>
 
-      <details className="mt-5 rounded-lg border border-card-border bg-card-muted px-4 py-3">
-        <summary className="cursor-pointer text-sm font-medium text-text-primary">
-          Technical evidence
-        </summary>
-        <dl className="mt-4 space-y-3 text-sm">
-          <div>
-            <dt className="font-medium text-text-secondary">Evidence</dt>
-            <dd className="mt-1 break-words text-text-primary">{finding.evidence}</dd>
-          </div>
-          {finding.evidenceUrls.length > 0 && (
+      <div className="mt-5 flex flex-wrap gap-3">
+        <details className="min-w-[12rem] flex-1 rounded-lg border border-card-border bg-card-muted px-4 py-3">
+          <summary className="cursor-pointer text-sm font-medium text-text-primary">
+            View Evidence
+          </summary>
+          <dl className="mt-4 space-y-3 text-sm">
             <div>
-              <dt className="font-medium text-text-secondary">Evidence URLs</dt>
-              <dd className="mt-1 space-y-1">
-                {finding.evidenceUrls.map((evidenceUrl) => (
-                  <div key={evidenceUrl} className="break-all">
-                    <a
-                      href={evidenceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-800 hover:underline dark:text-blue-300"
-                    >
-                      {evidenceUrl}
-                    </a>
-                  </div>
-                ))}
+              <dt className="font-medium text-text-secondary">Evidence</dt>
+              <dd className="mt-1 break-words text-text-primary">{finding.evidence}</dd>
+            </div>
+            {finding.evidenceUrls.length > 0 && (
+              <div>
+                <dt className="font-medium text-text-secondary">Evidence URLs</dt>
+                <dd className="mt-1 space-y-1">
+                  {finding.evidenceUrls.map((evidenceUrl) => (
+                    <div key={evidenceUrl} className="break-all">
+                      <a
+                        href={evidenceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-800 hover:underline dark:text-blue-300"
+                      >
+                        {evidenceUrl}
+                      </a>
+                    </div>
+                  ))}
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt className="font-medium text-text-secondary">Source URL</dt>
+              <dd className="mt-1 break-all">
+                <a
+                  href={finding.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-800 hover:underline dark:text-blue-300"
+                >
+                  {finding.sourceUrl}
+                </a>
               </dd>
             </div>
-          )}
-          <div>
-            <dt className="font-medium text-text-secondary">Source URL</dt>
-            <dd className="mt-1 break-all">
-              <a
-                href={finding.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-800 hover:underline dark:text-blue-300"
-              >
-                {finding.sourceUrl}
-              </a>
-            </dd>
-          </div>
-        </dl>
-      </details>
+          </dl>
+        </details>
+
+        {showFixPrompt ? <CopyFixPromptButton finding={finding} platform={platform} /> : null}
+      </div>
     </article>
   );
 }

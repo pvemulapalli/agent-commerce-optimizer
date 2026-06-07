@@ -1,6 +1,27 @@
 {
   "releases": [
     {
+      "version": "3.5.0",
+      "date": "2026-06-07",
+      "title": "Optimization Workflows, Shared Reports, and Non-Commerce Domain Controls",
+      "summary": "Merchant Signals now supports business-friendly report summaries, shareable audit URLs, AI-generated remediation prompts, and automated handling of non-ecommerce domains to improve data quality and usability.",
+      "categories": [
+        "UX",
+        "Optimization",
+        "Admin",
+        "Data Quality"
+      ],
+      "changes": [
+        "Added Business Summary section for non-technical users above dimension scores",
+        "Added Share Report button with permanent /report/{id} URLs that load stored audits without recrawling",
+        "Added Copy Fix Prompt on every finding card with platform-aware remediation guidance",
+        "Added Non-Ecommerce Domains quarantine list in Admin with search, approve, remove, and notes",
+        "Automatically quarantine domains classified as non-ecommerce storefronts",
+        "Block repeat scans of quarantined domains and exclude them from benchmarks and analytics",
+        "Shared reports display a Shared Report badge and preserve the original audit snapshot"
+      ]
+    },
+    {
       "version": "3.4.1",
       "date": "2026-06-06",
       "title": "Platform Detection Accuracy & UX Improvements",

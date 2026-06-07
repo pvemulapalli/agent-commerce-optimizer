@@ -1,6 +1,7 @@
 "use client";
 
 import { AuditNextSteps } from "@/components/audit-next-steps";
+import { GENERATED_FIX_ASSET_COUNT } from "@/lib/generate-assets";
 import { AuditConfidenceSection } from "@/components/audit-confidence-section";
 import { AuditMetadataCard } from "@/components/audit-metadata-card";
 import { AuditStickyNav } from "@/components/audit-sticky-nav";
@@ -22,7 +23,13 @@ import {
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import { buildReadinessReport } from "@/lib/readiness-score";
 import { AUDIT_SECTION_SCROLL_CLASS } from "@/lib/scroll-utils";
-import type { ConfidenceLevel, Finding, GenerateFixesApiResponse, PlatformAnalysis } from "@/lib/types";
+import type {
+  CommercePlatform,
+  ConfidenceLevel,
+  Finding,
+  GenerateFixesApiResponse,
+  PlatformAnalysis,
+} from "@/lib/types";
 
 type FixesResponse = GenerateFixesApiResponse;
 
@@ -112,12 +119,14 @@ function FindingSection({
   description,
   findings,
   accent,
+  platform,
 }: {
   sectionId: string;
   title: string;
   description: string;
   findings: Finding[];
   accent: "emerald" | "rose" | "amber";
+  platform: CommercePlatform;
 }) {
   if (findings.length === 0) return null;
 
@@ -152,7 +161,7 @@ function FindingSection({
 
       <div className="grid min-w-0 gap-4">
         {findings.map((finding) => (
-          <FindingCard key={finding.id} finding={finding} />
+          <FindingCard key={finding.id} finding={finding} platform={platform} />
         ))}
       </div>
     </section>
@@ -165,17 +174,25 @@ export function AuditResultsSection({
   fixesLoading,
   fixesError,
   onRegenerateFixes,
+  reportId,
+  shareUrl,
+  isSharedReport = false,
 }: {
   result: EnrichedAuditResponse;
   fixes: FixesResponse | null;
   fixesLoading: boolean;
   fixesError: string | null;
   onRegenerateFixes: () => void;
+  reportId?: string;
+  shareUrl?: string;
+  isSharedReport?: boolean;
 }) {
   const report = buildReadinessReport(result);
   const detectedCount = result.grouped.detected.length;
   const missingCount = result.grouped.missing.length;
   const needsReviewCount = result.grouped.needsReview.length;
+  const actionableFindings = [...result.grouped.missing, ...result.grouped.needsReview];
+  const assetCount = fixes?.assets.length ?? GENERATED_FIX_ASSET_COUNT;
 
   const visibleSections = [
     "overview",
@@ -203,6 +220,12 @@ export function AuditResultsSection({
         detectedCount={detectedCount}
         missingCount={missingCount}
         needsReviewCount={needsReviewCount}
+        isSharedReport={isSharedReport}
+        reportId={reportId}
+        shareUrl={shareUrl}
+        actionableFindings={actionableFindings}
+        platform={result.platform.platform}
+        assetCount={assetCount}
       />
 
       <AuditMetadataCard metadata={result.auditMetadata} />
@@ -235,7 +258,12 @@ export function AuditResultsSection({
         </dl>
       </section>
 
-      <AuditNextSteps sectionId="next-steps" />
+      <AuditNextSteps
+        sectionId="next-steps"
+        actionableFindings={actionableFindings}
+        platform={result.platform.platform}
+        assetCount={assetCount}
+      />
 
       <PlatformAnalysisSection platform={result.platform} auditUrl={result.url} />
 
@@ -245,6 +273,7 @@ export function AuditResultsSection({
         description="Signals found with direct evidence from crawled pages or discovery files."
         findings={result.grouped.detected}
         accent="emerald"
+        platform={result.platform.platform}
       />
 
       <FindingSection
@@ -253,6 +282,7 @@ export function AuditResultsSection({
         description="Expected signals that were not found during the crawl."
         findings={result.grouped.missing}
         accent="rose"
+        platform={result.platform.platform}
       />
 
       <FindingSection
@@ -261,6 +291,7 @@ export function AuditResultsSection({
         description="Partial or ambiguous signals that may require manual verification."
         findings={result.grouped.needsReview}
         accent="amber"
+        platform={result.platform.platform}
       />
 
       <div id="generated-assets" className={AUDIT_SECTION_SCROLL_CLASS}>
@@ -274,7 +305,13 @@ export function AuditResultsSection({
 
       <RecommendationsSection report={report} />
 
-      <AuditNextSteps sectionId="next-steps-bottom" showIntro={false} />
+      <AuditNextSteps
+        sectionId="next-steps-bottom"
+        showIntro={false}
+        actionableFindings={actionableFindings}
+        platform={result.platform.platform}
+        assetCount={assetCount}
+      />
     </div>
   );
 }
