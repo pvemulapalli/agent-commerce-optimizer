@@ -1,3 +1,5 @@
+import type { HostingProfile } from "./hosting-profile";
+
 export type FindingStatus = "detected" | "missing" | "needs_review";
 
 export type ConfidenceLevel = "high" | "medium" | "low";
@@ -46,8 +48,17 @@ export interface Finding {
 export interface PlatformAnalysis {
   platform: CommercePlatform;
   confidence: ConfidenceLevel;
+  /** Weighted signal score mapped to 0–100 before threshold checks. */
+  confidenceScore: number;
   evidence: string[];
   sourceUrls: string[];
+  /** Mix of storefront assets, JS bundles, URL patterns, and hosting (10% cap). */
+  signalBreakdown?: {
+    storefrontAssets: number;
+    jsBundles: number;
+    urlPatterns: number;
+    ipHosting: number;
+  };
 }
 
 export interface PageData {
@@ -94,6 +105,7 @@ export interface CrawlData {
     llmsTxt: ResourceFetch;
     llmsFullTxt: ResourceFetch;
   };
+  hosting?: HostingProfile;
   sitemap: SitemapCrawlInfo;
   relatedDomain: RelatedDomainCrawlInfo;
   crawledAt: string;

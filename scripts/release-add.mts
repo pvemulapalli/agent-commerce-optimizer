@@ -13,7 +13,14 @@ const releasesPath = path.join(root, "content/releases.json");
 const changelogPath = path.join(root, "CHANGELOG.md");
 const appVersionPath = path.join(root, "lib/app-version.ts");
 
-type ReleaseCategory = "UX" | "API" | "Admin" | "Scoring" | "Fixes";
+type ReleaseCategory =
+  | "Platform Detection"
+  | "UX"
+  | "Infrastructure"
+  | "API"
+  | "Admin"
+  | "Scoring"
+  | "Fixes";
 
 interface ReleaseEntry {
   version: string;
@@ -29,7 +36,9 @@ interface ReleasesDocument {
 }
 
 const VALID_CATEGORIES = new Set<ReleaseCategory>([
+  "Platform Detection",
   "UX",
+  "Infrastructure",
   "API",
   "Admin",
   "Scoring",

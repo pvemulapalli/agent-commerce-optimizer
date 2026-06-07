@@ -1,7 +1,7 @@
 "use client";
 
 import { PlatformLabel } from "@/components/platform-label";
-import type { RecentScanRecord } from "@/lib/scan-activity";
+import type { RecentScanRecord } from "@/lib/scan-activity-types";
 import { useEffect, useRef, useState } from "react";
 
 const TOAST_VISIBLE_MS = 5000;

@@ -1,6 +1,8 @@
 import {
   deleteCachedAuditsForHostname,
   isCacheEnabled,
+  mirrorCachedAuditUrls,
+  normalizeAuditUrl,
   readCachedAudit,
   writeCachedAudit,
 } from "@/lib/cache";
@@ -40,53 +42,61 @@ async function resolvePlatformAnalysis(
   return override ? applyPlatformOverride(platform, override) : platform;
 }
 
+async function buildCachedAuditRunResult(
+  cached: NonNullable<Awaited<ReturnType<typeof readCachedAudit>>>,
+): Promise<AuditRunResult> {
+  const platform = await resolvePlatformAnalysis(cached.url, cached.platform);
+  const findings = finalizeFindings(cached.findings, platform);
+  const generationContext =
+    cached.generationContext ??
+    buildGenerationContextFromFindings(
+      cached.url,
+      cached.crawledAt,
+      platform,
+      findings,
+    );
+
+  try {
+    assertEcommerceEligible({
+      findings,
+      platform,
+      generationPages: generationContext.pages,
+    });
+  } catch (error) {
+    if (error instanceof EcommerceIneligibleError) {
+      const hostname = new URL(cached.url).hostname;
+      await deleteCachedAuditsForHostname(hostname);
+    }
+    throw error;
+  }
+
+  return {
+    ...cached,
+    platform,
+    findings,
+    grouped: groupFindings(findings),
+    cacheStatus: "HIT",
+    crawlSummary: inferCrawlSummaryFromFindings(
+      findings,
+      generationContext?.pages.length ?? 0,
+    ),
+    generationContext,
+  };
+}
+
 export async function runAudit(url: string): Promise<AuditRunResult> {
-  await ensureDomainReachable(url);
+  const normalizedUrl = normalizeAuditUrl(url);
 
   if (isCacheEnabled()) {
-    const cached = await readCachedAudit(url);
+    const cached = await readCachedAudit(normalizedUrl);
     if (cached) {
-      const platform = await resolvePlatformAnalysis(cached.url, cached.platform);
-      const findings = finalizeFindings(cached.findings, platform);
-      const generationContext =
-        cached.generationContext ??
-        buildGenerationContextFromFindings(
-          cached.url,
-          cached.crawledAt,
-          platform,
-          findings,
-        );
-
-      try {
-        assertEcommerceEligible({
-          findings,
-          platform,
-          generationPages: generationContext.pages,
-        });
-      } catch (error) {
-        if (error instanceof EcommerceIneligibleError) {
-          const hostname = new URL(cached.url).hostname;
-          await deleteCachedAuditsForHostname(hostname);
-        }
-        throw error;
-      }
-
-      return {
-        ...cached,
-        platform,
-        findings,
-        grouped: groupFindings(findings),
-        cacheStatus: "HIT",
-        crawlSummary: inferCrawlSummaryFromFindings(
-          findings,
-          generationContext?.pages.length ?? 0,
-        ),
-        generationContext,
-      };
+      return buildCachedAuditRunResult(cached);
     }
   }
 
-  const crawlData = await crawlSite(url);
+  await ensureDomainReachable(normalizedUrl);
+
+  const crawlData = await crawlSite(normalizedUrl);
   assertMinimumCrawlHealth(crawlData);
   const crawlSummary = buildCrawlSummary(crawlData);
   const checks = runChecks(crawlData);
@@ -119,7 +129,8 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
   let expiresAt: string | null = null;
 
   if (isCacheEnabled()) {
-    expiresAt = await writeCachedAudit(url, result, generationContext);
+    expiresAt = await writeCachedAudit(normalizedUrl, result, generationContext);
+    await mirrorCachedAuditUrls(normalizedUrl, [crawlData.entryUrl], result, generationContext);
   }
 
   return {

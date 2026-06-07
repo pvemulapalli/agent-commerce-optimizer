@@ -5,7 +5,7 @@ import {
   isActivityFeedEnabled,
   isRecentActivityEvent,
 } from "@/lib/scan-activity-config";
-import type { RecentScanRecord, ScanActivityResponse } from "@/lib/scan-activity";
+import type { RecentScanRecord, ScanActivityResponse } from "@/lib/scan-activity-types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useRecentScans(options?: {

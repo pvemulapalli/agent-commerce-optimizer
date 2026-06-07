@@ -10,11 +10,12 @@ import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
 import { isNonEcommerceScanResponse } from "@/lib/non-ecommerce-messages";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
+import { normalizeAuditUrl } from "@/lib/audit-url";
 import { scrollToAuditOverview, scrollToElementById } from "@/lib/scroll-utils";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import type { GenerateFixesApiResponse } from "@/lib/types";
-import type { RecentScanRecord } from "@/lib/scan-activity";
-import { useCallback, useEffect, useState } from "react";
+import type { RecentScanRecord } from "@/lib/scan-activity-types";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type AuditResponse = EnrichedAuditResponse & {
   scanRecord?: { id: string; hostname: string };
@@ -33,6 +34,7 @@ export default function Home() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [feedNotifications, setFeedNotifications] = useState<RecentScanRecord[]>([]);
   const [loadingRecentId, setLoadingRecentId] = useState<string | null>(null);
+  const loadedReportUrlRef = useRef<string | null>(null);
 
   const activityFeedEnabled = isActivityFeedEnabled();
 
@@ -91,7 +93,8 @@ export default function Home() {
   }
 
   async function loadRecentAudit(entry: RecentScanRecord) {
-    setUrl(entry.url);
+    const scanUrl = normalizeAuditUrl(entry.url);
+    setUrl(scanUrl);
     setLoading(true);
     setLoadingRecentId(entry.id);
     setError(null);
@@ -102,7 +105,7 @@ export default function Home() {
     scrollToElementById("audit-hero");
 
     try {
-      const payload: { url: string; turnstileToken?: string } = { url: entry.url };
+      const payload: { url: string; turnstileToken?: string } = { url: scanUrl };
       if (turnstileToken) {
         payload.turnstileToken = turnstileToken;
       }
@@ -138,6 +141,45 @@ export default function Home() {
       setLoadingRecentId(null);
     }
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined" || loading || result || activityLoading) {
+      return;
+    }
+
+    const urlParam = new URLSearchParams(window.location.search).get("url");
+    if (!urlParam || loadedReportUrlRef.current === urlParam) {
+      return;
+    }
+
+    const normalizedParam = normalizeAuditUrl(urlParam);
+    const entry = activity.recentScans.find(
+      (scan) => normalizeAuditUrl(scan.url) === normalizedParam,
+    );
+
+    loadedReportUrlRef.current = urlParam;
+    window.history.replaceState({}, "", "/");
+
+    if (entry) {
+      void loadRecentAudit(entry);
+      return;
+    }
+
+    void loadRecentAudit({
+      id: normalizedParam,
+      url: normalizedParam,
+      hostname: new URL(normalizedParam).hostname,
+      merchant: normalizedParam,
+      platform: "Unknown",
+      confidence: "low",
+      scannedAt: new Date().toISOString(),
+      cacheStatus: "MISS",
+      summary: "",
+      readinessScore: 0,
+      grade: "-",
+      topGap: "",
+    });
+  }, [activity.recentScans, activityLoading, loading, result]);
 
   async function runAudit(targetUrl: string) {
     if (shouldShowTurnstileWidget() && !turnstileToken) {

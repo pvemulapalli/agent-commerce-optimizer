@@ -1,6 +1,6 @@
 "use client";
 
-import type { RecentScanRecord } from "@/lib/scan-activity";
+import type { RecentScanRecord } from "@/lib/scan-activity-types";
 import { formatPlatformDisplay } from "@/lib/platform-labels";
 
 export type RecentAuditSortField = "domain" | "score" | "grade" | "platform" | "scannedAt";

@@ -335,10 +335,10 @@ function checkPageDiscovery(
       "Matching title, meta, or visible content on crawled page",
     );
     if (built) {
-      return detected(
+      return needsReview(
         id,
         label,
-        "medium",
+        "low",
         built.evidence,
         built.evidenceUrls,
         built.sourceUrl,
@@ -714,7 +714,7 @@ function checkPricingInformation(
       "Pricing-related content on crawled page",
     );
     if (built) {
-      return detected(
+      return needsReview(
         "pricing-information",
         "Pricing information",
         "low",

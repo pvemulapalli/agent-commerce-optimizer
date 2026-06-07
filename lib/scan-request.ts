@@ -40,8 +40,14 @@ export async function validateScanRequest(
     return createBannedDomainResponse();
   }
 
+  const normalizedUrl = normalizeAuditUrl(url);
+  const cached = await readCachedAudit(normalizedUrl);
+  if (cached) {
+    return null;
+  }
+
   try {
-    await ensureDomainReachable(url);
+    await ensureDomainReachable(normalizedUrl);
   } catch (error) {
     if (error instanceof DomainUnreachableError) {
       return new Response(JSON.stringify({ error: error.message }), {
@@ -51,11 +57,6 @@ export async function validateScanRequest(
     }
 
     throw error;
-  }
-
-  const cached = await readCachedAudit(normalizeAuditUrl(url));
-  if (cached) {
-    return null;
   }
 
   return enforceScanRequestGuards(request, turnstileToken);

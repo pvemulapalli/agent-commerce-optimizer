@@ -1,7 +1,9 @@
 import releasesDocument from "@/content/releases.json";
 
 export type ReleaseCategory =
+  | "Platform Detection"
   | "UX"
+  | "Infrastructure"
   | "API"
   | "Admin"
   | "Scoring"

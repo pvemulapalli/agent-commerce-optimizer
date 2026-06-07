@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.4.1] - 2026-06-06
+
+### [Platform Detection]
+- Improved Adobe Commerce (Magento) platform detection accuracy
+- Added initial support for VTEX storefront detection
+- Added initial support for Fenicio storefront detection
+- Expanded platform fingerprint coverage using storefront assets, JavaScript bundles, metadata, URL patterns, and hosting signals
+- Refined platform confidence scoring model with weighted signals: 10% IP/hosting, 45% storefront assets, 25% JavaScript bundles, 20% URL patterns
+- Improved platform attribution reliability for international ecommerce storefronts
+
+### [UX]
+- Recent Scans entries are now clickable
+- Users can navigate directly from Recent Scans to the corresponding stored scan results
+
+### [Infrastructure]
+- Added validation datasets for VTEX and Fenicio platform detection
+- Improved platform classification framework to support future international commerce platform expansion
+
+### [Fixes]
+- Reduced Adobe Commerce false positives and platform misclassification issues
+- Improved handling of previously unidentified commerce platforms
+
 ## [3.4.0] - 2026-06-05
 
 ### Added

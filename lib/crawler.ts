@@ -7,6 +7,7 @@ import {
   selectRelatedDomainUrls,
   toInternalLinks,
 } from "./link-extraction";
+import { resolveHostingProfile } from "./hosting-profile";
 import {
   prioritizeSitemapUrls,
   resolveSitemapUrls,
@@ -465,6 +466,8 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
     pages = mergePages(pages, relatedPages);
   }
 
+  const hosting = await resolveHostingProfile(new URL(entryUrl).hostname);
+
   return {
     entryUrl,
     origin,
@@ -475,6 +478,7 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
       llmsTxt,
       llmsFullTxt,
     },
+    hosting,
     sitemap: sitemapInfo,
     relatedDomain: relatedDomainInfo,
     crawledAt: new Date().toISOString(),

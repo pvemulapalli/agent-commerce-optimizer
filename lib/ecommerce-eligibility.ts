@@ -142,6 +142,17 @@ function isFindingDetected(findings: Finding[], id: string): boolean {
   return findings.find((finding) => finding.id === id)?.status === "detected";
 }
 
+function isContentOnlyStorefrontFinding(finding: Finding): boolean {
+  return (
+    finding.evidence.includes("Matching title, meta, or visible content") ||
+    finding.evidence.includes("Pricing-related content on crawled page")
+  );
+}
+
+function isStrongStorefrontFinding(finding: Finding | undefined): finding is Finding {
+  return finding?.status === "detected" && !isContentOnlyStorefrontFinding(finding);
+}
+
 function collectPageText(pages: PageData[]): string {
   return pages
     .map((page) =>
@@ -197,7 +208,9 @@ function detectParkedDomain(
 }
 
 function hasCoreStorefrontSignal(findings: Finding[]): boolean {
-  return CORE_STOREFRONT_FINDING_IDS.some((id) => isFindingDetected(findings, id));
+  return CORE_STOREFRONT_FINDING_IDS.some((id) =>
+    isStrongStorefrontFinding(findings.find((finding) => finding.id === id)),
+  );
 }
 
 function pageHasNonEcommerceBusinessSchema(page: PageData): boolean {
@@ -252,46 +265,53 @@ function computeConfidenceScore(
   const signals: string[] = [];
   const hasCoreSignals = hasCoreStorefrontSignal(findings);
 
-  if (isFindingDetected(findings, "product-pages")) {
+  if (isStrongStorefrontFinding(findings.find((finding) => finding.id === "product-pages"))) {
     score += 25;
     signals.push("product_pages");
   }
 
-  if (isFindingDetected(findings, "catalog-pages")) {
+  if (isStrongStorefrontFinding(findings.find((finding) => finding.id === "catalog-pages"))) {
     score += 25;
     signals.push("catalog_pages");
   }
 
-  if (isFindingDetected(findings, "product-prices")) {
+  if (isStrongStorefrontFinding(findings.find((finding) => finding.id === "product-prices"))) {
     score += 20;
     signals.push("product_prices");
   }
 
-  if (isFindingDetected(findings, "product-schema")) {
+  if (isStrongStorefrontFinding(findings.find((finding) => finding.id === "product-schema"))) {
     score += 20;
     signals.push("product_schema");
   }
 
-  if (hasCoreSignals && isFindingDetected(findings, "cart-checkout-pages")) {
+  if (
+    hasCoreSignals &&
+    isStrongStorefrontFinding(findings.find((finding) => finding.id === "cart-checkout-pages"))
+  ) {
     score += 20;
     signals.push("cart_detected");
   }
 
-  if (hasCoreSignals && isFindingDetected(findings, "checkout-cart-links")) {
+  if (
+    hasCoreSignals &&
+    isStrongStorefrontFinding(findings.find((finding) => finding.id === "checkout-cart-links"))
+  ) {
     score += 20;
     signals.push("checkout_detected");
   }
 
-  if (isFindingDetected(findings, "offer-schema")) {
+  if (isStrongStorefrontFinding(findings.find((finding) => finding.id === "offer-schema"))) {
     score += 15;
     signals.push("offer_schema");
   }
 
-  const platformCounts =
+  if (
+    hasCoreSignals &&
     platform.platform !== "Unknown" &&
-    (DEDICATED_ECOMMERCE_PLATFORMS.has(platform.platform) || hasCoreSignals);
-
-  if (platformCounts) {
+    DEDICATED_ECOMMERCE_PLATFORMS.has(platform.platform) &&
+    platform.confidence !== "low"
+  ) {
     score += 10;
     signals.push("platform_identified");
   }
@@ -347,15 +367,8 @@ export function assessEcommerceEligibility(input: {
 
   const { score, signals } = computeConfidenceScore(input.findings, input.platform);
   const hasCoreSignals = hasCoreStorefrontSignal(input.findings);
-  const dedicatedPlatformIdentified =
-    input.platform.platform !== "Unknown" &&
-    DEDICATED_ECOMMERCE_PLATFORMS.has(input.platform.platform) &&
-    input.platform.confidence !== "low";
 
-  const eligible =
-    hasCoreSignals &&
-    (score >= ECOMMERCE_CONFIDENCE_THRESHOLD ||
-      (dedicatedPlatformIdentified && score >= 10));
+  const eligible = hasCoreSignals && score >= ECOMMERCE_CONFIDENCE_THRESHOLD;
 
   return {
     eligible,

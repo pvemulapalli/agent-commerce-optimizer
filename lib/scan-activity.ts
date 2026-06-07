@@ -1,5 +1,6 @@
 import { normalizeDomainFromUrl } from "./domain-normalization";
 import { resolveMerchantDisplayName } from "./merchant-name";
+import { normalizeAuditUrl } from "./audit-url";
 import type { AuditReportMetadata } from "./audit-metadata";
 import {
   computePlatformLeaderboard,
@@ -9,27 +10,14 @@ import { recordBenchmarkSample } from "./benchmark-samples";
 import type { AuditApiResponse } from "./types";
 import { buildReadinessReport } from "./readiness-score";
 import { getRedis, isRedisConfigured } from "./redis";
+import type { RecentScanRecord, ScanActivityResponse } from "./scan-activity-types";
 
-export interface RecentScanRecord {
-  id: string;
-  url: string;
-  hostname: string;
-  merchant: string;
-  platform: string;
-  confidence: string;
-  scannedAt: string;
-  cacheStatus: string;
-  summary: string;
-  readinessScore: number;
-  grade: string;
-  topGap: string;
-}
-
-export interface ScanActivityResponse {
-  totalScans: number;
-  recentScans: RecentScanRecord[];
-  platformStats: PlatformLeaderboardStat[];
-}
+export type { RecentScanRecord, ScanActivityResponse } from "./scan-activity-types";
+export {
+  RECENT_REPORT_LINK_LIMIT,
+  buildRecentReportHomeUrl,
+  getReportLinkableScanIds,
+} from "./recent-scan-links";
 
 const TOTAL_KEY = "aco:scan:total";
 const RECENT_KEY = "aco:scan:recent";
@@ -140,7 +128,7 @@ export function createScanRecord(
 
   return {
     id: normalizeHostname(hostname),
-    url: audit.url,
+    url: normalizeAuditUrl(audit.url),
     hostname,
     merchant: extractMerchantName(audit.url, merchantName),
     platform: audit.platform.platform,

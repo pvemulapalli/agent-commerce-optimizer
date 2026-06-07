@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { getRegistrableDomain } from "./domains";
+import { normalizeAuditUrl } from "./audit-url";
 import { getRedis, isRedisConfigured } from "./redis";
 import type {
   AuditApiResponse,
@@ -11,13 +12,15 @@ import type {
   GroupedFindings,
 } from "./types";
 
+export { normalizeAuditUrl };
+
 /**
  * Audit cache storage strategy:
  *
  * - Vercel serverless runs on a read-only filesystem at /var/task (except /tmp).
  *   Writing to process.cwd()/.cache fails in production with ENOENT/EACCES.
- * - Production should use Upstash Redis when UPSTASH_REDIS_REST_* is configured.
- * - Local file cache under process.cwd()/.cache is used only in development.
+ * - Production and local dev use Upstash Redis when UPSTASH_REDIS_REST_* is configured.
+ * - Local file cache under process.cwd()/.cache is used only in development without Redis.
  * - If production has no Redis, cache is skipped gracefully (audit still runs).
  * - Cache read/write failures never fail the audit — errors are swallowed.
  */
@@ -60,33 +63,19 @@ function isDevelopmentEnvironment(): boolean {
 }
 
 function shouldUseFileCache(): boolean {
-  return isDevelopmentEnvironment() && getCacheTtlMinutes() > 0;
+  return (
+    isDevelopmentEnvironment() &&
+    !isRedisConfigured() &&
+    getCacheTtlMinutes() > 0
+  );
 }
 
 function shouldUseRedisCache(): boolean {
-  return !isDevelopmentEnvironment() && isRedisConfigured() && getCacheTtlMinutes() > 0;
+  return isRedisConfigured() && getCacheTtlMinutes() > 0;
 }
 
 export function isCacheEnabled(): boolean {
   return shouldUseFileCache() || shouldUseRedisCache();
-}
-
-export function normalizeAuditUrl(input: string): string {
-  const trimmed = input.trim();
-  const withProtocol =
-    trimmed.startsWith("http://") || trimmed.startsWith("https://")
-      ? trimmed
-      : `https://${trimmed}`;
-
-  const url = new URL(withProtocol);
-  url.hash = "";
-  url.hostname = url.hostname.toLowerCase().replace(/^www\./, "");
-
-  if (url.pathname !== "/" && url.pathname.endsWith("/")) {
-    url.pathname = url.pathname.slice(0, -1);
-  }
-
-  return url.href;
 }
 
 export function getCacheKey(normalizedUrl: string): string {
@@ -163,15 +152,9 @@ async function readRedisCachedAudit(
   return toCachedAuditReadResult(entry);
 }
 
-export async function readCachedAudit(
-  inputUrl: string,
+async function readCachedAuditByKey(
+  cacheKey: string,
 ): Promise<CachedAuditReadResult | null> {
-  if (!isCacheEnabled()) {
-    return null;
-  }
-
-  const cacheKey = getCacheKey(normalizeAuditUrl(inputUrl));
-
   try {
     if (shouldUseRedisCache()) {
       return await readRedisCachedAudit(cacheKey);
@@ -182,6 +165,33 @@ export async function readCachedAudit(
     }
   } catch (error) {
     console.error("[audit-cache] read failed:", error);
+  }
+
+  return null;
+}
+
+export async function readCachedAudit(
+  inputUrl: string,
+): Promise<CachedAuditReadResult | null> {
+  if (!isCacheEnabled()) {
+    return null;
+  }
+
+  const normalized = normalizeAuditUrl(inputUrl);
+  const direct = await readCachedAuditByKey(getCacheKey(normalized));
+  if (direct) {
+    return direct;
+  }
+
+  try {
+    const homepage = normalizeAuditUrl(
+      `${new URL(normalized).origin}/`,
+    );
+    if (homepage !== normalized) {
+      return await readCachedAuditByKey(getCacheKey(homepage));
+    }
+  } catch {
+    // Invalid URL — already attempted direct lookup.
   }
 
   return null;
@@ -251,6 +261,24 @@ export async function writeCachedAudit(
   }
 
   return null;
+}
+
+export async function mirrorCachedAuditUrls(
+  canonicalUrl: string,
+  alternateUrls: string[],
+  result: AuditResult & { grouped: GroupedFindings },
+  generationContext?: GenerationContext,
+): Promise<void> {
+  const canonical = normalizeAuditUrl(canonicalUrl);
+
+  for (const alternateUrl of alternateUrls) {
+    const normalized = normalizeAuditUrl(alternateUrl);
+    if (normalized === canonical) {
+      continue;
+    }
+
+    await writeCachedAudit(normalized, result, generationContext);
+  }
 }
 
 function cacheKeyMatchesHostname(cacheKey: string, hostname: string): boolean {
@@ -343,6 +371,7 @@ export async function updateCachedAuditPlatform(
           ...entry.result.platform,
           platform: platform as CommercePlatform,
           confidence: "high",
+          confidenceScore: 100,
           evidence: [
             `Admin platform override applied (${platform})`,
             ...entry.result.platform.evidence,
@@ -378,6 +407,7 @@ export async function updateCachedAuditPlatform(
           ...entry.result.platform,
           platform: platform as CommercePlatform,
           confidence: "high",
+          confidenceScore: 100,
           evidence: [
             `Admin platform override applied (${platform})`,
             ...entry.result.platform.evidence,

@@ -106,5 +106,125 @@
     "expectedPlatformConfidence": "unverified",
     "merchant": "Tokyobike",
     "url": "https://tokyobike.us"
+  },
+  {
+    "platform": "VTEX",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "C&A Brazil",
+    "url": "https://www.cea.com.br"
+  },
+  {
+    "platform": "VTEX",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Aramis",
+    "url": "https://www.aramis.com.br"
+  },
+  {
+    "platform": "VTEX",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Tok&Stok",
+    "url": "https://www.tokstok.com.br"
+  },
+  {
+    "platform": "VTEX",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Novo Mundo",
+    "url": "https://www.novomundo.com.br"
+  },
+  {
+    "platform": "VTEX",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "HSM Store",
+    "url": "https://www.hsm.com.br"
+  },
+  {
+    "platform": "VTEX",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Juleriaque",
+    "url": "https://www.juleriaque.com.ar"
+  },
+  {
+    "platform": "VTEX",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Loungerie",
+    "url": "https://www.loungerie.com.br"
+  },
+  {
+    "platform": "VTEX",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Elektra Mexico",
+    "url": "https://www.elektra.mx"
+  },
+  {
+    "platform": "VTEX",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Océane",
+    "url": "https://www.oceane.com.br"
+  },
+  {
+    "platform": "VTEX",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Flormel",
+    "url": "https://www.flormel.com.br"
+  },
+  {
+    "platform": "Fenicio",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "TOMS Peru",
+    "url": "https://www.toms.pe"
+  },
+  {
+    "platform": "Fenicio",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Todo Moda Uruguay",
+    "url": "https://uy.todomoda.com"
+  },
+  {
+    "platform": "Fenicio",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Timberland Peru",
+    "url": "https://www.timberland.com.pe"
+  },
+  {
+    "platform": "Fenicio",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Rolling Uruguay",
+    "url": "https://www.rolling.com.uy"
+  },
+  {
+    "platform": "Fenicio",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "PriceBox Peru",
+    "url": "https://www.pricebox.pe"
+  },
+  {
+    "platform": "Fenicio",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Porto Servicios Uruguay",
+    "url": "https://tienda.portoservicios.com.uy"
+  },
+  {
+    "platform": "Fenicio",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Pampers Uruguay",
+    "url": "https://www.pamperouruguay.com"
+  },
+  {
+    "platform": "Fenicio",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "New Balance Uruguay",
+    "url": "https://www.newbalance.com.uy"
+  },
+  {
+    "platform": "Fenicio",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Matías González",
+    "url": "https://matiasgonzalez.com.uy"
+  },
+  {
+    "platform": "Fenicio",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Muar Paraguay",
+    "url": "https://www.muar.com.py"
   }
 ]

@@ -6,6 +6,10 @@ import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import { RecentAuditsList } from "@/components/recent-audits";
 import { useRecentScans } from "@/hooks/use-recent-scans";
 import {
+  getReportLinkableScanIds,
+  RECENT_REPORT_LINK_LIMIT,
+} from "@/lib/recent-scan-links";
+import {
   filterRecentAudits,
   parseRecentAuditSortDirection,
   parseRecentAuditSortField,
@@ -32,6 +36,11 @@ export default function RecentAuditsPage() {
     const filtered = filterRecentAudits(activity.recentScans, query, platform);
     return sortRecentAudits(filtered, sort, direction);
   }, [activity.recentScans, query, platform, sort, direction]);
+
+  const linkableEntryIds = useMemo(
+    () => getReportLinkableScanIds(activity.recentScans),
+    [activity.recentScans],
+  );
 
   function updateParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -63,7 +72,7 @@ export default function RecentAuditsPage() {
       <PageHeader
         eyebrow="Global scan history"
         title="Recent Scans"
-        description="Shared scan summaries across all users, stored in Redis. Recent scans show public summaries only. Full reports are available only from the original scan flow."
+        description={`Shared scan summaries across all users, stored in Redis. The ${RECENT_REPORT_LINK_LIMIT} most recent scans link to full reports on the homepage; older entries show summary data only.`}
       />
 
       {activity.platformStats.length > 0 ? (
@@ -96,17 +105,26 @@ export default function RecentAuditsPage() {
             {error}
           </div>
         ) : (
-          <RecentAuditsList
+          <>
+            {linkableEntryIds.size > 0 ? (
+              <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
+                The {RECENT_REPORT_LINK_LIMIT} most recent scans are highlighted and link to the full
+                report on the homepage. Older scans show summary data only.
+              </p>
+            ) : null}
+            <RecentAuditsList
             entries={filteredEntries}
             sort={sort}
             direction={direction}
             onSortChange={handleSortChange}
+            linkableEntryIds={linkableEntryIds}
             emptyMessage={
               activity.recentScans.length > 0
                 ? "No scans match your search or filters."
                 : "No scans recorded yet. Run the first scan from the homepage."
             }
           />
+          </>
         )}
       </div>
 

@@ -1,6 +1,31 @@
 {
   "releases": [
     {
+      "version": "3.4.1",
+      "date": "2026-06-06",
+      "title": "Platform Detection Accuracy & UX Improvements",
+      "summary": "This release focuses on improving platform detection quality, expanding support for international commerce platforms, strengthening platform confidence scoring, and improving navigation through stored scan results.",
+      "categories": [
+        "Platform Detection",
+        "UX",
+        "Infrastructure",
+        "Fixes"
+      ],
+      "changes": [
+        "Improved Adobe Commerce (Magento) platform detection accuracy",
+        "Added initial support for VTEX storefront detection",
+        "Added initial support for Fenicio storefront detection",
+        "Expanded platform fingerprint coverage using storefront assets, JavaScript bundles, metadata, URL patterns, and hosting signals",
+        "Refined platform confidence scoring model with weighted signals: 10% IP/hosting, 45% storefront assets, 25% JavaScript bundles, 20% URL patterns",
+        "Improved platform attribution reliability for international ecommerce storefronts",
+        "Recent Scans entries are now clickable and open the corresponding stored scan results",
+        "Added validation datasets for VTEX and Fenicio platform detection",
+        "Improved platform classification framework to support future international commerce platform expansion",
+        "Reduced Adobe Commerce false positives and platform misclassification issues",
+        "Improved handling of previously unidentified commerce platforms"
+      ]
+    },
+    {
       "version": "3.4.0",
       "date": "2026-06-05",
       "title": "International platform detection and benchmark scalability",

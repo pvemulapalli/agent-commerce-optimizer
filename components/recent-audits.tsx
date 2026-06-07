@@ -5,7 +5,8 @@ import { PlatformLabel } from "@/components/platform-label";
 import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import type { PlatformLeaderboardStat } from "@/lib/platform-leaderboard";
 import type { RecentAuditSortDirection, RecentAuditSortField } from "@/lib/recent-audits-query";
-import type { RecentScanRecord } from "@/lib/scan-activity";
+import { buildRecentReportHomeUrl } from "@/lib/recent-scan-links";
+import type { RecentScanRecord } from "@/lib/scan-activity-types";
 import Link from "next/link";
 
 function formatTimestamp(timestamp: string): string {
@@ -34,16 +35,28 @@ function RecentAuditSiteLink({
   );
 }
 
-function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
-  return (
-    <div className="rounded-xl border border-card-border bg-card p-4">
+function RecentAuditSummaryCard({
+  entry,
+  linkable = false,
+}: {
+  entry: RecentScanRecord;
+  linkable?: boolean;
+}) {
+  const cardBody = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-medium text-slate-900 dark:text-slate-100">{entry.merchant}</p>
-          <RecentAuditSiteLink
-            entry={entry}
-            className="mt-1 text-slate-500 hover:text-blue-900 dark:text-slate-400 dark:hover:text-blue-300"
-          />
+          {linkable ? (
+            <span className="mt-1 block break-all text-xs text-slate-500 dark:text-slate-400">
+              {entry.hostname}
+            </span>
+          ) : (
+            <RecentAuditSiteLink
+              entry={entry}
+              className="mt-1 text-slate-500 hover:text-blue-900 dark:text-slate-400 dark:hover:text-blue-300"
+            />
+          )}
         </div>
         <GradeBadge grade={entry.grade || "-"} />
       </div>
@@ -76,7 +89,27 @@ function RecentAuditSummaryCard({ entry }: { entry: RecentScanRecord }) {
       <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
         {formatTimestamp(entry.scannedAt)}
       </p>
-    </div>
+      {linkable ? (
+        <p className="mt-3 text-xs font-medium text-blue-900 dark:text-blue-300">View full report →</p>
+      ) : (
+        <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">Summary only</p>
+      )}
+    </>
+  );
+
+  if (linkable) {
+    return (
+      <Link
+        href={buildRecentReportHomeUrl(entry.url)}
+        className="block rounded-xl border border-blue-200 bg-blue-50/40 p-4 transition hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm dark:border-blue-800/60 dark:bg-blue-950/20 dark:hover:border-blue-700 dark:hover:bg-blue-950/40"
+      >
+        {cardBody}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-card-border bg-card p-4 opacity-95">{cardBody}</div>
   );
 }
 
@@ -86,13 +119,19 @@ export function RecentAuditsList({
   sort,
   direction,
   onSortChange,
+  linkableEntryIds,
 }: {
   entries: RecentScanRecord[];
   emptyMessage?: string;
   sort?: RecentAuditSortField;
   direction?: RecentAuditSortDirection;
   onSortChange?: (field: RecentAuditSortField) => void;
+  /** Scan IDs (typically the 6 most recent) that open the full homepage report. */
+  linkableEntryIds?: Set<string>;
 }) {
+  function isLinkable(entry: RecentScanRecord): boolean {
+    return linkableEntryIds?.has(entry.id) ?? false;
+  }
   function renderSortHeader(field: RecentAuditSortField, label: string) {
     if (!onSortChange) {
       return label;
@@ -134,6 +173,7 @@ export function RecentAuditsList({
           <RecentAuditSummaryCard
             key={`${entry.id}-${entry.scannedAt}-${index}-mobile`}
             entry={entry}
+            linkable={isLinkable(entry)}
           />
         ))}
       </div>
@@ -149,33 +189,73 @@ export function RecentAuditsList({
                 <th className="px-4 py-3">{renderSortHeader("platform", "Platform")}</th>
                 <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Top Gap</th>
                 <th className="px-4 py-3">{renderSortHeader("scannedAt", "Scanned")}</th>
+                {linkableEntryIds ? (
+                  <th className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Report</th>
+                ) : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {entries.map((entry, index) => (
-                <tr key={`${entry.id}-${entry.scannedAt}-${index}`} className="align-top">
-                  <td className="px-4 py-4">
-                    <div className="font-medium text-slate-900 dark:text-slate-100">{entry.merchant}</div>
-                    <RecentAuditSiteLink
-                      entry={entry}
-                      className="mt-1 block max-w-xs text-slate-500 hover:text-blue-900 dark:text-slate-400 dark:hover:text-blue-300"
-                    />
-                  </td>
-                  <td className="px-4 py-4">
-                    <GradeBadge grade={entry.grade || "-"} />
-                  </td>
-                  <td className="px-4 py-4 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-                    {entry.readinessScore ?? "-"}
-                  </td>
-                  <td className="px-4 py-4 text-slate-800 dark:text-slate-200">
-                    <PlatformLabel platform={entry.platform} />
-                  </td>
-                  <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.topGap || "-"}</td>
-                  <td className="px-4 py-4 whitespace-nowrap text-slate-700 dark:text-slate-300">
-                    {formatTimestamp(entry.scannedAt)}
-                  </td>
-                </tr>
-              ))}
+              {entries.map((entry, index) => {
+                const linkable = isLinkable(entry);
+                const rowClass = linkable
+                  ? "align-top bg-blue-50/30 transition hover:bg-blue-50/70 dark:bg-blue-950/10 dark:hover:bg-blue-950/25"
+                  : "align-top text-slate-600 dark:text-slate-400";
+
+                return (
+                  <tr key={`${entry.id}-${entry.scannedAt}-${index}`} className={rowClass}>
+                    <td className="px-4 py-4">
+                      {linkable ? (
+                        <Link
+                          href={buildRecentReportHomeUrl(entry.url)}
+                          className="group block min-w-0 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                        >
+                          <div className="font-medium text-slate-900 group-hover:text-blue-900 dark:text-slate-100 dark:group-hover:text-blue-300">
+                            {entry.merchant}
+                          </div>
+                          <span className="mt-1 block max-w-xs text-xs text-slate-500 group-hover:text-blue-800 dark:text-slate-400 dark:group-hover:text-blue-300">
+                            {entry.hostname}
+                          </span>
+                        </Link>
+                      ) : (
+                        <>
+                          <div className="font-medium text-slate-800 dark:text-slate-300">{entry.merchant}</div>
+                          <RecentAuditSiteLink
+                            entry={entry}
+                            className="mt-1 block max-w-xs text-slate-500 dark:text-slate-500"
+                          />
+                        </>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <GradeBadge grade={entry.grade || "-"} />
+                    </td>
+                    <td className="px-4 py-4 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                      {entry.readinessScore ?? "-"}
+                    </td>
+                    <td className="px-4 py-4 text-slate-800 dark:text-slate-200">
+                      <PlatformLabel platform={entry.platform} />
+                    </td>
+                    <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.topGap || "-"}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                      {formatTimestamp(entry.scannedAt)}
+                    </td>
+                    {linkableEntryIds ? (
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {linkable ? (
+                          <Link
+                            href={buildRecentReportHomeUrl(entry.url)}
+                            className="inline-flex items-center rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-900 transition hover:border-blue-300 hover:bg-blue-50 dark:border-blue-700 dark:bg-slate-900 dark:text-blue-200 dark:hover:bg-blue-950/50"
+                          >
+                            View report
+                          </Link>
+                        ) : (
+                          <span className="text-xs text-slate-400 dark:text-slate-500">Summary only</span>
+                        )}
+                      </td>
+                    ) : null}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

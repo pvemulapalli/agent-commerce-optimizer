@@ -74,6 +74,7 @@ export function applyPlatformOverride(
   return {
     platform: override,
     confidence: "high" as ConfidenceLevel,
+    confidenceScore: 100,
     evidence: [
       `Admin platform override applied (${getPlatformLabel(override)})`,
       ...analysis.evidence,

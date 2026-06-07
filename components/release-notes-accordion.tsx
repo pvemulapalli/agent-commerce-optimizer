@@ -5,7 +5,11 @@ import type { ReleaseCategory, ReleaseEntry } from "@/lib/releases";
 import { groupReleasesByVersionFamily } from "@/lib/releases";
 
 const CATEGORY_STYLES: Record<ReleaseCategory, string> = {
+  "Platform Detection":
+    "border-cyan-200 bg-cyan-50 text-cyan-900 dark:border-cyan-500/40 dark:bg-cyan-950/50 dark:text-cyan-100",
   UX: "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/40 dark:bg-blue-950/50 dark:text-blue-100",
+  Infrastructure:
+    "border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-500/40 dark:bg-slate-950/50 dark:text-slate-100",
   API: "border-indigo-200 bg-indigo-50 text-indigo-900 dark:border-indigo-500/40 dark:bg-indigo-950/50 dark:text-indigo-100",
   Admin:
     "border-violet-200 bg-violet-50 text-violet-900 dark:border-violet-500/40 dark:bg-violet-950/50 dark:text-violet-100",
