@@ -1,5 +1,4 @@
 import { normalizeHostname } from "./banned-domains";
-import { getRegistrableDomain } from "./domains";
 import { normalizeAuditUrl } from "./audit-url";
 import {
   QUARANTINED_NON_ECOMMERCE_MESSAGE,
@@ -40,7 +39,7 @@ function parseStoredRecords(raw: unknown): NonEcommerceDomainRecord[] | null {
       }
 
       const record = entry as Record<string, unknown>;
-      const domain = normalizeHostname(String(record.domain ?? ""));
+      const domain = normalizeStoredDomain(String(record.domain ?? ""));
 
       if (!domain) {
         return null;
@@ -72,11 +71,38 @@ async function readRecords(): Promise<NonEcommerceDomainRecord[]> {
   try {
     const redis = getRedis();
     const raw = await redis.get(REDIS_NON_ECOMMERCE_DOMAINS_KEY);
-    return parseStoredRecords(raw) ?? [];
+    const parsed = parseStoredRecords(raw) ?? [];
+    return dedupeRecords(parsed);
   } catch (error) {
     console.error("[non-ecommerce-domains] read failed:", error);
     return [];
   }
+}
+
+function dedupeRecords(records: NonEcommerceDomainRecord[]): NonEcommerceDomainRecord[] {
+  const byDomain = new Map<string, NonEcommerceDomainRecord>();
+
+  for (const record of records) {
+    const existing = byDomain.get(record.domain);
+    if (!existing) {
+      byDomain.set(record.domain, record);
+      continue;
+    }
+
+    byDomain.set(record.domain, {
+      ...existing,
+      reviewed: existing.reviewed || record.reviewed,
+      reviewedBy: existing.reviewedBy ?? record.reviewedBy,
+      notes: existing.notes ?? record.notes,
+      firstDetectedAt:
+        new Date(existing.firstDetectedAt).getTime() <=
+        new Date(record.firstDetectedAt).getTime()
+          ? existing.firstDetectedAt
+          : record.firstDetectedAt,
+    });
+  }
+
+  return [...byDomain.values()];
 }
 
 async function writeRecords(records: NonEcommerceDomainRecord[]): Promise<void> {
@@ -115,12 +141,12 @@ export async function getNonEcommerceDomains(search?: string): Promise<NonEcomme
 export async function getNonEcommerceDomain(
   domain: string,
 ): Promise<NonEcommerceDomainRecord | undefined> {
-  const normalized = normalizeHostname(domain);
+  const normalized = normalizeNonEcommerceDomainInput(domain);
   return (await readRecords()).find((record) => record.domain === normalized);
 }
 
 export async function isQuarantinedNonEcommerceDomain(hostname: string): Promise<boolean> {
-  const normalized = normalizeHostname(hostname);
+  const normalized = normalizeNonEcommerceDomainInput(hostname);
   return (await readRecords()).some((record) => {
     return record.domain === normalized || normalized.endsWith(`.${record.domain}`);
   });
@@ -139,7 +165,7 @@ export async function addNonEcommerceDomain(input: {
   domain: string;
   reason: string;
 }): Promise<NonEcommerceDomainRecord> {
-  const domain = normalizeHostname(input.domain);
+  const domain = normalizeNonEcommerceDomainInput(input.domain);
   const records = await readRecords();
   const existing = records.find((record) => record.domain === domain);
 
@@ -156,12 +182,12 @@ export async function addNonEcommerceDomain(input: {
     notes: null,
   };
 
-  await writeRecords([record, ...records]);
+  await writeRecords(dedupeRecords([record, ...records]));
   return record;
 }
 
 export async function removeNonEcommerceDomain(domain: string): Promise<boolean> {
-  const normalized = normalizeHostname(domain);
+  const normalized = normalizeNonEcommerceDomainInput(domain);
   const records = await readRecords();
   const next = records.filter((record) => record.domain !== normalized);
 
@@ -178,7 +204,7 @@ export async function approveNonEcommerceDomain(input: {
   reviewedBy: string;
   notes?: string | null;
 }): Promise<NonEcommerceDomainRecord | null> {
-  const normalized = normalizeHostname(input.domain);
+  const normalized = normalizeNonEcommerceDomainInput(input.domain);
   const records = await readRecords();
   let updated: NonEcommerceDomainRecord | null = null;
 
@@ -208,7 +234,7 @@ export async function updateNonEcommerceDomainNotes(input: {
   domain: string;
   notes: string | null;
 }): Promise<NonEcommerceDomainRecord | null> {
-  const normalized = normalizeHostname(input.domain);
+  const normalized = normalizeNonEcommerceDomainInput(input.domain);
   const records = await readRecords();
   let updated: NonEcommerceDomainRecord | null = null;
 
@@ -254,11 +280,15 @@ export function normalizeNonEcommerceDomainInput(input: string): string {
 
   try {
     if (trimmed.includes("://")) {
-      return getRegistrableDomain(new URL(trimmed).hostname.toLowerCase());
+      return normalizeHostname(new URL(trimmed).hostname);
     }
   } catch {
     // fall through
   }
 
   return normalizeHostname(trimmed);
+}
+
+function normalizeStoredDomain(input: string): string {
+  return normalizeNonEcommerceDomainInput(input);
 }

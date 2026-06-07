@@ -219,7 +219,10 @@ export default function AdminClient() {
       return;
     }
 
-    setBusy(`non-ecommerce-${action}-${domain}`);
+    const silent = action === "notes";
+    if (!silent) {
+      setBusy(`non-ecommerce-${action}-${domain}`);
+    }
     setStatus(null);
 
     try {
@@ -248,7 +251,9 @@ export default function AdminClient() {
           actionError instanceof Error ? actionError.message : "Action failed unexpectedly",
       });
     } finally {
-      setBusy(null);
+      if (!silent) {
+        setBusy(null);
+      }
     }
   }
 
@@ -923,7 +928,12 @@ export default function AdminClient() {
                   </td>
                 </tr>
               ) : (
-                nonEcommerceDomains.map((entry) => (
+                nonEcommerceDomains.map((entry) => {
+                  const rowBusy =
+                    busy === `non-ecommerce-remove-${entry.domain}` ||
+                    busy === `non-ecommerce-approve-${entry.domain}`;
+
+                  return (
                   <tr key={entry.domain} className="border-b border-slate-100 align-top">
                     <td className="px-3 py-3 font-medium text-slate-900">{entry.domain}</td>
                     <td className="px-3 py-3 text-slate-700">{entry.reason}</td>
@@ -953,7 +963,8 @@ export default function AdminClient() {
                       <div className="flex flex-col gap-2">
                         <button
                           type="button"
-                          disabled={busy !== null || entry.reviewed}
+                          disabled={rowBusy || entry.reviewed}
+                          onMouseDown={(event) => event.preventDefault()}
                           onClick={() => void handleNonEcommerceAction("approve", entry.domain)}
                           className="text-sm font-medium text-blue-900 hover:underline disabled:opacity-50"
                         >
@@ -961,7 +972,8 @@ export default function AdminClient() {
                         </button>
                         <button
                           type="button"
-                          disabled={busy !== null}
+                          disabled={rowBusy}
+                          onMouseDown={(event) => event.preventDefault()}
                           onClick={() => {
                             if (
                               window.confirm(
@@ -978,7 +990,8 @@ export default function AdminClient() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

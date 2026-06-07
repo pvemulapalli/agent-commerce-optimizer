@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.5.1] - 2026-06-07
+
+### [Fixes]
+- Updated Share Report button styling to match site blue theme on the readiness score card
+- Gracefully handle scanning errors when sites use bot protection (e.g. Cloudflare) with a clear “Scan Temporarily Blocked” message instead of generic server errors
+- Fixed Admin Non-Ecommerce Domains Remove action (blur race and domain normalization mismatch)
+- Prevent bot-protected ecommerce sites from being incorrectly added to the non-ecommerce quarantine list
+
 ## [3.5.0] - 2026-06-07
 
 ### [UX]

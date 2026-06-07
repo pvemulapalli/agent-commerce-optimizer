@@ -50,7 +50,7 @@ export function ShareReportButton({
       <button
         type="button"
         onClick={() => void handleShare()}
-        className="inline-flex items-center gap-2 rounded-full border border-amber-700/70 bg-slate-950 px-4 py-2 text-sm font-medium text-amber-200/90 transition hover:border-amber-600 hover:bg-slate-900 hover:text-amber-100 dark:border-amber-600/50 dark:bg-slate-950 dark:text-amber-200 dark:hover:border-amber-500 dark:hover:text-amber-100"
+        className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-card px-4 py-2 text-sm font-medium text-blue-900 transition hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-100 dark:hover:bg-blue-950/40"
       >
         <ShareIcon />
         Share

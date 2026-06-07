@@ -1,3 +1,5 @@
+import { createBotVerificationResponse } from "@/lib/bot-verification-api";
+import { BotVerificationBlockedError } from "@/lib/bot-verification";
 import { createIneligibleEcommerceResponse } from "@/lib/ecommerce-eligibility-api";
 import { EcommerceIneligibleError } from "@/lib/ecommerce-eligibility";
 import { recordEcommerceRejection } from "@/lib/ecommerce-rejection-log";
@@ -67,6 +69,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(response);
   } catch (error) {
+    if (error instanceof BotVerificationBlockedError) {
+      return createBotVerificationResponse();
+    }
+
     if (error instanceof EcommerceIneligibleError) {
       await recordEcommerceRejection({
         url: parsed.data.url,

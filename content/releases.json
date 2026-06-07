@@ -1,6 +1,23 @@
 {
   "releases": [
     {
+      "version": "3.5.1",
+      "date": "2026-06-07",
+      "title": "Bug Fixes: Share Button, Bot Protection, and Admin",
+      "summary": "Bug fixes for Share button styling, graceful handling of scan errors when sites use bot protection from providers like Cloudflare, and Admin portal quarantine list fixes.",
+      "categories": [
+        "Fixes"
+      ],
+      "changes": [
+        "Updated Share Report button styling to match the site blue theme",
+        "Show a clear Scan Temporarily Blocked message when Cloudflare or similar bot verification blocks a crawl",
+        "Detect bot protection during pre-crawl and crawl health checks instead of reporting a generic server error",
+        "Fixed Admin Non-Ecommerce Domains Remove button not firing due to notes field blur race",
+        "Fixed domain normalization so quarantined entries remove correctly from Redis",
+        "Prevent bot-protected storefronts from being auto-added to the non-ecommerce quarantine list"
+      ]
+    },
+    {
       "version": "3.5.0",
       "date": "2026-06-07",
       "title": "Optimization Workflows, Shared Reports, and Non-Commerce Domain Controls",

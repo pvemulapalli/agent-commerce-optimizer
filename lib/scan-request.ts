@@ -3,6 +3,8 @@ import {
   createBannedDomainResponse,
   isBannedScanUrl,
 } from "./banned-domains";
+import { createBotVerificationResponse } from "./bot-verification-api";
+import { BotVerificationBlockedError } from "./bot-verification";
 import {
   createQuarantinedNonEcommerceResponse,
   isQuarantinedNonEcommerceUrl,
@@ -57,6 +59,10 @@ export async function validateScanRequest(
   try {
     await ensureDomainReachable(normalizedUrl);
   } catch (error) {
+    if (error instanceof BotVerificationBlockedError) {
+      return createBotVerificationResponse();
+    }
+
     if (error instanceof DomainUnreachableError) {
       return new Response(JSON.stringify({ error: error.message }), {
         status: 400,

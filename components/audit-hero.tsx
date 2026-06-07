@@ -1,6 +1,7 @@
 "use client";
 
 import { AuditProgressBar } from "@/components/audit-progress";
+import { BotVerificationNotice } from "@/components/bot-verification-notice";
 import { NonEcommerceNotice } from "@/components/non-ecommerce-notice";
 import { ScanningRestrictedNotice } from "@/components/scanning-restricted-notice";
 import {
@@ -87,6 +88,7 @@ export function AuditHero({
   loading,
   error,
   nonEcommerceMessage,
+  botVerificationMessage,
   turnstileToken,
   onUrlChange,
   onSubmit,
@@ -97,6 +99,7 @@ export function AuditHero({
   loading: boolean;
   error: string | null;
   nonEcommerceMessage: string | null;
+  botVerificationMessage: string | null;
   turnstileToken: string | null;
   onUrlChange: (url: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -149,6 +152,13 @@ export function AuditHero({
           <ScanningRestrictedNotice onScanAnother={onScanAnother} />
         ) : null}
 
+        {botVerificationMessage ? (
+          <BotVerificationNotice
+            message={botVerificationMessage}
+            onScanAnother={onScanAnother}
+          />
+        ) : null}
+
         {nonEcommerceMessage ? (
           <NonEcommerceNotice
             message={nonEcommerceMessage}
@@ -156,7 +166,7 @@ export function AuditHero({
           />
         ) : null}
 
-        {error && !restrictedDomain && !nonEcommerceMessage ? (
+        {error && !restrictedDomain && !nonEcommerceMessage && !botVerificationMessage ? (
           <div className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/50 dark:text-rose-200">
             {error}
           </div>

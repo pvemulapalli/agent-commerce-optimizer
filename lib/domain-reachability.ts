@@ -1,4 +1,9 @@
 import dns from "node:dns/promises";
+import {
+  BotVerificationBlockedError,
+  detectBotVerificationInCrawl,
+  isBotVerificationResponse,
+} from "./bot-verification";
 import { deleteCachedAuditsForHostname, normalizeAuditUrl } from "./cache";
 import {
   gatewayErrorMessage,
@@ -100,6 +105,14 @@ async function probeSite(url: URL): Promise<void> {
     const text = await response.text();
     const snippet = text.slice(0, 4000);
 
+    if (isBotVerificationResponse({
+      status: response.status,
+      bodyText: snippet,
+      headers: response.headers,
+    })) {
+      throw new BotVerificationBlockedError();
+    }
+
     if (isGatewayErrorContent(snippet)) {
       throw new DomainUnreachableError(gatewayErrorMessage(snippet));
     }
@@ -119,6 +132,10 @@ async function probeSite(url: URL): Promise<void> {
       throw new DomainUnreachableError();
     }
   } catch (error) {
+    if (error instanceof BotVerificationBlockedError) {
+      throw error;
+    }
+
     if (error instanceof DomainUnreachableError) {
       throw error;
     }
@@ -139,6 +156,10 @@ function findEntryPage(data: CrawlData): PageData | undefined {
 
 /** Rejects crawls where every page failed or the entry is a gateway/SSL error page. */
 export function assertMinimumCrawlHealth(data: CrawlData): void {
+  if (detectBotVerificationInCrawl(data)) {
+    throw new BotVerificationBlockedError();
+  }
+
   const entry = findEntryPage(data);
   const entryHaystack = entry ? pageContentHaystack(entry) : "";
 
@@ -148,6 +169,10 @@ export function assertMinimumCrawlHealth(data: CrawlData): void {
       entry.status >= 500 ||
       isGatewayErrorContent(entryHaystack))
   ) {
+    if (detectBotVerificationInCrawl(data)) {
+      throw new BotVerificationBlockedError();
+    }
+
     throw new DomainUnreachableError(
       isGatewayErrorContent(entryHaystack)
         ? gatewayErrorMessage(entryHaystack)
@@ -160,6 +185,10 @@ export function assertMinimumCrawlHealth(data: CrawlData): void {
   );
 
   if (healthyPages.length === 0) {
+    if (detectBotVerificationInCrawl(data)) {
+      throw new BotVerificationBlockedError();
+    }
+
     throw new DomainUnreachableError(SITE_ERROR_MESSAGE);
   }
 }
@@ -195,6 +224,10 @@ export async function ensureDomainReachable(inputUrl: string): Promise<void> {
   try {
     await validateDomainReachability(inputUrl);
   } catch (error) {
+    if (error instanceof BotVerificationBlockedError) {
+      throw error;
+    }
+
     if (error instanceof DomainUnreachableError) {
       try {
         const hostname = new URL(normalizeAuditUrl(inputUrl)).hostname;

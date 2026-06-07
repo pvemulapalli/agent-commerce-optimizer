@@ -8,9 +8,11 @@ import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import { RecentAuditsPreview } from "@/components/recent-audits";
 import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
+import { isBotVerificationScanResponse } from "@/lib/bot-verification-messages";
 import { isNonEcommerceScanResponse } from "@/lib/non-ecommerce-messages";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
 import { normalizeAuditUrl } from "@/lib/audit-url";
+import { parseApiResponse } from "@/lib/parse-api-response";
 import { scrollToAuditOverview, scrollToElementById } from "@/lib/scroll-utils";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import type { GenerateFixesApiResponse } from "@/lib/types";
@@ -29,6 +31,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nonEcommerceMessage, setNonEcommerceMessage] = useState<string | null>(null);
+  const [botVerificationMessage, setBotVerificationMessage] = useState<string | null>(null);
   const [result, setResult] = useState<AuditResponse | null>(null);
   const [fixesLoading, setFixesLoading] = useState(false);
   const [fixesError, setFixesError] = useState<string | null>(null);
@@ -85,7 +88,10 @@ export default function Home() {
         body: JSON.stringify(payload),
       });
 
-      const data = (await response.json()) as FixesResponse & { error?: string };
+      const data = await parseApiResponse<FixesResponse & { error?: string }>(
+        response,
+        "Fix generation failed",
+      );
 
       if (!response.ok) {
         throw new Error(data.error ?? "Fix generation failed");
@@ -110,6 +116,7 @@ export default function Home() {
     setLoadingRecentId(entry.id);
     setError(null);
     setNonEcommerceMessage(null);
+    setBotVerificationMessage(null);
     setResult(null);
     setFixes(null);
     setFixesError(null);
@@ -127,7 +134,15 @@ export default function Home() {
         body: JSON.stringify(payload),
       });
 
-      const data = (await response.json()) as AuditResponse & { error?: string };
+      const data = await parseApiResponse<AuditResponse & { error?: string }>(
+        response,
+        "Audit request failed",
+      );
+
+      if (isBotVerificationScanResponse(data)) {
+        setBotVerificationMessage(data.message);
+        return;
+      }
 
       if (isNonEcommerceScanResponse(data)) {
         setNonEcommerceMessage(data.message);
@@ -201,6 +216,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setNonEcommerceMessage(null);
+    setBotVerificationMessage(null);
     setResult(null);
     setFixes(null);
     setFixesError(null);
@@ -217,7 +233,15 @@ export default function Home() {
         body: JSON.stringify(payload),
       });
 
-      const data = (await response.json()) as AuditResponse & { error?: string };
+      const data = await parseApiResponse<AuditResponse & { error?: string }>(
+        response,
+        "Audit request failed",
+      );
+
+      if (isBotVerificationScanResponse(data)) {
+        setBotVerificationMessage(data.message);
+        return;
+      }
 
       if (isNonEcommerceScanResponse(data)) {
         setNonEcommerceMessage(data.message);
@@ -258,6 +282,7 @@ export default function Home() {
             loading={loading}
             error={error}
             nonEcommerceMessage={nonEcommerceMessage}
+            botVerificationMessage={botVerificationMessage}
             turnstileToken={turnstileToken}
             onUrlChange={setUrl}
             onSubmit={handleSubmit}
@@ -265,6 +290,7 @@ export default function Home() {
             onScanAnother={() => {
               setError(null);
               setNonEcommerceMessage(null);
+              setBotVerificationMessage(null);
               setUrl("");
               setResult(null);
               setFixes(null);

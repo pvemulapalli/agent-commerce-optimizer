@@ -224,14 +224,31 @@ async function fetchPage(
     const effectiveOrigin =
       entryOrigin === "pending" ? new URL(pageUrl).origin : entryOrigin;
     const effectiveEntryUrl = entryUrl === "pending" ? pageUrl : entryUrl;
+    const contentType = response.headers.get("content-type") ?? "";
+    const isHtmlContent =
+      contentType.includes("text/html") ||
+      contentType.includes("application/xhtml") ||
+      contentType === "";
 
     if (!response.ok) {
+      let title: string | null = null;
+      let bodyTextSnippet: string | null = null;
+      let htmlSnippet: string | null = null;
+
+      if (isHtmlContent) {
+        const html = await response.text();
+        htmlSnippet = html.slice(0, 12_000);
+        const $ = cheerio.load(html);
+        title = $("title").first().text().replace(/\s+/g, " ").trim() || null;
+        bodyTextSnippet = extractBodyText($);
+      }
+
       return {
         url: pageUrl,
-        title: null,
+        title,
         metaDescription: null,
-        bodyTextSnippet: null,
-        htmlSnippet: null,
+        bodyTextSnippet,
+        htmlSnippet,
         jsonLdBlocks: [],
         schemaTypes: [],
         discoveredLinks: [],
@@ -241,11 +258,7 @@ async function fetchPage(
       };
     }
 
-    const contentType = response.headers.get("content-type") ?? "";
-    if (
-      !contentType.includes("text/html") &&
-      !contentType.includes("application/xhtml")
-    ) {
+    if (!isHtmlContent) {
       return {
         url: pageUrl,
         title: null,
