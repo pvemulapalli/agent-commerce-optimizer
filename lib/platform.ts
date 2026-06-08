@@ -1,6 +1,7 @@
 import { getCommercetoolsDomainHint } from "./commercetools-domain-hints";
 import { getFenicioDomainHint } from "./fenicio-domain-hints";
 import { getMagentoDomainHint } from "./magento-domain-hints";
+import { getShopwareDomainHint } from "./shopware-domain-hints";
 import { getVtexDomainHint } from "./vtex-domain-hints";
 import {
   formatHostingEvidence,
@@ -73,6 +74,7 @@ const PLATFORM_LABELS: Record<CommercePlatform, string> = {
   Magento: "Adobe Commerce",
   VTEX: "VTEX",
   Fenicio: "Fenicio",
+  Shopware: "Shopware",
   CommerceTools: "CommerceTools",
   Unknown: "Unknown",
 };
@@ -376,9 +378,131 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
         ),
       );
     }
+
+    if (
+      /\/js\/storefront\/storefront\.js|\/storefront\/storefront\.js/i.test(
+        content + urlLower,
+      )
+    ) {
+      signals.push(
+        jsBundleSignal(
+          "Shopware",
+          "Shopware storefront JavaScript bundle detected",
+          source.url,
+          4,
+        ),
+      );
+    }
+
+    if (/\/theme\/[a-f0-9]+\/js\/all\.js/i.test(content + urlLower)) {
+      signals.push(
+        jsBundleSignal(
+          "Shopware",
+          "Shopware theme JavaScript bundle detected",
+          source.url,
+          3,
+        ),
+      );
+    }
+
+    if (/\/js\/swag-[a-z0-9-]+\//i.test(content + urlLower)) {
+      signals.push(
+        jsBundleSignal(
+          "Shopware",
+          "Shopware official plugin bundle detected",
+          source.url,
+          4,
+        ),
+      );
+    }
+
+    if (/shopware/i.test(content)) {
+      signals.push(
+        storefrontSignal(
+          "Shopware",
+          "Shopware storefront assets detected",
+          source.url,
+          3,
+        ),
+      );
+    }
+
+    if (/<sw-[a-z0-9-]+|data-sw-[a-z0-9-]+=/i.test(content)) {
+      signals.push(
+        storefrontSignal(
+          "Shopware",
+          "Shopware Storefront web components detected",
+          source.url,
+          3,
+        ),
+      );
+    }
+
+    if (/\/store-api\//i.test(content + urlLower)) {
+      signals.push(
+        storefrontSignal(
+          "Shopware",
+          "Shopware Store API endpoints detected",
+          source.url,
+          3,
+        ),
+      );
+    }
+
+    if (
+      /\/bundles\//i.test(content + urlLower) &&
+      /shopware|\/theme\/|storefront|swag-/i.test(content + urlLower)
+    ) {
+      signals.push(
+        storefrontSignal(
+          "Shopware",
+          "Shopware bundle assets detected",
+          source.url,
+          2,
+        ),
+      );
+    }
+
+    if (
+      /sw-cookie|sw-environment|sw-base-url|sw-features|sw-state-token|sw-context-token/i.test(
+        content,
+      )
+    ) {
+      signals.push(
+        storefrontSignal(
+          "Shopware",
+          "Shopware runtime configuration detected",
+          source.url,
+          3,
+        ),
+      );
+    }
+
+    if (/s3sw-/i.test(content + urlLower)) {
+      signals.push(
+        storefrontSignal(
+          "Shopware",
+          "Shopware hosted storefront CDN detected",
+          source.url,
+          3,
+        ),
+      );
+    }
   }
 
   return signals;
+}
+
+function crawlHasShopwareHtml(data: CrawlData): boolean {
+  const haystack = getStorefrontPages(data)
+    .map((page) =>
+      [page.htmlSnippet, page.bodyTextSnippet, JSON.stringify(page.jsonLdBlocks)].join(" "),
+    )
+    .join(" ");
+
+  return /shopware|\/js\/storefront\/storefront\.js|\/theme\/[a-f0-9]+\/js\/(?:storefront\/storefront|all)\.js|\/bundles\/|swag-|<sw-|\/store-api\/|s3sw-/i.test(
+    haystack,
+  );
 }
 
 function crawlHasWooCommerceHtml(data: CrawlData): boolean {
@@ -529,6 +653,41 @@ function collectUrlSignals(data: CrawlData): PlatformSignal[] {
       signals.push(
         urlPatternSignal("Fenicio", "Fenicio account area URL structure detected", url),
       );
+    }
+
+    if (crawlHasShopwareHtml(data)) {
+      if (/\/detail\/[^/?#]+/i.test(lower)) {
+        signals.push(
+          urlPatternSignal(
+            "Shopware",
+            "Shopware product detail URL structure detected",
+            url,
+            3,
+          ),
+        );
+      }
+
+      if (/\/checkout(?:\/|$)/i.test(lower)) {
+        signals.push(
+          urlPatternSignal(
+            "Shopware",
+            "Shopware checkout URL structure detected",
+            url,
+            2,
+          ),
+        );
+      }
+
+      if (/\/navigation\/[^/?#]+/i.test(lower)) {
+        signals.push(
+          urlPatternSignal(
+            "Shopware",
+            "Shopware navigation URL structure detected",
+            url,
+            2,
+          ),
+        );
+      }
     }
   }
 
@@ -700,6 +859,16 @@ export function detectPlatform(data: CrawlData): PlatformAnalysis {
       ranked,
       hint: magentoHint,
       platform: "Magento",
+    });
+  }
+
+  const shopwareHint = getShopwareDomainHint(data.entryUrl);
+  if (shopwareHint && shouldApplyDomainHint(ranked, "Shopware")) {
+    return applyDomainHintOverride({
+      entryUrl: data.entryUrl,
+      ranked,
+      hint: shopwareHint,
+      platform: "Shopware",
     });
   }
 

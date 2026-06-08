@@ -14,6 +14,7 @@ export type CommercePlatform =
   | "Magento"
   | "VTEX"
   | "Fenicio"
+  | "Shopware"
   | "CommerceTools"
   | "Unknown";
 

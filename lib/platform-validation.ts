@@ -32,6 +32,7 @@ const testSiteSchema = z.object({
     "Magento",
     "VTEX",
     "Fenicio",
+    "Shopware",
     "CommerceTools",
     "Unknown",
   ]),

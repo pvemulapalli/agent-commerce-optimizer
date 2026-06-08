@@ -15,6 +15,7 @@ export const PLATFORM_FILTER_OPTIONS = [
   { value: "Magento", label: "Adobe Commerce" },
   { value: "VTEX", label: "VTEX" },
   { value: "Fenicio", label: "Fenicio" },
+  { value: "Shopware", label: "Shopware" },
   { value: "Squarespace", label: "Squarespace" },
   { value: "Wix", label: "Wix" },
   { value: "Unknown", label: "Other Platforms" },

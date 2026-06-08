@@ -123,6 +123,21 @@ export function trackScanCompleted(
   );
 }
 
+export function trackPlatformDetected(
+  context: ScanAnalyticsProperties & {
+    confidence?: string;
+    confidenceScore?: number;
+  },
+): void {
+  void captureAnalyticsEvent(
+    "platform_detected",
+    withScanContext(context, {
+      confidence: context.confidence ?? null,
+      confidenceScore: context.confidenceScore ?? null,
+    }),
+  );
+}
+
 export function trackScanFailed(
   context: ScanAnalyticsProperties & { reason: string },
 ): void {

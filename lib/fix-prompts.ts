@@ -7,6 +7,7 @@ const PLATFORM_PROMPT_PHRASES: Partial<Record<CommercePlatform, string>> = {
   Magento: "Generate Adobe Commerce implementation",
   VTEX: "Generate VTEX implementation",
   Fenicio: "Generate Fenicio implementation",
+  Shopware: "Generate Shopware implementation",
   CommerceTools: "Generate commercetools implementation",
 };
 

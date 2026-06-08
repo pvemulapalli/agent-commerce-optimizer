@@ -171,6 +171,7 @@ These are also tracked but were not part of the initial product-event spec:
 | Event | Properties | Trigger |
 | --- | --- | --- |
 | `page_view` | `page_path`, `page_location`, `page_title` | GA4 route changes (`components/ga4-page-view-tracker.tsx`) |
+| `platform_detected` | `domain`, `platform`, `score`, `grade`, `top_gap`, `confidence`, `confidenceScore` | Successful scan platform attribution (`app/page.tsx`) |
 | `feedback_submitted` | `sentiment`, `reportId` | Platform feedback modal submit |
 | `report_viewed` | `reportId`, scan context | Shared report page load |
 | `new_scan_clicked` | `currentReportId` | Try Another Site / reset scan |

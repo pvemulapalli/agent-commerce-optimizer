@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.5.5] - 2026-06-08
+
+### [Platform Detection]
+- Added first-class Shopware platform detection with storefront assets, theme JavaScript bundles, official plugin bundles, web components, URL patterns, and verified domain hints
+- Expanded European ecommerce platform coverage with a Shopware validation fixture suite and nine confirmed validation storefronts
+
+### [Fixes]
+- Prevent strong Shopware storefronts from being incorrectly classified as non-ecommerce or content sites when platform fingerprints are clear but generic storefront signals are sparse
+
+### [Infrastructure]
+- Added `docs/platform-coverage.md` documenting supported platforms and detection signals
+- Added `npm run validate:shopware` for offline Shopware detection regression checks
+- Added `platform_detected` analytics event on successful scans
+
 ## [3.5.4] - 2026-06-07
 
 ### [Analytics]

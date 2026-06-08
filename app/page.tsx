@@ -19,6 +19,7 @@ import type { GenerateFixesApiResponse } from "@/lib/types";
 import type { RecentScanRecord } from "@/lib/scan-activity-types";
 import {
   trackNewScanClicked,
+  trackPlatformDetected,
   trackRecentScanClickedFromEntry,
   trackScanCompleted,
   trackScanFailedFromUrl,
@@ -35,9 +36,15 @@ type AuditResponse = EnrichedAuditResponse & {
 type FixesResponse = GenerateFixesApiResponse;
 
 function trackSuccessfulAudit(data: AuditResponse): void {
+  const scanContext = scanContextFromAudit(data);
   trackScanCompleted({
-    ...scanContextFromAudit(data),
+    ...scanContext,
     scanDuration: data.crawlDurationSec,
+  });
+  trackPlatformDetected({
+    ...scanContext,
+    confidence: data.platform.confidence,
+    confidenceScore: data.platform.confidenceScore,
   });
 }
 

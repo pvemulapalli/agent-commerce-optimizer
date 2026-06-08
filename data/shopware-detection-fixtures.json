@@ -1,0 +1,62 @@
+[
+  {
+    "merchant": "Juniper Jack",
+    "url": "https://www.juniper-jack.de/",
+    "htmlSnippet": "<script src=\"https://www.juniper-jack.de/theme/97f85e9d6f912070f0d38f9f77090e04/js/all.js\"></script><a href=\"/checkout/cart\">Cart</a><link href=\"/bundles/storefront/css/all.css\" rel=\"stylesheet\">",
+    "urls": ["https://www.juniper-jack.de/", "https://www.juniper-jack.de/checkout/cart"]
+  },
+  {
+    "merchant": "Caseys",
+    "url": "https://www.caseys.ie/",
+    "htmlSnippet": "<script src=\"https://www.caseys.ie/theme/24e7985a9538e86a790758c918b8e835/js/all.js\"></script> shopware <a href=\"/navigation/main\">Shop</a>",
+    "urls": ["https://www.caseys.ie/", "https://www.caseys.ie/navigation/main"]
+  },
+  {
+    "merchant": "armedangels",
+    "url": "https://www.armedangels.com/",
+    "htmlSnippet": "<script src=\"https://www.armedangels.com/cdn/shopifycloud/storefront/assets/storefront/load_feature.js\"></script> cdn.shopify.com",
+    "urls": ["https://www.armedangels.com/products/example"]
+  },
+  {
+    "merchant": "STABILO",
+    "url": "https://www.stabilo.com/",
+    "htmlSnippet": "<script src=\"https://s3sw-live.stabilo.com/sta-live/theme/f171525d34f57c09d62593647c72fbd5/js/storefront/storefront.js\"></script><sw-listing></sw-listing><sw-offcanvas-cart></sw-offcanvas-cart>",
+    "urls": ["https://www.stabilo.com/", "https://www.stabilo.com/detail/12345"]
+  },
+  {
+    "merchant": "BWT",
+    "url": "https://www.bwt.com/",
+    "htmlSnippet": "shopware <script src=\"https://www.bwt.com/bundles/storefront/js/storefront.js\"></script>",
+    "urls": ["https://www.bwt.com/checkout/confirm"]
+  },
+  {
+    "merchant": "0815.eu",
+    "url": "https://www.0815.eu/",
+    "htmlSnippet": "<script src=\"https://www.0815.eu/theme/fa15e65859344913129cf02d668f9fc8/js/storefront/storefront.js\"></script><script src=\"https://www.0815.eu/theme/fa15e65859344913129cf02d668f9fc8/js/swag-pay-pal/swag-pay-pal.js\"></script>",
+    "urls": ["https://www.0815.eu/checkout/cart"]
+  },
+  {
+    "merchant": "Biomaris",
+    "url": "https://www.biomaris.com/",
+    "htmlSnippet": "shopware <script src=\"https://www.biomaris.com/theme/526bda6681f7af4ae93d73adb26f0f8c/js/all.js\"></script><a href=\"/checkout/cart\">Checkout</a>",
+    "urls": ["https://www.biomaris.com/checkout/cart"]
+  },
+  {
+    "merchant": "Feelgood Shop",
+    "url": "https://www.feelgood-shop.com/",
+    "htmlSnippet": "shopware <script src=\"https://asset.feelgood-shop.com/asset/theme/96597382465b73f268252c9857d0b8e3/js/all.js\"></script>",
+    "urls": ["https://www.feelgood-shop.com/checkout/cart"]
+  },
+  {
+    "merchant": "Gravado",
+    "url": "https://www.gravado.de/",
+    "htmlSnippet": "shopware <script src=\"https://www.gravado.de/bundles/molliepayments/mollie-payments.js\"></script><script src=\"https://www.gravado.de/theme/26846ba678add1c30ca4c1f489d663fd/js/all.js\"></script>",
+    "urls": ["https://www.gravado.de/checkout/cart"]
+  },
+  {
+    "merchant": "Miss Pompadour",
+    "url": "https://www.misspompadour.de/",
+    "htmlSnippet": "<script src=\"https://www.misspompadour.de/theme/deba01437a189eac65aec14b7a388965/js/storefront/storefront.js\"></script><script src=\"https://www.misspompadour.de/theme/deba01437a189eac65aec14b7a388965/js/swag-cms-extensions/swag-cms-extensions.js\"></script><sw-cms-page></sw-cms-page>",
+    "urls": ["https://www.misspompadour.de/detail/example-1234567890", "https://www.misspompadour.de/checkout/cart"]
+  }
+]

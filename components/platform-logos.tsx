@@ -110,6 +110,16 @@ export function FenicioWordmark({ className = "" }: LogoProps) {
   );
 }
 
+export function ShopwareWordmark({ className = "" }: LogoProps) {
+  return (
+    <svg viewBox="0 0 120 28" className={`h-6 w-auto ${className}`} aria-hidden>
+      <text x="0" y="21" fill="currentColor" className="fill-cyan-800 dark:fill-cyan-300" fontSize="16" fontWeight="700" fontFamily="system-ui, sans-serif">
+        Shopware
+      </text>
+    </svg>
+  );
+}
+
 export function OtherPlatformsWordmark({ className = "" }: LogoProps) {
   return (
     <svg viewBox="0 0 130 28" className={`h-6 w-auto ${className}`} aria-hidden>
@@ -131,6 +141,7 @@ const PLATFORM_LOGOS: Record<string, ComponentType<LogoProps>> = {
   Magento: AdobeCommerceWordmark,
   VTEX: VtexWordmark,
   Fenicio: FenicioWordmark,
+  Shopware: ShopwareWordmark,
   Unknown: OtherPlatformsWordmark,
 };
 
@@ -145,6 +156,7 @@ const PLATFORM_ACCENT: Record<string, string> = {
   Magento: "border-l-red-600",
   VTEX: "border-l-pink-600",
   Fenicio: "border-l-orange-600",
+  Shopware: "border-l-cyan-700",
   Unknown: "border-l-slate-400",
 };
 

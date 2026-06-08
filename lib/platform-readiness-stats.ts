@@ -10,6 +10,7 @@ export const PLATFORM_READINESS_BUCKETS = [
   { key: "Squarespace", label: "Squarespace" },
   { key: "CommerceTools", label: "commercetools" },
   { key: "Magento", label: "Adobe Commerce" },
+  { key: "Shopware", label: "Shopware" },
   { key: "Unknown", label: OTHER_PLATFORM_LABEL },
 ] as const;
 

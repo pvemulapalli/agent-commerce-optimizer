@@ -129,9 +129,12 @@ Detect major commerce platforms including:
 * BigCommerce
 * Salesforce Commerce Cloud
 * WooCommerce
+* Magento (Adobe Commerce)
+* VTEX
+* Fenicio
+* Shopware
 * Wix
 * Squarespace
-* Magento
 * CommerceTools
 
 ### Generated Assets

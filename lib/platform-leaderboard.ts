@@ -8,6 +8,7 @@ export const PLATFORM_LEADERBOARD_ORDER = [
   { key: "Magento", label: "Adobe Commerce" },
   { key: "VTEX", label: "VTEX" },
   { key: "Fenicio", label: "Fenicio" },
+  { key: "Shopware", label: "Shopware" },
   { key: "WooCommerce", label: "WooCommerce" },
   { key: "Squarespace", label: "Squarespace" },
   { key: "Wix", label: "Wix" },

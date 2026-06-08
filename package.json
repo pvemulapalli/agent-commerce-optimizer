@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test:merchants": "tsx scripts/validate-merchants.mts",
     "validate:platforms": "tsx scripts/run-validation.ts",
+    "validate:shopware": "tsx scripts/validate-shopware-detection.mts",
     "admin:reset": "tsx scripts/reset-redis.ts",
     "release:add": "tsx scripts/release-add.mts",
     "release:docs": "tsx scripts/release-add.mts --docs-only",

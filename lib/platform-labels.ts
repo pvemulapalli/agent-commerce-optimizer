@@ -14,6 +14,7 @@ const PLATFORM_DISPLAY_LABELS: Record<string, string> = {
   Magento: "Adobe Commerce",
   VTEX: "VTEX",
   Fenicio: "Fenicio",
+  Shopware: "Shopware",
 };
 
 export function formatPlatformDisplay(platform: string | null | undefined): string {

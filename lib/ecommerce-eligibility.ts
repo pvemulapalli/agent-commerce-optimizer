@@ -80,9 +80,18 @@ const DEDICATED_ECOMMERCE_PLATFORMS = new Set<CommercePlatform>([
   "Magento",
   "VTEX",
   "Fenicio",
+  "Shopware",
   "Salesforce Commerce Cloud",
   "CommerceTools",
 ]);
+
+function hasStrongShopwarePlatform(platform: PlatformAnalysis): boolean {
+  return (
+    platform.platform === "Shopware" &&
+    platform.confidence !== "low" &&
+    platform.confidenceScore >= 55
+  );
+}
 
 const NON_ECOMMERCE_BUSINESS_SCHEMA_TYPES = new Set([
   "localbusiness",
@@ -222,8 +231,13 @@ function pageHasNonEcommerceBusinessSchema(page: PageData): boolean {
 function detectNonEcommerceBusinessSite(
   pages: PageData[],
   findings: Finding[],
+  platform: PlatformAnalysis,
 ): { reason: string } | null {
   if (hasCoreStorefrontSignal(findings)) {
+    return null;
+  }
+
+  if (hasStrongShopwarePlatform(platform)) {
     return null;
   }
 
@@ -354,7 +368,11 @@ export function assessEcommerceEligibility(input: {
     };
   }
 
-  const nonEcommerceBusiness = detectNonEcommerceBusinessSite(pages, input.findings);
+  const nonEcommerceBusiness = detectNonEcommerceBusinessSite(
+    pages,
+    input.findings,
+    input.platform,
+  );
   if (nonEcommerceBusiness) {
     return {
       eligible: false,
@@ -367,12 +385,16 @@ export function assessEcommerceEligibility(input: {
 
   const { score, signals } = computeConfidenceScore(input.findings, input.platform);
   const hasCoreSignals = hasCoreStorefrontSignal(input.findings);
+  const strongShopware = hasStrongShopwarePlatform(input.platform);
 
-  const eligible = hasCoreSignals && score >= ECOMMERCE_CONFIDENCE_THRESHOLD;
+  const eligible =
+    strongShopware || (hasCoreSignals && score >= ECOMMERCE_CONFIDENCE_THRESHOLD);
 
   return {
     eligible,
-    ecommerceConfidence: score,
+    ecommerceConfidence: strongShopware
+      ? Math.max(score, ECOMMERCE_CONFIDENCE_THRESHOLD)
+      : score,
     reason: eligible ? "eligible" : "insufficient_storefront_signals",
     message: NON_ECOMMERCE_SCAN_MESSAGE,
     signals,

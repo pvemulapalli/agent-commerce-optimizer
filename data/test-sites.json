@@ -226,5 +226,59 @@
     "expectedPlatformConfidence": "confirmed",
     "merchant": "Muar Paraguay",
     "url": "https://www.muar.com.py"
+  },
+  {
+    "platform": "Shopware",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Juniper Jack",
+    "url": "https://www.juniper-jack.de"
+  },
+  {
+    "platform": "Shopware",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Caseys",
+    "url": "https://www.caseys.ie"
+  },
+  {
+    "platform": "Shopware",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "STABILO",
+    "url": "https://www.stabilo.com"
+  },
+  {
+    "platform": "Shopware",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "BWT",
+    "url": "https://www.bwt.com"
+  },
+  {
+    "platform": "Shopware",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "0815.eu",
+    "url": "https://www.0815.eu"
+  },
+  {
+    "platform": "Shopware",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Biomaris",
+    "url": "https://www.biomaris.com"
+  },
+  {
+    "platform": "Shopware",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Feelgood Shop",
+    "url": "https://www.feelgood-shop.com"
+  },
+  {
+    "platform": "Shopware",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Gravado",
+    "url": "https://www.gravado.de"
+  },
+  {
+    "platform": "Shopware",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Miss Pompadour",
+    "url": "https://www.misspompadour.de"
   }
 ]

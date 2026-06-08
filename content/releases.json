@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "3.5.5",
+      "date": "2026-06-08",
+      "title": "Shopware Platform Support and Detection Accuracy Improvements",
+      "summary": "Added first-class Shopware platform detection, improved ecommerce classification accuracy, expanded European commerce platform coverage, and strengthened safeguards against incorrectly classifying ecommerce storefronts as content sites or non-ecommerce domains.",
+      "categories": [
+        "Platform Detection",
+        "Fixes",
+        "Infrastructure"
+      ],
+      "changes": [
+        "Added Shopware platform support with weighted storefront, JavaScript, URL, and domain-hint signals",
+        "Improved European ecommerce platform coverage with verified Shopware storefront validation set",
+        "Improved platform confidence detection for Shopware theme bundles, swag plugins, and Storefront web components",
+        "Reduced false classification of Shopware storefronts as non-ecommerce or content sites",
+        "Added Shopware validation test suite and platform coverage documentation",
+        "Added platform_detected analytics event for successful scan platform attribution"
+      ]
+    },
+    {
       "version": "3.5.4",
       "date": "2026-06-07",
       "title": "Dual Analytics Product Events",

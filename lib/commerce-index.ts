@@ -9,6 +9,7 @@ const INDEX_PLATFORMS: CommercePlatform[] = [
   "Magento",
   "VTEX",
   "Fenicio",
+  "Shopware",
   "Squarespace",
   "Wix",
   "CommerceTools",

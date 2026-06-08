@@ -61,6 +61,7 @@ const PLATFORM_WORDMARK_KEYS = new Set([
   "Magento",
   "VTEX",
   "Fenicio",
+  "Shopware",
   "Unknown",
 ]);
 
