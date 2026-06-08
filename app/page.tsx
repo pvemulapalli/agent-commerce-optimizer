@@ -12,6 +12,7 @@ import { isBotVerificationScanResponse } from "@/lib/bot-verification-messages";
 import { isNonEcommerceScanResponse } from "@/lib/non-ecommerce-messages";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
 import { normalizeAuditUrl } from "@/lib/audit-url";
+import { getAuditUrlValidationError } from "@/lib/audit-url-validation";
 import { parseApiResponse } from "@/lib/parse-api-response";
 import { scrollToAuditOverview, scrollToElementById } from "@/lib/scroll-utils";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
@@ -240,6 +241,12 @@ export default function Home() {
   async function runAudit(targetUrl: string) {
     if (shouldShowTurnstileWidget() && !turnstileToken) {
       setError("Complete the Turnstile check before running a scan.");
+      return;
+    }
+
+    const validationError = getAuditUrlValidationError(targetUrl);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 

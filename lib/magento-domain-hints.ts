@@ -4,6 +4,8 @@ import { normalizeDomainFromUrl } from "./domain-normalization";
 const MAGENTO_DOMAIN_HINTS: Record<string, string> = {
   "zadig-et-voltaire.com": "Verified Adobe Commerce storefront (Zadig&Voltaire)",
   "meandem.com": "Verified Adobe Commerce storefront (ME+EM)",
+  // https://www.cabinets.com
+  "cabinets.com": "Verified Adobe Commerce storefront (Cabinets.com)",
 };
 
 export function getMagentoDomainHint(url: string): string | null {

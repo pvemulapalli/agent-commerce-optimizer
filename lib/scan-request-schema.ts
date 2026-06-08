@@ -1,4 +1,5 @@
 import { normalizeAuditUrl } from "./cache";
+import { isValidAuditUrlInput } from "./audit-url-validation";
 import { z } from "zod";
 
 export function normalizeScanUrlInput(input: string): string {
@@ -17,13 +18,7 @@ export function normalizeScanUrlInput(input: string): string {
 }
 
 function isValidScanUrlInput(value: string): boolean {
-  try {
-    const normalized = normalizeScanUrlInput(value);
-    const parsed = new URL(normalized);
-    return ["http:", "https:"].includes(parsed.protocol);
-  } catch {
-    return false;
-  }
+  return isValidAuditUrlInput(value);
 }
 
 export const scanUrlSchema = z.object({

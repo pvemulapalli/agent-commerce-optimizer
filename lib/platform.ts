@@ -221,7 +221,7 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
     }
 
     if (
-      /data-mage-init|text\/x-magento-init|Magento_Ui|mage\/requirejs|requirejs-config\.js/i.test(
+      /data-mage-init|text\/x-magento-init|Magento_Ui|Magento_Enterprise|mage\/requirejs|requirejs-config\.js|magepack\/requirejs-config/i.test(
         content,
       )
     ) {
@@ -235,7 +235,7 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
     }
 
     if (
-      /\/static\/frontend\/|\/pub\/static\/|mage-cache-storage|form-key|x-magento-vary/i.test(
+      /\/static\/(?:version\d+\/)?frontend\/|\/pub\/static\/|mage-cache-storage|form-key|x-magento-vary/i.test(
         content + urlLower,
       )
     ) {
@@ -526,7 +526,7 @@ function crawlHasMagentoHtml(data: CrawlData): boolean {
     )
     .join(" ");
 
-  return /data-mage-init|text\/x-magento-init|Magento_Ui|mage\/requirejs|magentoStorefrontEvents/i.test(
+  return /data-mage-init|text\/x-magento-init|Magento_Ui|Magento_Enterprise|mage\/requirejs|magentoStorefrontEvents|magepack\/requirejs-config/i.test(
     haystack,
   );
 }

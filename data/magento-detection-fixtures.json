@@ -1,0 +1,8 @@
+[
+  {
+    "merchant": "Cabinets.com",
+    "url": "https://www.cabinets.com/",
+    "htmlSnippet": "<link href=\"https://www.cabinets.com/static/version1780592436/frontend/Krd/redesign/en_US/mage/requirejs/mixins.min.js\"><script src=\"https://www.cabinets.com/static/version1780592436/frontend/Krd/redesign/en_US/requirejs/require.min.js\"></script> Magento_Enterprise/favicon proceed to checkout",
+    "urls": ["https://www.cabinets.com/", "https://www.cabinets.com/checkout/cart"]
+  }
+]

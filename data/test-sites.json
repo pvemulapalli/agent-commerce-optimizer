@@ -286,5 +286,11 @@
     "expectedPlatformConfidence": "confirmed",
     "merchant": "Bob Leisure",
     "url": "https://www.bobleisure.com"
+  },
+  {
+    "platform": "Magento",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Cabinets.com",
+    "url": "https://www.cabinets.com"
   }
 ]

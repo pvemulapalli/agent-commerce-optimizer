@@ -13,6 +13,7 @@ import {
   SITE_ERROR_MESSAGE,
   SSL_CERTIFICATE_MESSAGE,
 } from "./gateway-errors";
+import { isValidAuditHostname } from "./audit-url-validation";
 import type { CrawlData, PageData } from "./types";
 
 const REACHABILITY_TIMEOUT_MS = 12_000;
@@ -44,26 +45,6 @@ export class DnsResolutionError extends DomainUnreachableError {
     super(message);
     this.name = "DnsResolutionError";
   }
-}
-
-function isValidHostname(hostname: string): boolean {
-  if (!hostname || hostname.length > 253) {
-    return false;
-  }
-
-  if (hostname.startsWith(".") || hostname.endsWith(".")) {
-    return false;
-  }
-
-  if (hostname === "localhost") {
-    return true;
-  }
-
-  if (!hostname.includes(".")) {
-    return false;
-  }
-
-  return /^[a-z0-9.-]+$/i.test(hostname);
 }
 
 async function resolveHostname(hostname: string): Promise<void> {
@@ -208,7 +189,7 @@ export async function validateDomainReachability(inputUrl: string): Promise<void
   }
 
   const hostname = url.hostname;
-  if (!isValidHostname(hostname)) {
+  if (!isValidAuditHostname(hostname)) {
     throw new DomainUnreachableError();
   }
 

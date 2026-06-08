@@ -1,5 +1,5 @@
 import { isGatewayErrorContent, pageContentHaystack } from "./gateway-errors";
-import { hasStrongShopwarePlatform } from "./shopware-fingerprints";
+import { hasStrongDedicatedPlatform } from "./dedicated-platform-eligibility";
 import { normalizeSchemaType } from "./schema-utils";
 import type {
   CommercePlatform,
@@ -230,7 +230,7 @@ function detectNonEcommerceBusinessSite(
     return null;
   }
 
-  if (hasStrongShopwarePlatform(platform)) {
+  if (hasStrongDedicatedPlatform(platform)) {
     return null;
   }
 
@@ -378,14 +378,14 @@ export function assessEcommerceEligibility(input: {
 
   const { score, signals } = computeConfidenceScore(input.findings, input.platform);
   const hasCoreSignals = hasCoreStorefrontSignal(input.findings);
-  const strongShopware = hasStrongShopwarePlatform(input.platform);
+  const strongDedicatedPlatform = hasStrongDedicatedPlatform(input.platform);
 
   const eligible =
-    strongShopware || (hasCoreSignals && score >= ECOMMERCE_CONFIDENCE_THRESHOLD);
+    strongDedicatedPlatform || (hasCoreSignals && score >= ECOMMERCE_CONFIDENCE_THRESHOLD);
 
   return {
     eligible,
-    ecommerceConfidence: strongShopware
+    ecommerceConfidence: strongDedicatedPlatform
       ? Math.max(score, ECOMMERCE_CONFIDENCE_THRESHOLD)
       : score,
     reason: eligible ? "eligible" : "insufficient_storefront_signals",

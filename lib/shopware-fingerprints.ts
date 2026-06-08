@@ -53,3 +53,5 @@ export function hasStrongShopwarePlatform(platform: {
 }): boolean {
   return platform.platform === "Shopware" && platform.confidence !== "low";
 }
+
+export { hasStrongDedicatedPlatform } from "./dedicated-platform-eligibility";

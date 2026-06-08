@@ -11,7 +11,7 @@ Detection uses weighted signals across storefront assets (45%), JavaScript bundl
 | Shopify | Shopify | `cdn.shopify.com`, Shopify theme features, `/products/`, `/collections/`, cart endpoints |
 | BigCommerce | BigCommerce | Stencil bundles (`stencil.bundle`), BigCommerce assets, `/p/` category URLs |
 | Salesforce Commerce Cloud | Salesforce Commerce Cloud (Demandware) | `demandware.net`, `/on/demandware.store/`, SFCC product permalinks |
-| Adobe Commerce | Adobe Commerce | Magento RequireJS, `mage-init`, static frontend paths, REST/GraphQL catalog endpoints |
+| Adobe Commerce | Adobe Commerce | Magento RequireJS, `mage-init`, versioned `/static/.../frontend/` paths, REST/GraphQL catalog endpoints |
 | WooCommerce | WooCommerce | WooCommerce plugin paths, `wp-json/wc/`, product category permalinks |
 | VTEX | VTEX | VTEX CDN assets, IO runtime scripts, `/p` and checkout hash routes |
 | Fenicio | Fenicio | Fenicio CDN/API hosts, catalog URL structures, storefront branding |
@@ -60,4 +60,4 @@ Verified storefront domains can receive high-confidence overrides when crawl fin
 
 ## Ecommerce eligibility safeguard
 
-Strong Shopware detection (`confidence !== low`) prevents false **Non-Ecommerce** / content-site classification when storefront HTML signals are sparse but platform fingerprints are clear.
+Strong dedicated platform detection (`confidence !== low` for Shopify, Adobe Commerce, Shopware, VTEX, and other supported platforms) prevents false **Non-Ecommerce** / content-site classification when storefront HTML signals are sparse but platform fingerprints are clear.
