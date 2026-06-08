@@ -51,9 +51,11 @@ function ConfidenceBadge({ confidence }: { confidence: ConfidenceLevel }) {
 function PlatformAnalysisSection({
   platform,
   auditUrl,
+  reportId,
 }: {
   platform: PlatformAnalysis;
   auditUrl: string;
+  reportId?: string;
 }) {
   return (
     <section
@@ -94,6 +96,7 @@ function PlatformAnalysisSection({
             <PlatformFeedbackModal
               domain={normalizeDomainFromUrl(auditUrl)}
               defaultPlatform={platform.platform}
+              reportId={reportId}
             />
           </div>
         </div>
@@ -265,7 +268,11 @@ export function AuditResultsSection({
         assetCount={assetCount}
       />
 
-      <PlatformAnalysisSection platform={result.platform} auditUrl={result.url} />
+      <PlatformAnalysisSection
+        platform={result.platform}
+        auditUrl={result.url}
+        reportId={reportId}
+      />
 
       <FindingSection
         sectionId="findings-detected"

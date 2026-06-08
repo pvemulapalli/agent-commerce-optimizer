@@ -8,6 +8,14 @@ import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import { RecentAuditsPreview } from "@/components/recent-audits";
 import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
+import { analyticsDomainFromUrl } from "@/lib/analytics-domain";
+import {
+  trackNewScanClicked,
+  trackPlatformDetected,
+  trackScanCompleted,
+  trackScanFailedFromUrl,
+  trackScanStartedFromUrl,
+} from "@/lib/analytics-events";
 import { isBotVerificationScanResponse } from "@/lib/bot-verification-messages";
 import { isNonEcommerceScanResponse } from "@/lib/non-ecommerce-messages";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
@@ -17,6 +25,7 @@ import { scrollToAuditOverview, scrollToElementById } from "@/lib/scroll-utils";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import type { GenerateFixesApiResponse } from "@/lib/types";
 import type { RecentScanRecord } from "@/lib/scan-activity-types";
+import { buildReadinessReport } from "@/lib/readiness-score";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type AuditResponse = EnrichedAuditResponse & {
@@ -25,6 +34,20 @@ type AuditResponse = EnrichedAuditResponse & {
   shareUrl?: string;
 };
 type FixesResponse = GenerateFixesApiResponse;
+
+function trackSuccessfulAudit(data: AuditResponse): void {
+  const report = buildReadinessReport(data);
+  const domain = analyticsDomainFromUrl(data.url);
+
+  trackPlatformDetected(data.platform.platform, data.platform.confidence);
+  trackScanCompleted({
+    domain,
+    platform: data.platform.platform,
+    score: report.score,
+    grade: report.grade,
+    scanDuration: data.crawlDurationSec,
+  });
+}
 
 export default function Home() {
   const [url, setUrl] = useState("");
@@ -121,6 +144,7 @@ export default function Home() {
     setFixes(null);
     setFixesError(null);
     scrollToElementById("audit-hero");
+    trackScanStartedFromUrl(scanUrl);
 
     try {
       const payload: { url: string; turnstileToken?: string } = { url: scanUrl };
@@ -141,11 +165,13 @@ export default function Home() {
 
       if (isBotVerificationScanResponse(data)) {
         setBotVerificationMessage(data.message);
+        trackScanFailedFromUrl(scanUrl, "bot_verification_blocked");
         return;
       }
 
       if (isNonEcommerceScanResponse(data)) {
         setNonEcommerceMessage(data.message);
+        trackScanFailedFromUrl(scanUrl, "non_ecommerce_site");
         return;
       }
 
@@ -153,10 +179,15 @@ export default function Home() {
         throw new Error(data.error ?? "Audit request failed");
       }
 
+      trackSuccessfulAudit(data);
       setResult(data);
       await generateFixes(data.url, turnstileToken, data.reportId);
       scrollToAuditOverview("instant");
     } catch (loadError) {
+      trackScanFailedFromUrl(
+        scanUrl,
+        loadError instanceof Error ? loadError.message : "load_recent_audit_failed",
+      );
       setError(
         loadError instanceof Error
           ? loadError.message
@@ -220,6 +251,7 @@ export default function Home() {
     setResult(null);
     setFixes(null);
     setFixesError(null);
+    trackScanStartedFromUrl(targetUrl);
 
     try {
       const payload: { url: string; turnstileToken?: string } = { url: targetUrl };
@@ -240,11 +272,13 @@ export default function Home() {
 
       if (isBotVerificationScanResponse(data)) {
         setBotVerificationMessage(data.message);
+        trackScanFailedFromUrl(targetUrl, "bot_verification_blocked");
         return;
       }
 
       if (isNonEcommerceScanResponse(data)) {
         setNonEcommerceMessage(data.message);
+        trackScanFailedFromUrl(targetUrl, "non_ecommerce_site");
         return;
       }
 
@@ -254,10 +288,15 @@ export default function Home() {
 
       markOwnScan(data.scanRecord?.id);
       await refresh();
+      trackSuccessfulAudit(data);
       setResult(data);
       await generateFixes(data.url, turnstileToken, data.reportId);
       scrollToAuditOverview("instant");
     } catch (submitError) {
+      trackScanFailedFromUrl(
+        targetUrl,
+        submitError instanceof Error ? submitError.message : "scan_failed",
+      );
       setError(
         submitError instanceof Error
           ? submitError.message
@@ -288,6 +327,7 @@ export default function Home() {
             onSubmit={handleSubmit}
             onTurnstileTokenChange={setTurnstileToken}
             onScanAnother={() => {
+              trackNewScanClicked(result?.reportId);
               setError(null);
               setNonEcommerceMessage(null);
               setBotVerificationMessage(null);

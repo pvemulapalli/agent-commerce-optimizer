@@ -1,14 +1,17 @@
 "use client";
 
 import { createPortal } from "react-dom";
+import { trackFeedbackSubmitted } from "@/lib/analytics-events";
 import { useEffect, useState } from "react";
 
 export function PlatformFeedbackModal({
   domain,
   defaultPlatform = "",
+  reportId,
 }: {
   domain: string;
   defaultPlatform?: string;
+  reportId?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -43,6 +46,7 @@ export function PlatformFeedbackModal({
 
       setStatus("success");
       setMessage(data.message ?? "Thanks! Your feedback helps improve detection.");
+      trackFeedbackSubmitted("submitted", reportId);
       setComments("");
     } catch {
       setStatus("error");

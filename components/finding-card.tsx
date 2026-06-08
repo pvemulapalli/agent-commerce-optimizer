@@ -1,6 +1,7 @@
 "use client";
 
 import { buildFixPromptForFinding } from "@/lib/fix-prompts";
+import { trackCopyFixPrompt } from "@/lib/analytics-events";
 import { getFindingGuidance } from "@/lib/finding-guidance";
 import {
   getFindingImpactLevel,
@@ -73,6 +74,11 @@ function CopyFixPromptButton({
   const { toastMessage, clearToast, copyWithToast } = useCopyToast();
 
   async function handleCopyFixPrompt() {
+    trackCopyFixPrompt({
+      findingId: finding.id,
+      findingTitle: finding.label,
+      platform,
+    });
     const prompt = buildFixPromptForFinding(finding, platform);
     await copyWithToast(prompt, "Fix prompt copied.");
   }

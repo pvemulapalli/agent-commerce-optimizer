@@ -1,3 +1,4 @@
+import { AnalyticsProvider } from "@/components/analytics-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -57,11 +58,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-background font-sans text-text-primary">
-        <ThemeProvider>
-          <SiteHeader />
-          <div className="flex-1">{children}</div>
-          <SiteFooter />
-        </ThemeProvider>
+        <AnalyticsProvider>
+          <ThemeProvider>
+            <SiteHeader />
+            <div className="flex-1">{children}</div>
+            <SiteFooter />
+          </ThemeProvider>
+        </AnalyticsProvider>
       </body>
     </html>
   );

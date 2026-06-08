@@ -115,7 +115,11 @@ export function ReadinessDashboard({
       <div className="relative border-b border-card-border bg-card-muted px-6 py-5 sm:px-8">
         {reportId || shareUrl ? (
           <div className="absolute right-6 top-5 z-10 sm:right-8">
-            <ShareReportButton reportId={reportId} shareUrl={shareUrl} />
+            <ShareReportButton
+              reportId={reportId}
+              shareUrl={shareUrl}
+              domain={normalizedDomain}
+            />
           </div>
         ) : null}
         <div className={reportId || shareUrl ? "pr-28 sm:pr-32" : undefined}>

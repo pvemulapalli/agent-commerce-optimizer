@@ -1,6 +1,24 @@
 {
   "releases": [
     {
+      "version": "3.5.3",
+      "date": "2026-06-07",
+      "title": "Analytics Foundation and Positioning Refinement",
+      "summary": "Added GA4 and PostHog instrumentation, product event tracking, session recording support, analytics diagnostics, and updated homepage messaging to better reflect how AI systems discover, evaluate, and transact with merchant storefronts.",
+      "categories": [
+        "Analytics",
+        "UX",
+        "Platform"
+      ],
+      "changes": [
+        "Added GA4 page_view tracking with production-only, privacy-friendly configuration",
+        "Added PostHog product events for scans, platform detection, fix prompts, sharing, feedback, and report views",
+        "Enabled PostHog session recording in production",
+        "Added /analytics-status diagnostics page for GA4 and PostHog configuration checks",
+        "Updated homepage supporting copy for clearer AI commerce positioning"
+      ]
+    },
+    {
       "version": "3.5.2",
       "date": "2026-06-07",
       "title": "AI Discoverability Foundation",

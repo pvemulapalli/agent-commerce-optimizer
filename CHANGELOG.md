@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.5.3] - 2026-06-07
+
+### [Analytics]
+- Added GA4 support with production-only `page_view` tracking and privacy-friendly configuration
+- Added PostHog integration with lazy initialization, product event tracking, and session recording
+- Added `/analytics-status` diagnostics page for GA4 and PostHog configuration checks
+
+### [UX]
+- Updated homepage supporting copy to reflect how AI systems discover, evaluate, and transact with merchant storefronts
+
+### [Platform]
+- Instrumented scan lifecycle, platform detection, fix prompt copy, report sharing, feedback, and shared report view events
+
 ## [3.5.2] - 2026-06-07
 
 ### [Platform]

@@ -13,7 +13,7 @@ export const OPEN_GRAPH_TITLE = `${PARENT_BRAND} | ${PRODUCT_NAME}`;
 export const HERO_HEADLINE = "Optimize Your Store For AI Commerce";
 
 export const HERO_SUPPORTING_COPY =
-  "Crawl your storefront, uncover AI commerce gaps, and get downloadable fixes.";
+  "Understand how AI systems discover, evaluate, and transact with your storefront.";
 
 export const DIFFERENTIATOR_INTRO_COPY =
   "Most tools tell you if you're visible. Commerce Optimizer shows why and what\u00A0to\u00A0fix.";

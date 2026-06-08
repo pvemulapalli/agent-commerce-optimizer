@@ -1,6 +1,8 @@
 "use client";
 
 import { AuditResultsSection } from "@/components/audit-results";
+import { trackReportViewed } from "@/lib/analytics-events";
+import { analyticsDomainFromUrl } from "@/lib/analytics-domain";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import type { GenerateFixesApiResponse } from "@/lib/types";
 import Link from "next/link";
@@ -36,6 +38,7 @@ export function SharedReportView({ reportId }: { reportId: string }) {
 
         setResult(data.result);
         setShareUrl(`/report/${reportId}`);
+        trackReportViewed(reportId, analyticsDomainFromUrl(data.result.url));
 
         if (data.fixes) {
           setFixes(data.fixes);
