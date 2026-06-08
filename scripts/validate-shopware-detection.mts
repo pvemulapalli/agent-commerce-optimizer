@@ -9,6 +9,7 @@ interface ShopwareFixture {
   url: string;
   htmlSnippet: string;
   urls: string[];
+  robotsTxt?: string;
 }
 
 const emptyResource = {
@@ -40,7 +41,12 @@ function buildCrawlData(fixture: ShopwareFixture): CrawlData {
     origin,
     pages,
     resources: {
-      robotsTxt: emptyResource,
+      robotsTxt: {
+        ...emptyResource,
+        url: `${origin}/robots.txt`,
+        content: fixture.robotsTxt ?? "",
+        status: fixture.robotsTxt ? 200 : null,
+      },
       sitemapXml: emptyResource,
       llmsTxt: emptyResource,
       llmsFullTxt: emptyResource,

@@ -32,10 +32,12 @@ Common Shopware 6 fingerprints:
 - Storefront web components: `<sw-cms-page>`, `<sw-listing>`, `<sw-offcanvas-cart>`, `data-sw-*` attributes
 - Symfony bundle assets under `/bundles/`
 - SEO product routes such as `/detail/{slug-id}`
-- Checkout routes under `/checkout/`
+- Checkout routes under `/checkout/cart`
 - Category navigation routes under `/navigation/`
 - Hosted CDN patterns such as `s3sw-*` (custom Shopware hosting)
 - Runtime config markers: `sw-cookie`, `sw-environment`, `sw-base-url`, `sw-features`
+- `robots.txt` disallow paths such as `/warenkorb`, `/merkzettel`, `/widgets`, and `/listing` (common on Shopware 5/6 storefronts)
+- Late-loaded Shopware 5/6 bootstrap markers such as `Shopware >= 5.3` and `document.asyncReady`
 
 **Note:** `armedangels.com` from the research set runs on Shopify, not Shopware. It is excluded from Shopware domain hints and used as a negative control in fixture validation.
 
@@ -58,4 +60,4 @@ Verified storefront domains can receive high-confidence overrides when crawl fin
 
 ## Ecommerce eligibility safeguard
 
-Strong Shopware detection (`confidence !== low` and `confidenceScore >= 55`) prevents false **Non-Ecommerce** / content-site classification when storefront HTML signals are sparse but platform fingerprints are clear.
+Strong Shopware detection (`confidence !== low`) prevents false **Non-Ecommerce** / content-site classification when storefront HTML signals are sparse but platform fingerprints are clear.

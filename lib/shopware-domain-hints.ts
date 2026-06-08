@@ -23,6 +23,8 @@ const SHOPWARE_DOMAIN_HINTS: Record<string, string> = {
   "gravado.de": "Verified Shopware storefront (Gravado)",
   // https://www.misspompadour.de
   "misspompadour.de": "Verified Shopware storefront (Miss Pompadour)",
+  // https://www.bobleisure.com
+  "bobleisure.com": "Verified Shopware storefront (Bob Leisure)",
 };
 
 export function getShopwareDomainHint(url: string): string | null {

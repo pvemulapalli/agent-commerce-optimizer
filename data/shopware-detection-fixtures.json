@@ -58,5 +58,12 @@
     "url": "https://www.misspompadour.de/",
     "htmlSnippet": "<script src=\"https://www.misspompadour.de/theme/deba01437a189eac65aec14b7a388965/js/storefront/storefront.js\"></script><script src=\"https://www.misspompadour.de/theme/deba01437a189eac65aec14b7a388965/js/swag-cms-extensions/swag-cms-extensions.js\"></script><sw-cms-page></sw-cms-page>",
     "urls": ["https://www.misspompadour.de/detail/example-1234567890", "https://www.misspompadour.de/checkout/cart"]
+  },
+  {
+    "merchant": "Bob Leisure",
+    "url": "https://www.bobleisure.com/",
+    "htmlSnippet": "<a href=\"/checkout/cart\">Shopping cart</a>",
+    "robotsTxt": "Disallow: /widgets\nDisallow: /listing\nDisallow: /warenkorb\nDisallow: /mein-konto\nDisallow: /merkzettel\nDisallow: /checkout",
+    "urls": ["https://www.bobleisure.com/", "https://www.bobleisure.com/checkout/cart"]
   }
 ]

@@ -280,5 +280,11 @@
     "expectedPlatformConfidence": "confirmed",
     "merchant": "Miss Pompadour",
     "url": "https://www.misspompadour.de"
+  },
+  {
+    "platform": "Shopware",
+    "expectedPlatformConfidence": "confirmed",
+    "merchant": "Bob Leisure",
+    "url": "https://www.bobleisure.com"
   }
 ]

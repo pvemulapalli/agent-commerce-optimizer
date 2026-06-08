@@ -1,4 +1,5 @@
 import { isGatewayErrorContent, pageContentHaystack } from "./gateway-errors";
+import { hasStrongShopwarePlatform } from "./shopware-fingerprints";
 import { normalizeSchemaType } from "./schema-utils";
 import type {
   CommercePlatform,
@@ -84,14 +85,6 @@ const DEDICATED_ECOMMERCE_PLATFORMS = new Set<CommercePlatform>([
   "Salesforce Commerce Cloud",
   "CommerceTools",
 ]);
-
-function hasStrongShopwarePlatform(platform: PlatformAnalysis): boolean {
-  return (
-    platform.platform === "Shopware" &&
-    platform.confidence !== "low" &&
-    platform.confidenceScore >= 55
-  );
-}
 
 const NON_ECOMMERCE_BUSINESS_SCHEMA_TYPES = new Set([
   "localbusiness",

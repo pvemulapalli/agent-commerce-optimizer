@@ -2,6 +2,10 @@ import { getCommercetoolsDomainHint } from "./commercetools-domain-hints";
 import { getFenicioDomainHint } from "./fenicio-domain-hints";
 import { getMagentoDomainHint } from "./magento-domain-hints";
 import { getShopwareDomainHint } from "./shopware-domain-hints";
+import {
+  crawlHasShopwareContext,
+  isShopwareRobotsTxt,
+} from "./shopware-fingerprints";
 import { getVtexDomainHint } from "./vtex-domain-hints";
 import {
   formatHostingEvidence,
@@ -427,6 +431,28 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
       );
     }
 
+    if (urlLower.includes("robots.txt") && isShopwareRobotsTxt(content)) {
+      signals.push(
+        storefrontSignal(
+          "Shopware",
+          "Shopware robots.txt route fingerprint detected",
+          source.url,
+          4,
+        ),
+      );
+    }
+
+    if (/Shopware\s*>=\s*5|document\.asyncReady/i.test(content)) {
+      signals.push(
+        jsBundleSignal(
+          "Shopware",
+          "Shopware 5/6 async storefront bootstrap detected",
+          source.url,
+          3,
+        ),
+      );
+    }
+
     if (/<sw-[a-z0-9-]+|data-sw-[a-z0-9-]+=/i.test(content)) {
       signals.push(
         storefrontSignal(
@@ -493,14 +519,14 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
   return signals;
 }
 
-function crawlHasShopwareHtml(data: CrawlData): boolean {
+function crawlHasMagentoHtml(data: CrawlData): boolean {
   const haystack = getStorefrontPages(data)
     .map((page) =>
       [page.htmlSnippet, page.bodyTextSnippet, JSON.stringify(page.jsonLdBlocks)].join(" "),
     )
     .join(" ");
 
-  return /shopware|\/js\/storefront\/storefront\.js|\/theme\/[a-f0-9]+\/js\/(?:storefront\/storefront|all)\.js|\/bundles\/|swag-|<sw-|\/store-api\/|s3sw-/i.test(
+  return /data-mage-init|text\/x-magento-init|Magento_Ui|mage\/requirejs|magentoStorefrontEvents/i.test(
     haystack,
   );
 }
@@ -615,7 +641,8 @@ function collectUrlSignals(data: CrawlData): PlatformSignal[] {
     if (
       /\/catalog\/product\/|\/catalog\/category\/|\/checkout\/cart|\/customer\/account/i.test(
         lower,
-      )
+      ) &&
+      crawlHasMagentoHtml(data)
     ) {
       signals.push(
         urlPatternSignal(
@@ -655,7 +682,18 @@ function collectUrlSignals(data: CrawlData): PlatformSignal[] {
       );
     }
 
-    if (crawlHasShopwareHtml(data)) {
+    if (crawlHasShopwareContext(data)) {
+      if (/\/checkout\/cart\b/i.test(lower)) {
+        signals.push(
+          urlPatternSignal(
+            "Shopware",
+            "Shopware checkout cart URL structure detected",
+            url,
+            3,
+          ),
+        );
+      }
+
       if (/\/detail\/[^/?#]+/i.test(lower)) {
         signals.push(
           urlPatternSignal(
@@ -663,17 +701,6 @@ function collectUrlSignals(data: CrawlData): PlatformSignal[] {
             "Shopware product detail URL structure detected",
             url,
             3,
-          ),
-        );
-      }
-
-      if (/\/checkout(?:\/|$)/i.test(lower)) {
-        signals.push(
-          urlPatternSignal(
-            "Shopware",
-            "Shopware checkout URL structure detected",
-            url,
-            2,
           ),
         );
       }
