@@ -2,7 +2,7 @@
 
 import { AuditResultsSection } from "@/components/audit-results";
 import { trackReportViewed } from "@/lib/analytics-events";
-import { analyticsDomainFromUrl } from "@/lib/analytics-domain";
+import { scanContextFromAudit } from "@/lib/analytics-properties";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import type { GenerateFixesApiResponse } from "@/lib/types";
 import Link from "next/link";
@@ -38,7 +38,10 @@ export function SharedReportView({ reportId }: { reportId: string }) {
 
         setResult(data.result);
         setShareUrl(`/report/${reportId}`);
-        trackReportViewed(reportId, analyticsDomainFromUrl(data.result.url));
+        trackReportViewed({
+          reportId,
+          ...scanContextFromAudit(data.result),
+        });
 
         if (data.fixes) {
           setFixes(data.fixes);

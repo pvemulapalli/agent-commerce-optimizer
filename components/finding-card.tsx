@@ -1,7 +1,8 @@
 "use client";
 
 import { buildFixPromptForFinding } from "@/lib/fix-prompts";
-import { trackCopyFixPrompt } from "@/lib/analytics-events";
+import { trackFixPromptCopied } from "@/lib/analytics-events";
+import type { ScanAnalyticsProperties } from "@/lib/analytics-properties";
 import { getFindingGuidance } from "@/lib/finding-guidance";
 import {
   getFindingImpactLevel,
@@ -67,17 +68,20 @@ function StatusBadge({ status }: { status: "Passed" | "Missing" | "Needs Review"
 function CopyFixPromptButton({
   finding,
   platform,
+  scanContext,
 }: {
   finding: Finding;
   platform?: CommercePlatform;
+  scanContext?: ScanAnalyticsProperties;
 }) {
   const { toastMessage, clearToast, copyWithToast } = useCopyToast();
 
   async function handleCopyFixPrompt() {
-    trackCopyFixPrompt({
+    trackFixPromptCopied({
+      ...scanContext,
+      platform: platform ?? scanContext?.platform,
       findingId: finding.id,
       findingTitle: finding.label,
-      platform,
     });
     const prompt = buildFixPromptForFinding(finding, platform);
     await copyWithToast(prompt, "Fix prompt copied.");
@@ -110,9 +114,11 @@ function CopyFixPromptButton({
 export function FindingCard({
   finding,
   platform,
+  scanContext,
 }: {
   finding: Finding;
   platform?: CommercePlatform;
+  scanContext?: ScanAnalyticsProperties;
 }) {
   const guidance = getFindingGuidance(finding);
   const impact = getFindingImpactLevel(finding);
@@ -199,7 +205,9 @@ export function FindingCard({
           </dl>
         </details>
 
-        {showFixPrompt ? <CopyFixPromptButton finding={finding} platform={platform} /> : null}
+        {showFixPrompt ? (
+          <CopyFixPromptButton finding={finding} platform={platform} scanContext={scanContext} />
+        ) : null}
       </div>
     </article>
   );

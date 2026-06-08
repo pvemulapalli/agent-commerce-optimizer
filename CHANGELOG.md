@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.5.4] - 2026-06-07
+
+### [Analytics]
+- Wired nine product events to both PostHog and GA4: `scan_started`, `scan_completed`, `scan_failed`, `report_shared`, `fix_prompt_copied`, `builtwith_clicked`, `report_downloaded`, `recent_scan_clicked`, and `contact_clicked`
+- Added shared scan context properties (`domain`, `platform`, `score`, `grade`, `top_gap`) on scan-related events via unified capture helpers
+- Renamed legacy event names (`share_report` → `report_shared`, `copy_fix_prompt` → `fix_prompt_copied`) for consistent GA4 and PostHog reporting
+- Added `analytics.md` documenting all tracked events, standard properties, and trigger locations
+- Updated `/analytics-status` to reflect GA4 product event delivery alongside page views
+
 ## [3.5.3] - 2026-06-07
 
 ### [Analytics]

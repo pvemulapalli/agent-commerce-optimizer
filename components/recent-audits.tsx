@@ -3,6 +3,7 @@
 import { GradeBadge } from "@/components/grade-badge";
 import { PlatformLabel } from "@/components/platform-label";
 import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
+import { trackRecentScanClickedFromEntry } from "@/lib/analytics-events";
 import type { PlatformLeaderboardStat } from "@/lib/platform-leaderboard";
 import type { RecentAuditSortDirection, RecentAuditSortField } from "@/lib/recent-audits-query";
 import { buildRecentReportHomeUrl } from "@/lib/recent-scan-links";
@@ -33,6 +34,10 @@ function RecentAuditSiteLink({
       {entry.hostname}
     </a>
   );
+}
+
+function handleRecentScanLinkClick(entry: RecentScanRecord) {
+  trackRecentScanClickedFromEntry(entry);
 }
 
 function RecentAuditSummaryCard({
@@ -101,6 +106,7 @@ function RecentAuditSummaryCard({
     return (
       <Link
         href={buildRecentReportHomeUrl(entry.url)}
+        onClick={() => handleRecentScanLinkClick(entry)}
         className="block rounded-xl border border-blue-200 bg-blue-50/40 p-4 transition hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm dark:border-blue-800/60 dark:bg-blue-950/20 dark:hover:border-blue-700 dark:hover:bg-blue-950/40"
       >
         {cardBody}
@@ -207,6 +213,7 @@ export function RecentAuditsList({
                       {linkable ? (
                         <Link
                           href={buildRecentReportHomeUrl(entry.url)}
+                          onClick={() => handleRecentScanLinkClick(entry)}
                           className="group block min-w-0 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
                         >
                           <div className="font-medium text-slate-900 group-hover:text-blue-900 dark:text-slate-100 dark:group-hover:text-blue-300">
@@ -244,6 +251,7 @@ export function RecentAuditsList({
                         {linkable ? (
                           <Link
                             href={buildRecentReportHomeUrl(entry.url)}
+                            onClick={() => handleRecentScanLinkClick(entry)}
                             className="inline-flex items-center rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-900 transition hover:border-blue-300 hover:bg-blue-50 dark:border-blue-700 dark:bg-slate-900 dark:text-blue-200 dark:hover:bg-blue-950/50"
                           >
                             View report

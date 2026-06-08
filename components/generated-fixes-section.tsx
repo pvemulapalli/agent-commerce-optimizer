@@ -1,6 +1,8 @@
 "use client";
 
 import type { GeneratedAsset, GenerateFixesApiResponse } from "@/lib/types";
+import { trackReportDownloaded } from "@/lib/analytics-events";
+import type { ScanAnalyticsProperties } from "@/lib/analytics-properties";
 import { useMemo, useState } from "react";
 
 type FixesResponse = GenerateFixesApiResponse;
@@ -127,7 +129,13 @@ function AssetPreview({ asset }: { asset: GeneratedAsset }) {
   return <PlainTextPreview content={asset.content} />;
 }
 
-function GeneratedAssetCard({ asset }: { asset: GeneratedAsset }) {
+function GeneratedAssetCard({
+  asset,
+  scanContext,
+}: {
+  asset: GeneratedAsset;
+  scanContext?: ScanAnalyticsProperties;
+}) {
   const [copied, setCopied] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -156,6 +164,14 @@ function GeneratedAssetCard({ asset }: { asset: GeneratedAsset }) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     }
+  }
+
+  function handleDownload() {
+    downloadAsset(asset);
+    trackReportDownloaded({
+      ...scanContext,
+      filename: asset.filename,
+    });
   }
 
   return (
@@ -204,7 +220,7 @@ function GeneratedAssetCard({ asset }: { asset: GeneratedAsset }) {
           </button>
           <button
             type="button"
-            onClick={() => downloadAsset(asset)}
+            onClick={handleDownload}
             aria-label={`Download ${asset.filename}`}
             className="w-full rounded-lg bg-violet-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-violet-800 sm:w-auto"
           >
@@ -241,11 +257,13 @@ export function GeneratedFixesSection({
   loading,
   error,
   onRegenerate,
+  scanContext,
 }: {
   fixes: FixesResponse | null;
   loading: boolean;
   error: string | null;
   onRegenerate: () => void;
+  scanContext?: ScanAnalyticsProperties;
 }) {
   if (!fixes && !loading && !error) {
     return null;
@@ -330,7 +348,11 @@ export function GeneratedFixesSection({
 
           <div className="grid min-w-0 gap-4">
             {fixes.assets.map((asset) => (
-              <GeneratedAssetCard key={asset.filename} asset={asset} />
+              <GeneratedAssetCard
+                key={asset.filename}
+                asset={asset}
+                scanContext={scanContext}
+              />
             ))}
           </div>
         </div>

@@ -8,14 +8,6 @@ import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import { RecentAuditsPreview } from "@/components/recent-audits";
 import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
-import { analyticsDomainFromUrl } from "@/lib/analytics-domain";
-import {
-  trackNewScanClicked,
-  trackPlatformDetected,
-  trackScanCompleted,
-  trackScanFailedFromUrl,
-  trackScanStartedFromUrl,
-} from "@/lib/analytics-events";
 import { isBotVerificationScanResponse } from "@/lib/bot-verification-messages";
 import { isNonEcommerceScanResponse } from "@/lib/non-ecommerce-messages";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
@@ -25,7 +17,14 @@ import { scrollToAuditOverview, scrollToElementById } from "@/lib/scroll-utils";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import type { GenerateFixesApiResponse } from "@/lib/types";
 import type { RecentScanRecord } from "@/lib/scan-activity-types";
-import { buildReadinessReport } from "@/lib/readiness-score";
+import {
+  trackNewScanClicked,
+  trackRecentScanClickedFromEntry,
+  trackScanCompleted,
+  trackScanFailedFromUrl,
+  trackScanStartedFromUrl,
+} from "@/lib/analytics-events";
+import { scanContextFromAudit } from "@/lib/analytics-properties";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type AuditResponse = EnrichedAuditResponse & {
@@ -36,15 +35,8 @@ type AuditResponse = EnrichedAuditResponse & {
 type FixesResponse = GenerateFixesApiResponse;
 
 function trackSuccessfulAudit(data: AuditResponse): void {
-  const report = buildReadinessReport(data);
-  const domain = analyticsDomainFromUrl(data.url);
-
-  trackPlatformDetected(data.platform.platform, data.platform.confidence);
   trackScanCompleted({
-    domain,
-    platform: data.platform.platform,
-    score: report.score,
-    grade: report.grade,
+    ...scanContextFromAudit(data),
     scanDuration: data.crawlDurationSec,
   });
 }
@@ -347,7 +339,10 @@ export default function Home() {
             totalCount={activity.totalScans}
             loading={activityLoading}
             variant="homepage"
-            onSelectEntry={(entry) => void loadRecentAudit(entry)}
+            onSelectEntry={(entry) => {
+              trackRecentScanClickedFromEntry(entry);
+              void loadRecentAudit(entry);
+            }}
             loadingEntryId={loadingRecentId}
             auditLoading={loading}
           />

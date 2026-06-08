@@ -1,6 +1,23 @@
 {
   "releases": [
     {
+      "version": "3.5.4",
+      "date": "2026-06-07",
+      "title": "Dual Analytics Product Events",
+      "summary": "Expanded GA4 and PostHog instrumentation with nine unified product events, shared scan context properties, and full analytics documentation.",
+      "categories": [
+        "Analytics"
+      ],
+      "changes": [
+        "Wired scan_started, scan_completed, and scan_failed to both PostHog and GA4 with domain, platform, score, grade, and top_gap properties",
+        "Wired report_shared, fix_prompt_copied, builtwith_clicked, report_downloaded, recent_scan_clicked, and contact_clicked to both PostHog and GA4",
+        "Added unified capture helpers and scan context builders for consistent event payloads across the readiness dashboard",
+        "Renamed share_report and copy_fix_prompt events to report_shared and fix_prompt_copied",
+        "Added analytics.md documenting all tracked events, standard properties, and trigger locations",
+        "Updated /analytics-status diagnostics to reflect GA4 product event delivery"
+      ]
+    },
+    {
       "version": "3.5.3",
       "date": "2026-06-07",
       "title": "Analytics Foundation and Positioning Refinement",

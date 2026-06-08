@@ -2,6 +2,8 @@
 
 import { PlatformFeedbackModal } from "@/components/platform-feedback-modal";
 import { PlatformLabel } from "@/components/platform-label";
+import { trackBuiltWithClicked } from "@/lib/analytics-events";
+import type { ScanAnalyticsProperties } from "@/lib/analytics-properties";
 import { getBuiltWithProfileUrl } from "@/lib/builtwith-url";
 import { normalizeDomainFromUrl } from "@/lib/domain-normalization";
 
@@ -11,12 +13,24 @@ export const OTHER_PLATFORM_DETECTION_EXPLANATION =
 export function OtherPlatformDetectionDetails({
   auditUrl,
   showFeedback = true,
+  scanContext,
 }: {
   auditUrl: string;
   showFeedback?: boolean;
+  scanContext?: ScanAnalyticsProperties;
 }) {
   const builtWithUrl = getBuiltWithProfileUrl(auditUrl);
   const domain = normalizeDomainFromUrl(auditUrl);
+
+  function handleBuiltWithClick() {
+    trackBuiltWithClicked({
+      domain: scanContext?.domain ?? domain,
+      platform: scanContext?.platform,
+      score: scanContext?.score,
+      grade: scanContext?.grade,
+      top_gap: scanContext?.top_gap,
+    });
+  }
 
   return (
     <div className="mt-6 rounded-xl border border-card-border bg-card-muted p-4">
@@ -31,6 +45,7 @@ export function OtherPlatformDetectionDetails({
           href={builtWithUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={handleBuiltWithClick}
           className="text-sm font-medium text-blue-900 hover:underline dark:text-blue-300"
         >
           Check BuiltWith technology profile

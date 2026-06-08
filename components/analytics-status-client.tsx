@@ -59,7 +59,7 @@ export function AnalyticsStatusClient() {
             <div>
               <dt className="font-medium text-text-primary">GA4 tracking active</dt>
               <dd className="mt-1 text-sm text-text-secondary">
-                Production-only page_view events
+                Production-only page_view and product events
               </dd>
             </div>
             <ConfigBadge enabled={isGa4TrackingEnabled()} />

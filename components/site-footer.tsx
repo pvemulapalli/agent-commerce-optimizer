@@ -1,5 +1,6 @@
 import { DEFAULT_SITE_DESCRIPTION, FOOTER_COPYRIGHT, PRODUCT_BYLINE } from "@/lib/brand";
 import { EmailSignupForm } from "@/components/email-signup-form";
+import { ContactLink } from "@/components/contact-link";
 import { PROJECT_DISCLAIMER } from "@/lib/disclaimer";
 import { APP_VERSION_LABEL } from "@/lib/app-version";
 import Link from "next/link";
@@ -51,15 +52,26 @@ export function SiteFooter() {
           aria-label="Footer"
           className="mt-8 flex gap-x-5 gap-y-2 overflow-x-auto border-t border-card-border pt-6 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-x-6 [&::-webkit-scrollbar]:hidden"
         >
-          {FOOTER_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="shrink-0 text-sm font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {FOOTER_LINKS.map((link) =>
+            link.href === "/contact" ? (
+              <ContactLink
+                key={link.href}
+                href={link.href}
+                location="footer"
+                className="shrink-0 text-sm font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+              >
+                {link.label}
+              </ContactLink>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="shrink-0 text-sm font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+              >
+                {link.label}
+              </Link>
+            ),
+          )}
         </nav>
 
         <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">

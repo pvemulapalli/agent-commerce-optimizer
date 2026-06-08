@@ -1,7 +1,8 @@
 "use client";
 
 import { buildShareReportUrl } from "@/lib/share-report-url";
-import { trackShareReport } from "@/lib/analytics-events";
+import { trackReportShared } from "@/lib/analytics-events";
+import type { ScanAnalyticsProperties } from "@/lib/analytics-properties";
 import { useCopyToast, CopyToast } from "@/components/copy-toast";
 
 function ShareIcon({ className = "h-4 w-4" }: { className?: string }) {
@@ -28,11 +29,11 @@ function ShareIcon({ className = "h-4 w-4" }: { className?: string }) {
 export function ShareReportButton({
   reportId,
   shareUrl,
-  domain,
+  scanContext,
 }: {
   reportId?: string;
   shareUrl?: string;
-  domain?: string;
+  scanContext?: ScanAnalyticsProperties;
 }) {
   const { toastMessage, clearToast, copyWithToast } = useCopyToast();
 
@@ -46,7 +47,11 @@ export function ShareReportButton({
     const absoluteUrl =
       href.startsWith("http") ? href : `${window.location.origin}${href}`;
     if (reportId) {
-      trackShareReport(reportId, domain ?? "unknown");
+      trackReportShared({
+        reportId,
+        ...scanContext,
+        domain: scanContext?.domain ?? "unknown",
+      });
     }
     await copyWithToast(absoluteUrl, "Shareable report link copied.");
   }

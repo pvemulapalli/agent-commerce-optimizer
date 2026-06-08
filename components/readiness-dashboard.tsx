@@ -5,6 +5,7 @@ import { DimensionScoreCards } from "@/components/dimension-score-cards";
 import { AuditNextStepsInline } from "@/components/audit-next-steps";
 import { LowScoreScopeNote } from "@/components/low-score-scope-note";
 import { ShareReportButton } from "@/components/share-report-button";
+import type { ScanAnalyticsProperties } from "@/lib/analytics-properties";
 import { AUDIT_SECTION_SCROLL_CLASS } from "@/lib/scroll-utils";
 import { FUTURE_AUTOMATION_NOTE } from "@/lib/scan-messaging";
 import { SCORE_EVIDENCE_NOTE, type ReadinessReport } from "@/lib/readiness-score";
@@ -92,6 +93,7 @@ export function ReadinessDashboard({
   actionableFindings = [],
   platform,
   assetCount = 0,
+  scanContext,
 }: {
   report: ReadinessReport;
   merchantName?: string;
@@ -106,6 +108,7 @@ export function ReadinessDashboard({
   actionableFindings?: Finding[];
   platform?: CommercePlatform;
   assetCount?: number;
+  scanContext?: ScanAnalyticsProperties;
 }) {
   return (
     <section
@@ -118,7 +121,7 @@ export function ReadinessDashboard({
             <ShareReportButton
               reportId={reportId}
               shareUrl={shareUrl}
-              domain={normalizedDomain}
+              scanContext={scanContext}
             />
           </div>
         ) : null}

@@ -22,6 +22,7 @@ import {
 } from "@/components/readiness-dashboard";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import { buildReadinessReport } from "@/lib/readiness-score";
+import { scanContextFromAudit, type ScanAnalyticsProperties } from "@/lib/analytics-properties";
 import { AUDIT_SECTION_SCROLL_CLASS } from "@/lib/scroll-utils";
 import type {
   CommercePlatform,
@@ -52,10 +53,12 @@ function PlatformAnalysisSection({
   platform,
   auditUrl,
   reportId,
+  scanContext,
 }: {
   platform: PlatformAnalysis;
   auditUrl: string;
   reportId?: string;
+  scanContext: ScanAnalyticsProperties;
 }) {
   return (
     <section
@@ -86,7 +89,7 @@ function PlatformAnalysisSection({
       </dl>
 
       {isPlatformNotIdentified(platform.platform) ? (
-        <OtherPlatformDetectionDetails auditUrl={auditUrl} />
+        <OtherPlatformDetectionDetails auditUrl={auditUrl} scanContext={scanContext} />
       ) : shouldShowPlatformFeedback(platform) ? (
         <div className="mt-6 rounded-xl border border-card-border bg-card-muted p-4">
           <p className="text-sm text-text-secondary">
@@ -123,6 +126,7 @@ function FindingSection({
   findings,
   accent,
   platform,
+  scanContext,
 }: {
   sectionId: string;
   title: string;
@@ -130,6 +134,7 @@ function FindingSection({
   findings: Finding[];
   accent: "emerald" | "rose" | "amber";
   platform: CommercePlatform;
+  scanContext: ScanAnalyticsProperties;
 }) {
   if (findings.length === 0) return null;
 
@@ -164,7 +169,12 @@ function FindingSection({
 
       <div className="grid min-w-0 gap-4">
         {findings.map((finding) => (
-          <FindingCard key={finding.id} finding={finding} platform={platform} />
+          <FindingCard
+            key={finding.id}
+            finding={finding}
+            platform={platform}
+            scanContext={scanContext}
+          />
         ))}
       </div>
     </section>
@@ -191,6 +201,7 @@ export function AuditResultsSection({
   isSharedReport?: boolean;
 }) {
   const report = buildReadinessReport(result);
+  const scanContext = scanContextFromAudit(result);
   const detectedCount = result.grouped.detected.length;
   const missingCount = result.grouped.missing.length;
   const needsReviewCount = result.grouped.needsReview.length;
@@ -229,6 +240,7 @@ export function AuditResultsSection({
         actionableFindings={actionableFindings}
         platform={result.platform.platform}
         assetCount={assetCount}
+        scanContext={scanContext}
       />
 
       <AuditMetadataCard metadata={result.auditMetadata} />
@@ -272,6 +284,7 @@ export function AuditResultsSection({
         platform={result.platform}
         auditUrl={result.url}
         reportId={reportId}
+        scanContext={scanContext}
       />
 
       <FindingSection
@@ -281,6 +294,7 @@ export function AuditResultsSection({
         findings={result.grouped.detected}
         accent="emerald"
         platform={result.platform.platform}
+        scanContext={scanContext}
       />
 
       <FindingSection
@@ -290,6 +304,7 @@ export function AuditResultsSection({
         findings={result.grouped.missing}
         accent="rose"
         platform={result.platform.platform}
+        scanContext={scanContext}
       />
 
       <FindingSection
@@ -299,6 +314,7 @@ export function AuditResultsSection({
         findings={result.grouped.needsReview}
         accent="amber"
         platform={result.platform.platform}
+        scanContext={scanContext}
       />
 
       <div id="generated-assets" className={AUDIT_SECTION_SCROLL_CLASS}>
@@ -307,6 +323,7 @@ export function AuditResultsSection({
           loading={fixesLoading}
           error={fixesError}
           onRegenerate={onRegenerateFixes}
+          scanContext={scanContext}
         />
       </div>
 
