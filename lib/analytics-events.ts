@@ -2,7 +2,10 @@
 
 import { appendAnalyticsEventLog } from "@/lib/analytics-event-log";
 import { analyticsDomainFromUrl } from "@/lib/analytics-domain";
-import { isGa4TrackingEnabled, isPostHogTrackingEnabled } from "@/lib/analytics-config";
+import {
+  isEffectiveGa4TrackingEnabled,
+  isEffectivePostHogTrackingEnabled,
+} from "@/lib/analytics-runtime";
 import {
   compactAnalyticsProperties,
   scanContextFromRecentScan,
@@ -23,7 +26,7 @@ declare global {
 let posthogInitPromise: Promise<PostHogClient | null> | null = null;
 
 async function getPostHogClient(): Promise<PostHogClient | null> {
-  if (!isPostHogTrackingEnabled()) {
+  if (!isEffectivePostHogTrackingEnabled()) {
     return null;
   }
 
@@ -58,8 +61,34 @@ export function initPostHogAnalytics(): void {
   void getPostHogClient();
 }
 
+type PostHogLifecycleClient = PostHogClient & {
+  opt_out_capturing?: () => void;
+  opt_in_capturing?: () => void;
+  reset?: () => void;
+};
+
+export async function suppressPostHogCapturing(): Promise<void> {
+  if (!posthogInitPromise) {
+    return;
+  }
+
+  try {
+    const posthog = (await posthogInitPromise) as PostHogLifecycleClient | null;
+    posthog?.opt_out_capturing?.();
+    posthog?.reset?.();
+    posthogInitPromise = null;
+  } catch {
+    posthogInitPromise = null;
+  }
+}
+
+export async function resumePostHogCapturing(): Promise<void> {
+  posthogInitPromise = null;
+  initPostHogAnalytics();
+}
+
 function trackGa4Event(event: string, properties?: Record<string, unknown>): boolean {
-  if (!isGa4TrackingEnabled() || typeof window.gtag !== "function") {
+  if (!isEffectiveGa4TrackingEnabled() || typeof window.gtag !== "function") {
     return false;
   }
 
@@ -73,6 +102,16 @@ async function captureAnalyticsEvent(
 ): Promise<void> {
   const payload = properties ? compactAnalyticsProperties(properties) : {};
   let delivered = false;
+
+  if (!isEffectiveGa4TrackingEnabled() && !isEffectivePostHogTrackingEnabled()) {
+    appendAnalyticsEventLog({
+      event,
+      properties: payload,
+      timestamp: new Date().toISOString(),
+      delivered: false,
+    });
+    return;
+  }
 
   try {
     const posthog = await getPostHogClient();

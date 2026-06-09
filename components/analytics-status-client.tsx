@@ -1,6 +1,7 @@
 "use client";
 
 import { PageHeader } from "@/components/page-header";
+import { useTelemetrySuppression } from "@/components/telemetry-context-provider";
 import { readAnalyticsEventLog } from "@/lib/analytics-event-log";
 import {
   isGa4Configured,
@@ -9,9 +10,16 @@ import {
   isPostHogTrackingEnabled,
 } from "@/lib/analytics-config";
 import { APP_VERSION } from "@/lib/app-version";
+import type { AnalyticsEventLogEntry } from "@/lib/analytics-event-log";
 import { useEffect, useState } from "react";
 
-function ConfigBadge({ enabled }: { enabled: boolean }) {
+function ConfigBadge({
+  enabled,
+  label,
+}: {
+  enabled: boolean;
+  label?: string;
+}) {
   return (
     <span
       className={
@@ -20,17 +28,20 @@ function ConfigBadge({ enabled }: { enabled: boolean }) {
           : "inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
       }
     >
-      {enabled ? "Yes" : "No"}
+      {label ?? (enabled ? "Yes" : "No")}
     </span>
   );
 }
 
 export function AnalyticsStatusClient() {
-  const [events, setEvents] = useState(readAnalyticsEventLog());
+  const { suppressed } = useTelemetrySuppression();
+  const [events, setEvents] = useState<AnalyticsEventLogEntry[]>([]);
+  const ga4Active = isGa4TrackingEnabled() && !suppressed;
+  const postHogActive = isPostHogTrackingEnabled() && !suppressed;
 
   useEffect(() => {
     setEvents(readAnalyticsEventLog());
-  }, []);
+  }, [suppressed]);
 
   return (
     <main className="mx-auto w-full min-w-0 max-w-4xl px-6 py-10 lg:px-8 lg:py-14">
@@ -44,6 +55,21 @@ export function AnalyticsStatusClient() {
         <p className="text-sm text-text-secondary">Version {APP_VERSION}</p>
 
         <dl className="mt-6 space-y-4">
+          <div className="flex flex-col gap-2 rounded-xl border border-card-border bg-card-muted px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <dt className="font-medium text-text-primary">Analytics suppression</dt>
+              <dd className="mt-1 text-sm text-text-secondary">
+                {suppressed
+                  ? "Founder Mode is active in this browser. No analytics traffic is sent."
+                  : "Normal visitor tracking behavior is active in this browser."}
+              </dd>
+            </div>
+            <ConfigBadge
+              enabled={suppressed}
+              label={suppressed ? "Active" : "Inactive"}
+            />
+          </div>
+
           <div className="flex flex-col gap-2 rounded-xl border border-card-border bg-card-muted px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <dt className="font-medium text-text-primary">GA4 configured</dt>
@@ -60,9 +86,10 @@ export function AnalyticsStatusClient() {
               <dt className="font-medium text-text-primary">GA4 tracking active</dt>
               <dd className="mt-1 text-sm text-text-secondary">
                 Production-only page_view and product events
+                {suppressed ? " (suppressed in this browser)" : ""}
               </dd>
             </div>
-            <ConfigBadge enabled={isGa4TrackingEnabled()} />
+            <ConfigBadge enabled={ga4Active} />
           </div>
 
           <div className="flex flex-col gap-2 rounded-xl border border-card-border bg-card-muted px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -81,9 +108,10 @@ export function AnalyticsStatusClient() {
               <dt className="font-medium text-text-primary">PostHog tracking active</dt>
               <dd className="mt-1 text-sm text-text-secondary">
                 Production-only product events and session recording
+                {suppressed ? " (suppressed in this browser)" : ""}
               </dd>
             </div>
-            <ConfigBadge enabled={isPostHogTrackingEnabled()} />
+            <ConfigBadge enabled={postHogActive} />
           </div>
         </dl>
       </section>
@@ -91,8 +119,9 @@ export function AnalyticsStatusClient() {
       <section className="mt-8 rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
         <h2 className="text-lg font-semibold text-text-primary">Latest tracked events</h2>
         <p className="mt-2 text-sm text-text-secondary">
-          Recent events captured in this browser session (including dry-run entries when tracking
-          is disabled).
+          {suppressed
+            ? "Events may appear here for local diagnostics, but nothing is delivered to GA4 or PostHog while suppression is active."
+            : "Recent events captured in this browser session (including dry-run entries when tracking is disabled)."}
         </p>
 
         {events.length === 0 ? (

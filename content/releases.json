@@ -1,6 +1,23 @@
 {
   "releases": [
     {
+      "version": "3.5.6",
+      "date": "2026-06-08",
+      "title": "Founder Analytics Exclusion Controls",
+      "summary": "Added internal testing controls to prevent development and validation activity from impacting analytics data quality. Improved analytics accuracy and reporting reliability while maintaining normal tracking behavior for site visitors.",
+      "categories": [
+        "Analytics",
+        "Admin",
+        "Infrastructure"
+      ],
+      "changes": [
+        "Added internal analytics exclusion controls",
+        "Improved analytics data quality",
+        "Improved reporting reliability",
+        "Added testing safeguards for development activity"
+      ]
+    },
+    {
       "version": "3.5.5",
       "date": "2026-06-08",
       "title": "Shopware Platform Support and Detection Accuracy Improvements",

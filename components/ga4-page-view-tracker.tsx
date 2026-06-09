@@ -1,5 +1,6 @@
 "use client";
 
+import { useTelemetrySuppression } from "@/components/telemetry-context-provider";
 import { isGa4TrackingEnabled } from "@/lib/analytics-config";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -13,9 +14,10 @@ declare global {
 export function Ga4PageViewTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { suppressed } = useTelemetrySuppression();
 
   useEffect(() => {
-    if (!isGa4TrackingEnabled() || typeof window.gtag !== "function") {
+    if (!isGa4TrackingEnabled() || suppressed || typeof window.gtag !== "function") {
       return;
     }
 
@@ -27,7 +29,7 @@ export function Ga4PageViewTracker() {
       page_location: window.location.href,
       page_title: document.title,
     });
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, suppressed]);
 
   return null;
 }

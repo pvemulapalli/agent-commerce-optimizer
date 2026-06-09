@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  readTelemetrySuppression,
+  subscribeTelemetrySuppression,
+  TELEMETRY_DIRECTIVE_PARAM,
+  TELEMETRY_DIRECTIVE_RESUME,
+  TELEMETRY_DIRECTIVE_SUPPRESS,
+} from "@/lib/telemetry-context";
 import { useCallback, useEffect, useState } from "react";
 
 const ADMIN_TOKEN_SESSION_KEY = "aco-admin-token";
@@ -117,6 +124,22 @@ export default function AdminClient() {
   } | null>(null);
   const [loadingBanned, setLoadingBanned] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [founderModeActive, setFounderModeActive] = useState(false);
+  const [founderModeExampleOrigin, setFounderModeExampleOrigin] = useState("");
+
+  const buildFounderModeUrl = useCallback((directive: string) => {
+    const origin = founderModeExampleOrigin || (typeof window !== "undefined" ? window.location.origin : "");
+    if (!origin) {
+      return `/?${TELEMETRY_DIRECTIVE_PARAM}=${directive}`;
+    }
+
+    const url = new URL(origin);
+    url.pathname = "/";
+    url.search = "";
+    url.hash = "";
+    url.searchParams.set(TELEMETRY_DIRECTIVE_PARAM, directive);
+    return url.href;
+  }, [founderModeExampleOrigin]);
 
   const clearToken = useCallback(() => {
     setToken("");
@@ -408,6 +431,19 @@ export default function AdminClient() {
       cancelled = true;
     };
   }, [loadBannedDomains, loadContributors, loadEmailSubscribers, loadNonEcommerceDomains, loadPlatformFeedback]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    setFounderModeExampleOrigin(window.location.origin);
+    setFounderModeActive(readTelemetrySuppression());
+
+    return subscribeTelemetrySuppression(() => {
+      setFounderModeActive(readTelemetrySuppression());
+    });
+  }, [token]);
 
   async function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -786,6 +822,84 @@ export default function AdminClient() {
           Lock admin tools
         </button>
       </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Founder Mode</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Excludes GA4 and PostHog tracking in this browser only. Use it while
+              testing or validating scans so internal activity does not affect analytics
+              reporting. The setting persists across refreshes, tabs, and return visits.
+            </p>
+          </div>
+          <span
+            className={
+              founderModeActive
+                ? "inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900"
+                : "inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
+            }
+          >
+            {founderModeActive ? "Active in this browser" : "Inactive in this browser"}
+          </span>
+        </div>
+
+        <div className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+          <p className="text-sm font-medium text-slate-900">Enable or disable via query string</p>
+          <p className="text-sm leading-6 text-slate-600">
+            Visit any page on this site with one of the query parameters below. The
+            parameter is removed from the address bar immediately after it is applied.
+            You can append it to the homepage or any other route.
+          </p>
+
+          <dl className="space-y-3 text-sm">
+            <div>
+              <dt className="font-medium text-slate-900">Enable Founder Mode</dt>
+              <dd className="mt-1 break-all font-mono text-slate-700">
+                ?{TELEMETRY_DIRECTIVE_PARAM}={TELEMETRY_DIRECTIVE_SUPPRESS}
+              </dd>
+              <dd className="mt-2 break-all font-mono text-xs text-slate-600">
+                {buildFounderModeUrl(TELEMETRY_DIRECTIVE_SUPPRESS)}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-900">Disable Founder Mode</dt>
+              <dd className="mt-1 break-all font-mono text-slate-700">
+                ?{TELEMETRY_DIRECTIVE_PARAM}={TELEMETRY_DIRECTIVE_RESUME}
+              </dd>
+              <dd className="mt-2 break-all font-mono text-xs text-slate-600">
+                {buildFounderModeUrl(TELEMETRY_DIRECTIVE_RESUME)}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="flex flex-wrap gap-3 pt-2">
+            <a
+              href={buildFounderModeUrl(TELEMETRY_DIRECTIVE_SUPPRESS)}
+              className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-800"
+            >
+              Enable Founder Mode
+            </a>
+            <a
+              href={buildFounderModeUrl(TELEMETRY_DIRECTIVE_RESUME)}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              Disable Founder Mode
+            </a>
+            <a
+              href="/analytics-status"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              Open analytics status
+            </a>
+          </div>
+        </div>
+
+        <p className="mt-4 text-sm leading-6 text-slate-600">
+          When active, a small &ldquo;Founder Mode Active&rdquo; indicator appears in the
+          bottom-right corner of every page in this browser.
+        </p>
+      </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <h2 className="text-lg font-semibold text-slate-900">

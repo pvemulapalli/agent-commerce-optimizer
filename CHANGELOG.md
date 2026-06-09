@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.5.6] - 2026-06-08
+
+### [Analytics]
+- Added internal analytics exclusion controls for development and validation activity
+- Improved analytics data quality and reporting reliability while preserving normal tracking for site visitors
+
+### [Admin]
+- Added internal testing safeguards to prevent analytics pollution during product development
+
+### [Infrastructure]
+- Updated analytics diagnostics to reflect suppression status in the browser
+
 ## [3.5.5] - 2026-06-08
 
 ### [Platform Detection]

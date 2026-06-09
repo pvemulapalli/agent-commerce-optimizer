@@ -1,6 +1,7 @@
 "use client";
 
 import { Ga4PageViewTracker } from "@/components/ga4-page-view-tracker";
+import { useTelemetrySuppression } from "@/components/telemetry-context-provider";
 import { initPostHogAnalytics } from "@/lib/analytics-events";
 import {
   getGa4MeasurementId,
@@ -11,14 +12,15 @@ import Script from "next/script";
 import { Suspense, useEffect } from "react";
 
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
+  const { suppressed } = useTelemetrySuppression();
   const ga4Id = getGa4MeasurementId();
-  const ga4Enabled = isGa4TrackingEnabled();
+  const ga4Enabled = isGa4TrackingEnabled() && !suppressed;
 
   useEffect(() => {
-    if (isPostHogTrackingEnabled()) {
+    if (isPostHogTrackingEnabled() && !suppressed) {
       initPostHogAnalytics();
     }
-  }, []);
+  }, [suppressed]);
 
   return (
     <>
