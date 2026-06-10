@@ -1,7 +1,14 @@
-import { getCommercetoolsDomainHint } from "./commercetools-domain-hints";
+import {
+  crawlHasBigCommerceContext,
+  hasBigCommerceCatalystMarker,
+  hasBigCommerceStencilCdn,
+} from "./bigcommerce-fingerprints";
+import { getCommercetoolsDomainHint, hasVerifiedCommercetoolsDomainHint } from "./commercetools-domain-hints";
+import { crawlHasCommercetoolsContext } from "./commercetools-fingerprints";
 import { getFenicioDomainHint } from "./fenicio-domain-hints";
 import { getMagentoDomainHint } from "./magento-domain-hints";
 import { getShopwareDomainHint } from "./shopware-domain-hints";
+import { crawlHasShopifyHtml } from "./shopify-fingerprints";
 import {
   crawlHasShopwareContext,
   isShopwareRobotsTxt,
@@ -160,7 +167,47 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
       );
     }
 
-    if (/bigcommerce\.com/i.test(content)) {
+    if (hasBigCommerceStencilCdn(content)) {
+      signals.push(
+        storefrontSignal(
+          "BigCommerce",
+          "BigCommerce Stencil CDN assets detected",
+          source.url,
+        ),
+      );
+    }
+
+    if (hasBigCommerceCatalystMarker(content)) {
+      signals.push(
+        storefrontSignal(
+          "BigCommerce",
+          "BigCommerce Catalyst headless storefront detected",
+          source.url,
+        ),
+      );
+    }
+
+    if (/microapps\.bigcommerce\.com/i.test(content)) {
+      signals.push(
+        jsBundleSignal(
+          "BigCommerce",
+          "BigCommerce microapps runtime detected",
+          source.url,
+        ),
+      );
+    }
+
+    if (/graphql\.bigcommerce\.com/i.test(content)) {
+      signals.push(
+        jsBundleSignal(
+          "BigCommerce",
+          "BigCommerce GraphQL API reference detected",
+          source.url,
+        ),
+      );
+    }
+
+    if (/cdn\d+\.bigcommerce\.com|bigcommerce\.com\/s\/[\w-]+/i.test(content)) {
       signals.push(
         storefrontSignal(
           "BigCommerce",
@@ -369,8 +416,7 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
     }
 
     if (
-      /commercetools\.com|commercetools\.io|composable-commerce/i.test(content) ||
-      /commerceToolsAttributes|commerceToolsApi|@commercetools|frontastic/i.test(
+      /commercetools\.com|commercetools\.io|composable-commerce|commercetools-frontend/i.test(
         content,
       )
     ) {
@@ -379,6 +425,55 @@ function collectHtmlSignals(data: CrawlData): PlatformSignal[] {
           "CommerceTools",
           "CommerceTools composable commerce assets detected",
           source.url,
+          3,
+        ),
+      );
+    }
+
+    if (
+      /commerceToolsAttributes|commerceToolsApi|@commercetools|frontastic|projectKey|ct-api/i.test(
+        content,
+      )
+    ) {
+      signals.push(
+        jsBundleSignal(
+          "CommerceTools",
+          "CommerceTools SDK or API runtime markers detected",
+          source.url,
+          4,
+        ),
+      );
+    }
+
+    if (/api\.(?:europe-west1|australia-southeast1)\.gcp\.commercetools\.com/i.test(content)) {
+      signals.push(
+        jsBundleSignal(
+          "CommerceTools",
+          "CommerceTools hosted API endpoint detected",
+          source.url,
+          4,
+        ),
+      );
+    }
+
+    if (/commercetools-frontend-sdk|@commercetools-frontend/i.test(content)) {
+      signals.push(
+        jsBundleSignal(
+          "CommerceTools",
+          "CommerceTools frontend SDK bundle detected",
+          source.url,
+          4,
+        ),
+      );
+    }
+
+    if (/frontastic|composable frontends/i.test(content)) {
+      signals.push(
+        storefrontSignal(
+          "CommerceTools",
+          "Frontastic composable storefront markers detected",
+          source.url,
+          3,
         ),
       );
     }
@@ -552,13 +647,14 @@ function collectUrlSignals(data: CrawlData): PlatformSignal[] {
   for (const url of urls) {
     const lower = url.toLowerCase();
 
-    if (/\/products\/[^/?#]+/i.test(lower)) {
+    if (crawlHasShopifyHtml(data) && /\/products\/[^/?#]+/i.test(lower)) {
       signals.push(
         urlPatternSignal("Shopify", "Shopify product URL structure detected", url),
       );
     }
 
     if (
+      crawlHasShopifyHtml(data) &&
       /\/collections\/[^/?#]+/i.test(lower) &&
       !/\/c\/collections\//i.test(lower)
     ) {
@@ -573,12 +669,26 @@ function collectUrlSignals(data: CrawlData): PlatformSignal[] {
       );
     }
 
-    if (/\/[\w-]+\/p\/|\/categories\//i.test(lower)) {
+    if (
+      crawlHasBigCommerceContext(data) &&
+      /\/[\w-]+\/p\/|\/categories\//i.test(lower)
+    ) {
       signals.push(
         urlPatternSignal(
           "BigCommerce",
           "BigCommerce product or category URL structure detected",
           url,
+        ),
+      );
+    }
+
+    if (crawlHasBigCommerceContext(data) && /\/product\/[^/?#]+\/\d+/i.test(lower)) {
+      signals.push(
+        urlPatternSignal(
+          "BigCommerce",
+          "BigCommerce headless product URL structure detected",
+          url,
+          3,
         ),
       );
     }
@@ -680,6 +790,30 @@ function collectUrlSignals(data: CrawlData): PlatformSignal[] {
       signals.push(
         urlPatternSignal("Fenicio", "Fenicio account area URL structure detected", url),
       );
+    }
+
+    if (crawlHasCommercetoolsContext(data)) {
+      if (/\/api\/project\/|\/graphql\b/i.test(lower)) {
+        signals.push(
+          urlPatternSignal(
+            "CommerceTools",
+            "CommerceTools API route pattern detected",
+            url,
+            3,
+          ),
+        );
+      }
+
+      if (/\/en(?:-[a-z]{2})?\/(?:shop|store|mobile|basket|checkout)\b/i.test(lower)) {
+        signals.push(
+          urlPatternSignal(
+            "CommerceTools",
+            "CommerceTools storefront route pattern detected",
+            url,
+            2,
+          ),
+        );
+      }
     }
 
     if (crawlHasShopwareContext(data)) {
@@ -850,7 +984,11 @@ export function detectPlatform(data: CrawlData): PlatformAnalysis {
   const ranked = rankedList[0];
 
   const commercetoolsHint = getCommercetoolsDomainHint(data.entryUrl);
-  if (commercetoolsHint && shouldApplyDomainHint(ranked, "CommerceTools")) {
+  if (
+    commercetoolsHint &&
+    (hasVerifiedCommercetoolsDomainHint(data.entryUrl) ||
+      shouldApplyDomainHint(ranked, "CommerceTools"))
+  ) {
     return applyDomainHintOverride({
       entryUrl: data.entryUrl,
       ranked,

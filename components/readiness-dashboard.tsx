@@ -1,7 +1,10 @@
 "use client";
 
 import { BusinessSummarySection } from "@/components/business-summary-section";
+import { RecommendedStartingPointSection } from "@/components/recommended-starting-point-section";
 import { DimensionScoreCards } from "@/components/dimension-score-cards";
+import { buildRecommendedStartingPoint } from "@/lib/recommended-starting-point";
+import type { GroupedFindings } from "@/lib/types";
 import { AuditNextStepsInline } from "@/components/audit-next-steps";
 import { LowScoreScopeNote } from "@/components/low-score-scope-note";
 import { ShareReportButton } from "@/components/share-report-button";
@@ -94,6 +97,7 @@ export function ReadinessDashboard({
   platform,
   assetCount = 0,
   scanContext,
+  grouped,
 }: {
   report: ReadinessReport;
   merchantName?: string;
@@ -109,7 +113,13 @@ export function ReadinessDashboard({
   platform?: CommercePlatform;
   assetCount?: number;
   scanContext?: ScanAnalyticsProperties;
+  grouped: GroupedFindings;
 }) {
+  const startingPoint = buildRecommendedStartingPoint({
+    grouped,
+    topGap: report.topGap,
+  });
+
   return (
     <section
       id="overview"
@@ -187,6 +197,7 @@ export function ReadinessDashboard({
 
       <div className="space-y-8 px-6 py-8 sm:px-8">
         <BusinessSummarySection report={report} missingCount={missingCount} />
+        <RecommendedStartingPointSection startingPoint={startingPoint} />
 
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">

@@ -1,10 +1,11 @@
 import { pageContentHaystack } from "./gateway-errors";
+import type { BotVerificationDiagnostic } from "./bot-verification-diagnostics";
 import type { CrawlData, PageData } from "./types";
 
 export const BOT_VERIFICATION_SCAN_STATUS = "bot_verification_blocked";
 
 export const BOT_VERIFICATION_MESSAGE =
-  "Bot verification is blocking the scanning of this site. Please try again later.";
+  "This storefront is actively challenging automated scanners.";
 
 const BOT_VERIFICATION_PATTERNS = [
   /just a moment/i,
@@ -31,9 +32,21 @@ const BOT_VERIFICATION_PATTERNS = [
 const BOT_VERIFICATION_STATUS_CODES = new Set([403, 429, 503]);
 
 export class BotVerificationBlockedError extends Error {
-  constructor(message = BOT_VERIFICATION_MESSAGE) {
-    super(message);
+  diagnostic: BotVerificationDiagnostic;
+
+  constructor(diagnostic?: BotVerificationDiagnostic, message?: string) {
+    super(message ?? diagnostic?.message ?? BOT_VERIFICATION_MESSAGE);
     this.name = "BotVerificationBlockedError";
+    this.diagnostic =
+      diagnostic ??
+      ({
+        title: "Bot Verification Detected",
+        message: BOT_VERIFICATION_MESSAGE,
+        meaning:
+          "This storefront is actively challenging automated scanners. Merchant Signals is not necessarily at fault—the site is protecting itself from automated traffic.",
+        confidence: "high",
+        provider: "unknown",
+      } satisfies BotVerificationDiagnostic);
   }
 }
 
@@ -59,6 +72,48 @@ function readResponseHeader(
 
   const direct = headers[name] ?? headers[name.toLowerCase()];
   return direct ?? null;
+}
+
+function detectBotProvider(input: {
+  bodyText?: string | null;
+  headers?: Headers | Record<string, string>;
+}): BotVerificationDiagnostic["provider"] {
+  const bodyText = input.bodyText ?? "";
+  const server = readResponseHeader(input.headers, "server")?.toLowerCase() ?? "";
+  const cfRay = readResponseHeader(input.headers, "cf-ray");
+
+  if (cfRay || /cloudflare/i.test(bodyText) || server.includes("cloudflare")) {
+    return "cloudflare";
+  }
+
+  if (/perimeterx|datadome|akamai|incapsula|distil/i.test(bodyText)) {
+    return "enterprise_waf";
+  }
+
+  return "unknown";
+}
+
+export function buildBotVerificationDiagnostic(input?: {
+  bodyText?: string | null;
+  headers?: Headers | Record<string, string>;
+  status?: number | null;
+}): BotVerificationDiagnostic {
+  const provider = detectBotProvider(input ?? {});
+  const providerLabel =
+    provider === "cloudflare"
+      ? "Cloudflare or similar edge protection"
+      : provider === "enterprise_waf"
+        ? "Enterprise bot mitigation"
+        : "Storefront security service";
+
+  return {
+    title: "Bot Verification Detected",
+    message: BOT_VERIFICATION_MESSAGE,
+    meaning: `This storefront is actively challenging automated scanners through ${providerLabel}. That does not mean Merchant Signals is broken—the site is choosing to verify automated traffic before serving content.`,
+    confidence: "high",
+    provider,
+    httpStatus: input?.status ?? null,
+  };
 }
 
 export function isBotVerificationResponse(input: {

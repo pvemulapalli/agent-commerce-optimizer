@@ -6,7 +6,7 @@ import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import { trackRecentScanClickedFromEntry } from "@/lib/analytics-events";
 import type { PlatformLeaderboardStat } from "@/lib/platform-leaderboard";
 import type { RecentAuditSortDirection, RecentAuditSortField } from "@/lib/recent-audits-query";
-import { buildRecentReportHomeUrl } from "@/lib/recent-scan-links";
+import { buildRecentReportUrl } from "@/lib/recent-scan-links";
 import type { RecentScanRecord } from "@/lib/scan-activity-types";
 import Link from "next/link";
 
@@ -105,7 +105,7 @@ function RecentAuditSummaryCard({
   if (linkable) {
     return (
       <Link
-        href={buildRecentReportHomeUrl(entry.url)}
+        href={buildRecentReportUrl(entry)}
         onClick={() => handleRecentScanLinkClick(entry)}
         className="block rounded-xl border border-blue-200 bg-blue-50/40 p-4 transition hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm dark:border-blue-800/60 dark:bg-blue-950/20 dark:hover:border-blue-700 dark:hover:bg-blue-950/40"
       >
@@ -212,7 +212,7 @@ export function RecentAuditsList({
                     <td className="px-4 py-4">
                       {linkable ? (
                         <Link
-                          href={buildRecentReportHomeUrl(entry.url)}
+                          href={buildRecentReportUrl(entry)}
                           onClick={() => handleRecentScanLinkClick(entry)}
                           className="group block min-w-0 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
                         >
@@ -250,7 +250,7 @@ export function RecentAuditsList({
                       <td className="px-4 py-4 whitespace-nowrap">
                         {linkable ? (
                           <Link
-                            href={buildRecentReportHomeUrl(entry.url)}
+                            href={buildRecentReportUrl(entry)}
                             onClick={() => handleRecentScanLinkClick(entry)}
                             className="inline-flex items-center rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-900 transition hover:border-blue-300 hover:bg-blue-50 dark:border-blue-700 dark:bg-slate-900 dark:text-blue-200 dark:hover:bg-blue-950/50"
                           >

@@ -1,0 +1,29 @@
+[
+  {
+    "name": "bloop.eu BigCommerce Catalyst headless",
+    "entryUrl": "https://bloop.eu/",
+    "expectedPlatform": "BigCommerce",
+    "expectedConfidence": "medium",
+    "htmlSnippet": "https://cdn11.bigcommerce.com/s-6njswlljaw/images/stencil/1280w/products/84554/212391/product.jpg",
+    "urls": [
+      "https://bloop.eu/",
+      "https://bloop.eu/product/capa-carteira-magntica-magneticflipwallet-para-xiaomi-13t/84554"
+    ]
+  },
+  {
+    "name": "BigCommerce Catalyst meta marker",
+    "entryUrl": "https://example.com/",
+    "expectedPlatform": "BigCommerce",
+    "expectedConfidence": "medium",
+    "htmlSnippet": "<meta name=\"platform\" content=\"bigcommerce.catalyst\" />",
+    "urls": ["https://example.com/product/widget/12345"]
+  },
+  {
+    "name": "Classic BigCommerce Stencil bundle",
+    "entryUrl": "https://example.com/",
+    "expectedPlatform": "BigCommerce",
+    "expectedConfidence": "medium",
+    "htmlSnippet": "stencil.bundle.js bc-sf-filter https://cdn11.bigcommerce.com/s-storehash/images/stencil/",
+    "urls": ["https://example.com/category/shoes"]
+  }
+]

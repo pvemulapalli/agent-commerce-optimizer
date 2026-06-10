@@ -1,6 +1,28 @@
 {
   "releases": [
     {
+      "version": "3.5.7",
+      "date": "2026-06-09",
+      "title": "Detection Accuracy, Scan Reliability, and Report Sharing Foundation",
+      "summary": "Improved commercetools detection, enhanced scan failure diagnostics, introduced report permalink architecture, strengthened foundations for historical tracking, and added guided recommendations to help users focus on the highest-impact improvements first.",
+      "categories": [
+        "Platform Detection",
+        "UX",
+        "Infrastructure",
+        "Analytics",
+        "Fixes"
+      ],
+      "changes": [
+        "Improved commercetools detection confidence",
+        "Enhanced scan failure diagnostics",
+        "Improved bot-blocked storefront messaging",
+        "Added shareable report foundation",
+        "Added historical scan foundation",
+        "Added recommended starting point guidance",
+        "Improved executive summary experience"
+      ]
+    },
+    {
       "version": "3.5.6",
       "date": "2026-06-08",
       "title": "Founder Analytics Exclusion Controls",

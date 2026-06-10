@@ -26,10 +26,13 @@ export interface AuditHistoryRecord {
   confidenceScore: number;
   crawlHash: string;
   timestamp: string;
+  topGaps: string[];
+  reportId?: string;
 }
 
 const HISTORY_KEY = "aco:audit-history";
-const MAX_HISTORY = 5000;
+/** Default page size when reading audit history — storage is not trimmed. */
+export const DEFAULT_AUDIT_HISTORY_READ_LIMIT = 500;
 
 let memoryHistory: AuditHistoryRecord[] = [];
 
@@ -48,10 +51,14 @@ export function createAuditHistoryRecord(input: {
   audit: AuditApiResponse;
   confidenceScore: number;
   merchantName?: string;
+  reportId?: string;
 }): AuditHistoryRecord {
   const report = buildReadinessReport(input.audit);
   const dimensionScores = Object.fromEntries(
     report.dimensions.map((dimension) => [dimension.id, dimension.score]),
+  );
+  const topGaps = [...report.opportunities, report.topGap].filter(
+    (value, index, array) => array.indexOf(value) === index,
   );
 
   return {
@@ -71,6 +78,8 @@ export function createAuditHistoryRecord(input: {
       dimensionScores,
     }),
     timestamp: input.audit.crawledAt,
+    topGaps,
+    reportId: input.reportId,
   };
 }
 
@@ -96,7 +105,9 @@ function parseHistoryList(entries: unknown[]): AuditHistoryRecord[] {
     .filter((entry): entry is AuditHistoryRecord => Boolean(entry));
 }
 
-async function readHistoryRecords(limit = MAX_HISTORY): Promise<AuditHistoryRecord[]> {
+async function readHistoryRecords(
+  limit = DEFAULT_AUDIT_HISTORY_READ_LIMIT,
+): Promise<AuditHistoryRecord[]> {
   if (isRedisConfigured()) {
     const redis = getRedis();
     const raw = await redis.lrange(HISTORY_KEY, 0, limit - 1);
@@ -111,17 +122,18 @@ export async function appendAuditHistory(record: AuditHistoryRecord): Promise<vo
     if (isRedisConfigured()) {
       const redis = getRedis();
       await redis.lpush(HISTORY_KEY, JSON.stringify(record));
-      await redis.ltrim(HISTORY_KEY, 0, MAX_HISTORY - 1);
       return;
     }
 
-    memoryHistory = [record, ...memoryHistory].slice(0, MAX_HISTORY);
+    memoryHistory = [record, ...memoryHistory];
   } catch (error) {
     console.error("[audit-history] append failed:", error);
   }
 }
 
-export async function getAuditHistory(limit = MAX_HISTORY): Promise<AuditHistoryRecord[]> {
+export async function getAuditHistory(
+  limit = DEFAULT_AUDIT_HISTORY_READ_LIMIT,
+): Promise<AuditHistoryRecord[]> {
   try {
     return await readHistoryRecords(limit);
   } catch (error) {
@@ -132,7 +144,7 @@ export async function getAuditHistory(limit = MAX_HISTORY): Promise<AuditHistory
 
 export async function getAuditHistoryForPlatform(
   platform: string,
-  limit = MAX_HISTORY,
+  limit = DEFAULT_AUDIT_HISTORY_READ_LIMIT,
 ): Promise<AuditHistoryRecord[]> {
   const records = await getAuditHistory(limit);
   return records.filter((record) => record.platform === platform);
@@ -186,6 +198,7 @@ export async function recordAuditHistory(input: {
   audit: AuditApiResponse;
   confidenceScore: number;
   merchantName?: string;
+  reportId?: string;
 }): Promise<AuditHistoryRecord | null> {
   const record = createAuditHistoryRecord(input);
   await appendAuditHistory(record);

@@ -7,34 +7,34 @@ export interface BusinessSummary {
 
 function getReadinessBand(score: number): string {
   if (score >= 80) {
-    return "Strong readiness";
+    return "Strong customer and AI visibility";
   }
 
   if (score >= 60) {
-    return "Moderate readiness";
+    return "Solid foundation with room to grow";
   }
 
   if (score >= 40) {
-    return "Limited readiness";
+    return "Limited discoverability today";
   }
 
-  return "Significant opportunity";
+  return "Significant visibility opportunity";
 }
 
 function getOpeningLine(score: number, missingCount: number): string {
   if (score >= 80 && missingCount <= 2) {
-    return "Your storefront appears well prepared for customers and AI-driven discovery today.";
+    return "Your storefront appears ready for shoppers and AI-driven discovery. Customers can likely find key products, policies, and purchase paths with confidence.";
   }
 
   if (score >= 60) {
-    return "Your storefront appears usable by customers today.";
+    return "Your storefront provides a usable customer experience today, but AI shopping assistants may still miss important product, policy, and trust signals.";
   }
 
   if (score >= 40) {
-    return "Your storefront may work for shoppers today, but important discovery signals are incomplete.";
+    return "Customers may be able to shop on your site, but AI systems likely have limited visibility into what you sell, how checkout works, and why shoppers should trust the experience.";
   }
 
-  return "Your storefront may still serve customers, but AI systems likely have limited visibility into your commerce capabilities.";
+  return "Your storefront may still serve customers directly, but AI visibility, discoverability, and conversion readiness appear limited based on the signals detected during this scan.";
 }
 
 export function buildBusinessSummary(
@@ -48,21 +48,21 @@ export function buildBusinessSummary(
 
   if (missingCount > 0) {
     paragraphs.push(
-      "However, AI systems may have limited visibility into your products, policies, and commerce capabilities because several machine-readable signals were not detected during the crawl.",
+      "Several machine-readable signals that help AI systems understand your catalog, policies, and purchase flow were not detected. That can reduce discoverability in AI shopping assistants and agent-driven commerce channels.",
     );
     paragraphs.push(
-      "Improving these signals can increase discoverability in AI shopping assistants and agent-driven commerce experiences.",
+      "Strengthening these signals improves customer trust, conversion readiness, and the likelihood that AI systems can confidently recommend your storefront.",
     );
   } else if (report.score < 80) {
     paragraphs.push(
-      "Some areas still need attention so AI shopping assistants can confidently understand your catalog, policies, and purchase flow.",
+      "Most core commerce signals were detected, but there is still room to improve how clearly AI systems understand your products, policies, and purchase experience.",
     );
     paragraphs.push(
-      "Strengthening these signals can improve how your store appears in agent-driven commerce experiences.",
+      "Closing the remaining gaps helps maintain visibility as AI shopping and agent checkout channels evolve.",
     );
   } else {
     paragraphs.push(
-      "Most core commerce signals were detected. Continued maintenance will help your storefront stay visible as AI shopping channels evolve.",
+      "Most core commerce signals were detected. Continued maintenance will help your storefront stay visible, trustworthy, and ready for AI-driven discovery.",
     );
   }
 

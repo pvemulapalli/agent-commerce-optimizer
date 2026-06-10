@@ -1,3 +1,4 @@
+import { buildPublicPlatformEvidence } from "./platform-evidence-display";
 import { normalizeSchemaType } from "./schema-utils";
 import type { GeneratedAsset, GenerationContext, GroupedFindings } from "./types";
 
@@ -185,12 +186,8 @@ function generateMerchantProfile(context: GenerationContext): string {
     "",
   ];
 
-  if (context.platform.evidence.length > 0) {
-    for (const item of context.platform.evidence) {
-      lines.push(`- ${item}`);
-    }
-  } else {
-    lines.push("- TODO: No platform evidence captured");
+  for (const item of buildPublicPlatformEvidence(context.platform)) {
+    lines.push(`- ${item}`);
   }
 
   lines.push("", "## Product catalog signals", "");

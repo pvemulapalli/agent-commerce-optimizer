@@ -10,6 +10,7 @@ import {
   isQuarantinedNonEcommerceUrl,
 } from "./non-ecommerce-domains";
 import { ensureDomainReachable, DomainUnreachableError } from "./domain-reachability";
+import { createScanFailureResponseFromError } from "./scan-failure-api";
 import { enforceScanRateLimit } from "./rate-limit";
 import { verifyTurnstileToken } from "./turnstile";
 
@@ -60,14 +61,11 @@ export async function validateScanRequest(
     await ensureDomainReachable(normalizedUrl);
   } catch (error) {
     if (error instanceof BotVerificationBlockedError) {
-      return createBotVerificationResponse();
+      return createBotVerificationResponse(error);
     }
 
     if (error instanceof DomainUnreachableError) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return createScanFailureResponseFromError(error);
     }
 
     throw error;

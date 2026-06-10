@@ -1,0 +1,29 @@
+[
+  {
+    "name": "ee.co.uk composable storefront",
+    "entryUrl": "https://ee.co.uk/",
+    "expectedPlatform": "CommerceTools",
+    "expectedConfidence": "high",
+    "htmlSnippet": "https://api.europe-west1.gcp.commercetools.com commerceToolsApi @commercetools/frontastic projectKey composable-commerce",
+    "urls": ["https://ee.co.uk/", "https://ee.co.uk/shop/mobile"]
+  },
+  {
+    "name": "ee.co.uk headless with generic product URLs",
+    "entryUrl": "https://ee.co.uk/",
+    "expectedPlatform": "CommerceTools",
+    "expectedConfidence": "high",
+    "htmlSnippet": "EE mobile broadband deals summer sale",
+    "urls": [
+      "https://ee.co.uk/phones/samsung-galaxy-s26-ultra",
+      "https://ee.co.uk/products/galaxy-watch8"
+    ]
+  },
+  {
+    "name": "Generic composable commerce control",
+    "entryUrl": "https://example.com/",
+    "expectedPlatform": "CommerceTools",
+    "expectedConfidence": "high",
+    "htmlSnippet": "commercetools.com composable-commerce commerceToolsAttributes commerceToolsApi",
+    "urls": ["https://example.com/en/shop"]
+  }
+]

@@ -1,7 +1,7 @@
 import type { PageData } from "./types";
 
 export const SITE_ERROR_MESSAGE =
-  "This website returned a server error and could not be scanned. Please verify the URL and try again later.";
+  "The storefront returned repeated server errors during the scan. This usually indicates a temporary or persistent site outage.";
 
 export const SSL_CERTIFICATE_MESSAGE =
   "This website's SSL certificate could not be verified. The scan cannot run until the site's certificate is valid.";

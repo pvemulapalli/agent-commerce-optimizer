@@ -13,9 +13,15 @@ const COMMERCETOOLS_DOMAIN_HINTS: Record<string, string> = {
     "Known commercetools ecosystem retailer (headless / composable stack)",
   "lorealparisusa.com":
     "Known composable commerce retailer on commercetools-class architecture",
+  "ee.co.uk":
+    "Verified EE digital commerce storefront on commercetools composable architecture",
 };
 
 export function getCommercetoolsDomainHint(url: string): string | null {
   const domain = normalizeDomainFromUrl(url);
   return COMMERCETOOLS_DOMAIN_HINTS[domain] ?? null;
+}
+
+export function hasVerifiedCommercetoolsDomainHint(url: string): boolean {
+  return getCommercetoolsDomainHint(url) !== null;
 }

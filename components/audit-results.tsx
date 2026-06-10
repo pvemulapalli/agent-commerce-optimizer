@@ -11,6 +11,11 @@ import {
   PlatformValue,
 } from "@/components/other-platform-detection";
 import { PlatformFeedbackModal } from "@/components/platform-feedback-modal";
+import {
+  PlatformDetectionIntro,
+  PlatformEvidenceSection,
+} from "@/components/platform-evidence-section";
+import { useTelemetrySuppression } from "@/components/telemetry-context-provider";
 import { isPlatformNotIdentified, shouldShowPlatformFeedback } from "@/lib/platform-labels";
 import { normalizeDomainFromUrl } from "@/lib/domain-normalization";
 import { FindingCard } from "@/components/finding-card";
@@ -54,11 +59,13 @@ function PlatformAnalysisSection({
   auditUrl,
   reportId,
   scanContext,
+  showInternalEvidence = false,
 }: {
   platform: PlatformAnalysis;
   auditUrl: string;
   reportId?: string;
   scanContext: ScanAnalyticsProperties;
+  showInternalEvidence?: boolean;
 }) {
   return (
     <section
@@ -69,9 +76,7 @@ function PlatformAnalysisSection({
         Platform Detection
       </p>
       <h2 className="mt-2 text-2xl font-semibold text-text-primary">Commerce Platform</h2>
-      <p className="mt-2 text-sm text-text-secondary">
-        Platform signals detected from storefront assets, URL structures, and crawled pages.
-      </p>
+      <PlatformDetectionIntro showInternalEvidence={showInternalEvidence} />
 
       <dl className="mt-6 grid gap-6 sm:grid-cols-2">
         <div>
@@ -82,8 +87,13 @@ function PlatformAnalysisSection({
         </div>
         <div>
           <dt className="text-sm font-medium text-text-secondary">Confidence</dt>
-          <dd className="mt-2">
+          <dd className="mt-2 flex flex-wrap items-center gap-2">
             <ConfidenceBadge confidence={platform.confidence} />
+            {platform.platform !== "Unknown" && platform.confidenceScore > 0 ? (
+              <span className="text-sm font-medium tabular-nums text-text-primary">
+                {platform.confidenceScore}%
+              </span>
+            ) : null}
           </dd>
         </div>
       </dl>
@@ -105,16 +115,10 @@ function PlatformAnalysisSection({
         </div>
       ) : null}
 
-      <div className="mt-6">
-        <h3 className="text-sm font-medium text-text-secondary">Evidence</h3>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-text-primary">
-          {platform.evidence.map((item) => (
-            <li key={item} className="break-words">
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <PlatformEvidenceSection
+        platform={platform}
+        showInternalEvidence={showInternalEvidence}
+      />
     </section>
   );
 }
@@ -200,6 +204,7 @@ export function AuditResultsSection({
   shareUrl?: string;
   isSharedReport?: boolean;
 }) {
+  const { suppressed: founderModeActive } = useTelemetrySuppression();
   const report = buildReadinessReport(result);
   const scanContext = scanContextFromAudit(result);
   const detectedCount = result.grouped.detected.length;
@@ -241,6 +246,7 @@ export function AuditResultsSection({
         platform={result.platform.platform}
         assetCount={assetCount}
         scanContext={scanContext}
+        grouped={result.grouped}
       />
 
       <AuditMetadataCard metadata={result.auditMetadata} />
@@ -285,6 +291,7 @@ export function AuditResultsSection({
         auditUrl={result.url}
         reportId={reportId}
         scanContext={scanContext}
+        showInternalEvidence={founderModeActive}
       />
 
       <FindingSection

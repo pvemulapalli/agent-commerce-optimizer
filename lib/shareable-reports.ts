@@ -1,11 +1,13 @@
-import { randomBytes } from "crypto";
+import { randomBytes, timingSafeEqual } from "crypto";
 import { getCacheKey, normalizeAuditUrl } from "./cache";
 import { getRegistrableDomain } from "./domains";
 import type { EnrichedAuditResponse } from "./enrich-audit-response";
+import { buildShareReportPath } from "./share-report-url";
 import { getRedis, isRedisConfigured } from "./redis";
 import type { GenerateFixesApiResponse } from "./types";
 
 export const REDIS_REPORT_PREFIX = "aco:report:";
+export const REDIS_REPORT_AUDIT_PREFIX = "aco:report:audit:";
 
 export interface ShareableReportRecord {
   reportId: string;
@@ -15,14 +17,45 @@ export interface ShareableReportRecord {
   auditedUrl: string;
   result: EnrichedAuditResponse;
   fixes: GenerateFixesApiResponse | null;
+  accessKey?: string;
 }
 
 function getReportRedisKey(reportId: string): string {
   return `${REDIS_REPORT_PREFIX}${reportId}`;
 }
 
+function getAuditReportIndexKey(auditId: string): string {
+  return `${REDIS_REPORT_AUDIT_PREFIX}${auditId}`;
+}
+
 function generateReportId(): string {
-  return randomBytes(9).toString("base64url");
+  return randomBytes(16).toString("base64url");
+}
+
+export function generateReportAccessKey(): string {
+  return randomBytes(16).toString("base64url");
+}
+
+export function isValidReportId(reportId: string): boolean {
+  return /^[A-Za-z0-9_-]{12,64}$/.test(reportId);
+}
+
+export function reportAccessKeysMatch(
+  provided: string | null | undefined,
+  expected: string | null | undefined,
+): boolean {
+  if (!provided || !expected) {
+    return false;
+  }
+
+  const providedBuffer = Buffer.from(provided);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(providedBuffer, expectedBuffer);
 }
 
 function parseReportRecord(raw: unknown): ShareableReportRecord | null {
@@ -73,6 +106,20 @@ export async function getShareableReport(
   }
 }
 
+export async function getShareableReportForDomainAccess(input: {
+  domainOrUrl: string;
+  accessKey: string | null;
+}): Promise<ShareableReportRecord | null> {
+  const { getLatestDomainScanIndex } = await import("./domain-scan-index");
+  const index = await getLatestDomainScanIndex(input.domainOrUrl);
+
+  if (!index?.reportId || !reportAccessKeysMatch(input.accessKey, index.accessKey)) {
+    return null;
+  }
+
+  return getShareableReport(index.reportId);
+}
+
 export async function ensureShareableReport(
   result: EnrichedAuditResponse,
 ): Promise<{ reportId: string; shareUrl: string } | null> {
@@ -86,21 +133,20 @@ export async function ensureShareableReport(
 
   try {
     const redis = getRedis();
-    const existingKeys = await redis.keys(`${REDIS_REPORT_PREFIX}*`);
+    const existingReportId = await redis.get<string>(getAuditReportIndexKey(auditId));
 
-    for (const key of existingKeys) {
-      const raw = await redis.get(key);
-      const record = parseReportRecord(raw);
-
-      if (record?.auditId === auditId && record.auditedUrl === normalizedUrl) {
+    if (existingReportId) {
+      const existing = await getShareableReport(existingReportId);
+      if (existing?.auditedUrl === normalizedUrl) {
         return {
-          reportId: record.reportId,
-          shareUrl: `/report/${record.reportId}`,
+          reportId: existing.reportId,
+          shareUrl: buildShareReportPath(existing.reportId),
         };
       }
     }
 
     const reportId = generateReportId();
+    const accessKey = generateReportAccessKey();
     const record: ShareableReportRecord = {
       reportId,
       domain,
@@ -109,13 +155,18 @@ export async function ensureShareableReport(
       auditedUrl: normalizedUrl,
       result,
       fixes: null,
+      accessKey,
     };
 
     await redis.set(getReportRedisKey(reportId), JSON.stringify(record));
+    await redis.set(getAuditReportIndexKey(auditId), reportId);
+
+    const { updateDomainScanIndex } = await import("./domain-scan-index");
+    await updateDomainScanIndex({ audit: result, reportId, accessKey });
 
     return {
       reportId,
-      shareUrl: `/report/${reportId}`,
+      shareUrl: buildShareReportPath(reportId),
     };
   } catch (error) {
     console.error("[shareable-reports] create failed:", error);

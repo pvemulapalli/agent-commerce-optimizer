@@ -5,10 +5,8 @@ import { RecentAuditsControls } from "@/components/recent-audits-controls";
 import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import { RecentAuditsList } from "@/components/recent-audits";
 import { useRecentScans } from "@/hooks/use-recent-scans";
-import {
-  getReportLinkableScanIds,
-  RECENT_REPORT_LINK_LIMIT,
-} from "@/lib/recent-scan-links";
+import { RECENT_SCANS_PAGE_LIMIT } from "@/lib/scan-activity";
+import { getReportLinkableScanIds } from "@/lib/recent-scan-links";
 import {
   filterRecentAudits,
   parseRecentAuditSortDirection,
@@ -22,7 +20,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
 export default function RecentAuditsPage() {
-  const { activity, loading, error } = useRecentScans({ limit: 100, poll: false });
+  const { activity, loading, error } = useRecentScans({
+    limit: RECENT_SCANS_PAGE_LIMIT,
+    poll: false,
+  });
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -72,7 +73,7 @@ export default function RecentAuditsPage() {
       <PageHeader
         eyebrow="Global scan history"
         title="Recent Scans"
-        description={`Shared scan summaries across all users, stored in Redis. The ${RECENT_REPORT_LINK_LIMIT} most recent scans link to full reports on the homepage; older entries show summary data only.`}
+        description="Browse recent storefront scans across Merchant Signals. Search, filter, and open full reports for the latest activity."
       />
 
       {activity.platformStats.length > 0 ? (
@@ -106,12 +107,6 @@ export default function RecentAuditsPage() {
           </div>
         ) : (
           <>
-            {linkableEntryIds.size > 0 ? (
-              <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
-                The {RECENT_REPORT_LINK_LIMIT} most recent scans are highlighted and link to the full
-                report on the homepage. Older scans show summary data only.
-              </p>
-            ) : null}
             <RecentAuditsList
             entries={filteredEntries}
             sort={sort}

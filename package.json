@@ -11,6 +11,8 @@
     "validate:platforms": "tsx scripts/run-validation.ts",
     "validate:shopware": "tsx scripts/validate-shopware-detection.mts",
     "validate:magento": "tsx scripts/validate-magento-detection.mts",
+    "validate:commercetools": "tsx scripts/validate-commercetools-detection.mts",
+    "validate:bigcommerce": "tsx scripts/validate-bigcommerce-detection.mts",
     "admin:reset": "tsx scripts/reset-redis.ts",
     "release:add": "tsx scripts/release-add.mts",
     "release:docs": "tsx scripts/release-add.mts --docs-only",

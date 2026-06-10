@@ -3,6 +3,7 @@
 import { AuditProgressBar } from "@/components/audit-progress";
 import { BotVerificationNotice } from "@/components/bot-verification-notice";
 import { NonEcommerceNotice } from "@/components/non-ecommerce-notice";
+import { ScanFailureNotice } from "@/components/scan-failure-notice";
 import { ScanningRestrictedNotice } from "@/components/scanning-restricted-notice";
 import {
   TurnstileWidget,
@@ -10,8 +11,10 @@ import {
   getClientTurnstileSiteKey,
 } from "@/components/turnstile-widget";
 import { isBannedDomainError } from "@/lib/banned-domain-messages";
+import type { BotVerificationDiagnostic } from "@/lib/bot-verification-diagnostics";
 import { HERO_HEADLINE, HERO_SUPPORTING_COPY, PARENT_BRAND } from "@/lib/brand";
 import { FREE_SCAN_PRIMARY, FREE_SCAN_SECONDARY } from "@/lib/scan-messaging";
+import type { ScanFailureDiagnostic } from "@/lib/scan-failure-diagnostics";
 import { inputClass } from "@/lib/theme-classes";
 
 const BENEFITS = [
@@ -88,8 +91,10 @@ export function AuditHero({
   loading,
   error,
   nonEcommerceMessage,
-  botVerificationMessage,
+  botVerificationDiagnostic,
+  scanFailureDiagnostic,
   turnstileToken,
+  scanStartedAt,
   onUrlChange,
   onSubmit,
   onTurnstileTokenChange,
@@ -99,8 +104,10 @@ export function AuditHero({
   loading: boolean;
   error: string | null;
   nonEcommerceMessage: string | null;
-  botVerificationMessage: string | null;
+  botVerificationDiagnostic: BotVerificationDiagnostic | null;
+  scanFailureDiagnostic: ScanFailureDiagnostic | null;
   turnstileToken: string | null;
+  scanStartedAt: number | null;
   onUrlChange: (url: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onTurnstileTokenChange: (token: string | null) => void;
@@ -146,15 +153,22 @@ export function AuditHero({
           ))}
         </ul>
 
-        {loading ? <AuditProgressBar /> : null}
+        {loading ? <AuditProgressBar startedAt={scanStartedAt} /> : null}
 
         {restrictedDomain ? (
           <ScanningRestrictedNotice onScanAnother={onScanAnother} />
         ) : null}
 
-        {botVerificationMessage ? (
+        {botVerificationDiagnostic ? (
           <BotVerificationNotice
-            message={botVerificationMessage}
+            diagnostic={botVerificationDiagnostic}
+            onScanAnother={onScanAnother}
+          />
+        ) : null}
+
+        {scanFailureDiagnostic ? (
+          <ScanFailureNotice
+            diagnostic={scanFailureDiagnostic}
             onScanAnother={onScanAnother}
           />
         ) : null}
@@ -166,7 +180,11 @@ export function AuditHero({
           />
         ) : null}
 
-        {error && !restrictedDomain && !nonEcommerceMessage && !botVerificationMessage ? (
+        {error &&
+        !restrictedDomain &&
+        !nonEcommerceMessage &&
+        !botVerificationDiagnostic &&
+        !scanFailureDiagnostic ? (
           <div className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/50 dark:text-rose-200">
             {error}
           </div>

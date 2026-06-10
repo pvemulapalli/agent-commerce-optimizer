@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.5.7] - 2026-06-09
+
+### [Platform Detection]
+- Improved commercetools detection with additional SDK, API endpoint, Frontastic, and storefront route fingerprints
+- Added verified domain hint support for headless commercetools storefronts such as ee.co.uk
+
+### [UX]
+- Added Recommended Starting Point guidance below the Business Summary to highlight the highest-impact first action
+- Improved Business Summary language for non-technical business owners
+- Improved bot-blocked storefront messaging with clearer meaning and next steps
+- Enhanced scan failure diagnostics with specific user-facing explanations and confidence levels
+
+### [Infrastructure]
+- Added domain-based report permalink architecture with latest-report resolution per normalized domain
+- Added domain scan index and per-domain scan history foundation for future trend views
+- Added indexed report deduplication and duplicate-scan reuse foundations
+
+### [Analytics]
+- Added `permalink_opened` event for domain report permalinks
+- Normalized scan failure analytics reasons using structured error codes
+
+### [Fixes]
+- Differentiated DNS, SSL, 403, 429, 5xx, timeout, gateway, and not-found scan failures instead of a generic server error message
+
 ## [3.5.6] - 2026-06-08
 
 ### [Analytics]

@@ -13,6 +13,8 @@ export interface RecentScanRecord {
   readinessScore: number;
   grade: string;
   topGap: string;
+  reportId?: string;
+  shareUrl?: string;
 }
 
 export interface ScanActivityResponse {

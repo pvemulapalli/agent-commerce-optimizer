@@ -6,9 +6,11 @@ import { EcommerceIneligibleError } from "@/lib/ecommerce-eligibility";
 import { recordEcommerceRejection } from "@/lib/ecommerce-rejection-log";
 import { addNonEcommerceDomain } from "@/lib/non-ecommerce-domains";
 import { DomainUnreachableError } from "@/lib/domain-reachability";
+import { recordAuditHistory } from "@/lib/audit-history";
 import { runAudit } from "@/lib/run-audit";
 import { validateScanRequest } from "@/lib/scan-request";
 import { scanUrlSchema } from "@/lib/scan-request-schema";
+import { createScanFailureResponseFromError } from "@/lib/scan-failure-api";
 import { recordCompletedScan } from "@/lib/scan-activity";
 import { ensureShareableReport } from "@/lib/shareable-reports";
 import { NextResponse } from "next/server";
@@ -62,7 +64,21 @@ export async function POST(request: Request) {
       generationContext: auditRun.generationContext,
     });
     const shareable = await ensureShareableReport(response);
-    const scanRecord = await recordCompletedScan(response);
+
+    if (auditRun.cacheStatus !== "HIT") {
+      await recordAuditHistory({
+        audit: response,
+        confidenceScore: response.auditConfidence.score,
+        merchantName: response.auditMetadata.merchantName,
+        reportId: shareable?.reportId,
+      });
+    }
+
+    const scanRecord = await recordCompletedScan({
+      ...response,
+      reportId: shareable?.reportId,
+      shareUrl: shareable?.shareUrl,
+    });
 
     return NextResponse.json({
       ...response,
@@ -73,7 +89,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (error instanceof BotVerificationBlockedError) {
-      return createBotVerificationResponse();
+      return createBotVerificationResponse(error);
     }
 
     if (error instanceof EcommerceIneligibleError) {
@@ -90,7 +106,7 @@ export async function POST(request: Request) {
     }
 
     if (error instanceof DomainUnreachableError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return createScanFailureResponseFromError(error);
     }
 
     const message =

@@ -1,4 +1,11 @@
-export function buildShareReportUrl(reportId: string, origin?: string): string {
+export function buildShareReportPath(reportId: string): string {
+  return `/report/${reportId}`;
+}
+
+export function buildShareReportUrl(
+  reportId: string,
+  origin?: string,
+): string {
   const base = origin ?? (typeof window !== "undefined" ? window.location.origin : "");
-  return `${base}/report/${reportId}`;
+  return `${base}${buildShareReportPath(reportId)}`;
 }

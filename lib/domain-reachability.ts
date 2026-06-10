@@ -1,6 +1,7 @@
 import dns from "node:dns/promises";
 import {
   BotVerificationBlockedError,
+  buildBotVerificationDiagnostic,
   detectBotVerificationInCrawl,
   isBotVerificationResponse,
 } from "./bot-verification";
@@ -13,6 +14,10 @@ import {
   SITE_ERROR_MESSAGE,
   SSL_CERTIFICATE_MESSAGE,
 } from "./gateway-errors";
+import {
+  buildScanFailureDiagnostic,
+  type ScanFailureDiagnostic,
+} from "./scan-failure-diagnostics";
 import { isValidAuditHostname } from "./audit-url-validation";
 import type { CrawlData, PageData } from "./types";
 
@@ -34,15 +39,23 @@ export {
 };
 
 export class DomainUnreachableError extends Error {
-  constructor(message = DOMAIN_UNREACHABLE_MESSAGE) {
-    super(message);
+  diagnostic: ScanFailureDiagnostic;
+
+  constructor(diagnostic?: ScanFailureDiagnostic | string) {
+    const resolved =
+      typeof diagnostic === "string"
+        ? buildScanFailureDiagnostic("site_unreachable", { message: diagnostic })
+        : (diagnostic ?? buildScanFailureDiagnostic("site_unreachable"));
+
+    super(resolved.message);
     this.name = "DomainUnreachableError";
+    this.diagnostic = resolved;
   }
 }
 
 export class DnsResolutionError extends DomainUnreachableError {
   constructor(message = DNS_RESOLUTION_MESSAGE) {
-    super(message);
+    super(buildScanFailureDiagnostic("dns_failure", { message }));
     this.name = "DnsResolutionError";
   }
 }
@@ -91,26 +104,55 @@ async function probeSite(url: URL): Promise<void> {
       bodyText: snippet,
       headers: response.headers,
     })) {
-      throw new BotVerificationBlockedError();
+      throw new BotVerificationBlockedError(
+        buildBotVerificationDiagnostic({
+          status: response.status,
+          bodyText: snippet,
+          headers: response.headers,
+        }),
+      );
     }
 
     if (isGatewayErrorContent(snippet)) {
-      throw new DomainUnreachableError(gatewayErrorMessage(snippet));
+      throw new DomainUnreachableError(
+        buildScanFailureDiagnostic("gateway_error", {
+          message: gatewayErrorMessage(snippet),
+        }),
+      );
+    }
+
+    if (response.status === 403) {
+      throw new DomainUnreachableError(
+        buildScanFailureDiagnostic("blocked_403", { httpStatus: 403 }),
+      );
+    }
+
+    if (response.status === 429) {
+      throw new DomainUnreachableError(
+        buildScanFailureDiagnostic("rate_limited_429", { httpStatus: 429 }),
+      );
     }
 
     if (response.status >= 500) {
-      throw new DomainUnreachableError(SITE_ERROR_MESSAGE);
+      throw new DomainUnreachableError(
+        buildScanFailureDiagnostic("origin_5xx", {
+          message: SITE_ERROR_MESSAGE,
+          httpStatus: response.status,
+        }),
+      );
     }
 
     if (response.status === 404 || response.status === 410) {
-      throw new DomainUnreachableError();
+      throw new DomainUnreachableError(
+        buildScanFailureDiagnostic("not_found", { httpStatus: response.status }),
+      );
     }
 
     if (
       !contentType.includes("text/html") &&
       !contentType.includes("application/xhtml")
     ) {
-      throw new DomainUnreachableError();
+      throw new DomainUnreachableError(buildScanFailureDiagnostic("site_unreachable"));
     }
   } catch (error) {
     if (error instanceof BotVerificationBlockedError) {
@@ -121,7 +163,22 @@ async function probeSite(url: URL): Promise<void> {
       throw error;
     }
 
-    throw new DomainUnreachableError(mapFetchReachabilityError(error));
+    const mappedMessage = mapFetchReachabilityError(error);
+    if (/timeout|abort|timed out/i.test(mappedMessage)) {
+      throw new DomainUnreachableError(buildScanFailureDiagnostic("timeout"));
+    }
+
+    if (/redirect/i.test(mappedMessage)) {
+      throw new DomainUnreachableError(buildScanFailureDiagnostic("redirect_loop"));
+    }
+
+    if (mappedMessage === SSL_CERTIFICATE_MESSAGE) {
+      throw new DomainUnreachableError(buildScanFailureDiagnostic("ssl_failure"));
+    }
+
+    throw new DomainUnreachableError(
+      buildScanFailureDiagnostic("site_unreachable", { message: mappedMessage }),
+    );
   } finally {
     clearTimeout(timeout);
   }
@@ -138,7 +195,7 @@ function findEntryPage(data: CrawlData): PageData | undefined {
 /** Rejects crawls where every page failed or the entry is a gateway/SSL error page. */
 export function assertMinimumCrawlHealth(data: CrawlData): void {
   if (detectBotVerificationInCrawl(data)) {
-    throw new BotVerificationBlockedError();
+    throw new BotVerificationBlockedError(buildBotVerificationDiagnostic());
   }
 
   const entry = findEntryPage(data);
@@ -151,13 +208,30 @@ export function assertMinimumCrawlHealth(data: CrawlData): void {
       isGatewayErrorContent(entryHaystack))
   ) {
     if (detectBotVerificationInCrawl(data)) {
-      throw new BotVerificationBlockedError();
+      throw new BotVerificationBlockedError(buildBotVerificationDiagnostic());
+    }
+
+    if (entry.status === 403) {
+      throw new DomainUnreachableError(
+        buildScanFailureDiagnostic("blocked_403", { httpStatus: 403 }),
+      );
+    }
+
+    if (entry.status === 429) {
+      throw new DomainUnreachableError(
+        buildScanFailureDiagnostic("rate_limited_429", { httpStatus: 429 }),
+      );
     }
 
     throw new DomainUnreachableError(
       isGatewayErrorContent(entryHaystack)
-        ? gatewayErrorMessage(entryHaystack)
-        : SITE_ERROR_MESSAGE,
+        ? buildScanFailureDiagnostic("gateway_error", {
+            message: gatewayErrorMessage(entryHaystack),
+          })
+        : buildScanFailureDiagnostic("origin_5xx", {
+            message: SITE_ERROR_MESSAGE,
+            httpStatus: entry.status,
+          }),
     );
   }
 
@@ -167,10 +241,12 @@ export function assertMinimumCrawlHealth(data: CrawlData): void {
 
   if (healthyPages.length === 0) {
     if (detectBotVerificationInCrawl(data)) {
-      throw new BotVerificationBlockedError();
+      throw new BotVerificationBlockedError(buildBotVerificationDiagnostic());
     }
 
-    throw new DomainUnreachableError(SITE_ERROR_MESSAGE);
+    throw new DomainUnreachableError(
+      buildScanFailureDiagnostic("origin_5xx", { message: SITE_ERROR_MESSAGE }),
+    );
   }
 }
 
@@ -181,16 +257,16 @@ export async function validateDomainReachability(inputUrl: string): Promise<void
   try {
     url = new URL(inputUrl);
   } catch {
-    throw new DomainUnreachableError();
+    throw new DomainUnreachableError(buildScanFailureDiagnostic("invalid_hostname"));
   }
 
   if (!["http:", "https:"].includes(url.protocol)) {
-    throw new DomainUnreachableError();
+    throw new DomainUnreachableError(buildScanFailureDiagnostic("invalid_hostname"));
   }
 
   const hostname = url.hostname;
   if (!isValidAuditHostname(hostname)) {
-    throw new DomainUnreachableError();
+    throw new DomainUnreachableError(buildScanFailureDiagnostic("invalid_hostname"));
   }
 
   await resolveHostname(hostname);

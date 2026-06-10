@@ -96,6 +96,20 @@ User copied a shareable report link.
 
 ---
 
+### `permalink_opened`
+
+User opened a domain-based report permalink.
+
+| Property | Required | Notes |
+| --- | --- | --- |
+| `reportId` | Yes | Shareable report ID |
+| `domainSlug` | Yes | Domain slug from `/report/d/{slug}` |
+| `domain`, `platform`, `score`, `grade`, `top_gap` | No | From stored report context |
+
+**Triggered:** Domain permalink page load (`app/report/d/[domainSlug]/report-client.tsx`).
+
+---
+
 ### `fix_prompt_copied`
 
 User copied an AI fix prompt for a finding.

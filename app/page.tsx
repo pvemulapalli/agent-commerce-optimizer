@@ -9,7 +9,10 @@ import { RecentAuditsPreview } from "@/components/recent-audits";
 import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
 import { isBotVerificationScanResponse } from "@/lib/bot-verification-messages";
+import type { BotVerificationDiagnostic } from "@/lib/bot-verification-diagnostics";
 import { isNonEcommerceScanResponse } from "@/lib/non-ecommerce-messages";
+import { isScanFailureResponse } from "@/lib/scan-failure-diagnostics";
+import type { ScanFailureDiagnostic } from "@/lib/scan-failure-diagnostics";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
 import { normalizeAuditUrl } from "@/lib/audit-url";
 import { getAuditUrlValidationError } from "@/lib/audit-url-validation";
@@ -54,12 +57,16 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nonEcommerceMessage, setNonEcommerceMessage] = useState<string | null>(null);
-  const [botVerificationMessage, setBotVerificationMessage] = useState<string | null>(null);
+  const [botVerificationDiagnostic, setBotVerificationDiagnostic] =
+    useState<BotVerificationDiagnostic | null>(null);
+  const [scanFailureDiagnostic, setScanFailureDiagnostic] =
+    useState<ScanFailureDiagnostic | null>(null);
   const [result, setResult] = useState<AuditResponse | null>(null);
   const [fixesLoading, setFixesLoading] = useState(false);
   const [fixesError, setFixesError] = useState<string | null>(null);
   const [fixes, setFixes] = useState<FixesResponse | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [scanStartedAt, setScanStartedAt] = useState<number | null>(null);
   const [feedNotifications, setFeedNotifications] = useState<RecentScanRecord[]>([]);
   const [loadingRecentId, setLoadingRecentId] = useState<string | null>(null);
   const loadedReportUrlRef = useRef<string | null>(null);
@@ -133,13 +140,21 @@ export default function Home() {
   }
 
   async function loadRecentAudit(entry: RecentScanRecord) {
+    if (entry.shareUrl) {
+      trackRecentScanClickedFromEntry(entry);
+      window.location.assign(entry.shareUrl);
+      return;
+    }
+
     const scanUrl = normalizeAuditUrl(entry.url);
     setUrl(scanUrl);
     setLoading(true);
+    setScanStartedAt(Date.now());
     setLoadingRecentId(entry.id);
     setError(null);
     setNonEcommerceMessage(null);
-    setBotVerificationMessage(null);
+    setBotVerificationDiagnostic(null);
+    setScanFailureDiagnostic(null);
     setResult(null);
     setFixes(null);
     setFixesError(null);
@@ -164,7 +179,7 @@ export default function Home() {
       );
 
       if (isBotVerificationScanResponse(data)) {
-        setBotVerificationMessage(data.message);
+        setBotVerificationDiagnostic(data);
         trackScanFailedFromUrl(scanUrl, "bot_verification_blocked");
         return;
       }
@@ -172,6 +187,12 @@ export default function Home() {
       if (isNonEcommerceScanResponse(data)) {
         setNonEcommerceMessage(data.message);
         trackScanFailedFromUrl(scanUrl, "non_ecommerce_site");
+        return;
+      }
+
+      if (isScanFailureResponse(data)) {
+        setScanFailureDiagnostic(data);
+        trackScanFailedFromUrl(scanUrl, data.code);
         return;
       }
 
@@ -195,6 +216,7 @@ export default function Home() {
       );
     } finally {
       setLoading(false);
+      setScanStartedAt(null);
       setLoadingRecentId(null);
     }
   }
@@ -251,9 +273,11 @@ export default function Home() {
     }
 
     setLoading(true);
+    setScanStartedAt(Date.now());
     setError(null);
     setNonEcommerceMessage(null);
-    setBotVerificationMessage(null);
+    setBotVerificationDiagnostic(null);
+    setScanFailureDiagnostic(null);
     setResult(null);
     setFixes(null);
     setFixesError(null);
@@ -277,7 +301,7 @@ export default function Home() {
       );
 
       if (isBotVerificationScanResponse(data)) {
-        setBotVerificationMessage(data.message);
+        setBotVerificationDiagnostic(data);
         trackScanFailedFromUrl(targetUrl, "bot_verification_blocked");
         return;
       }
@@ -285,6 +309,12 @@ export default function Home() {
       if (isNonEcommerceScanResponse(data)) {
         setNonEcommerceMessage(data.message);
         trackScanFailedFromUrl(targetUrl, "non_ecommerce_site");
+        return;
+      }
+
+      if (isScanFailureResponse(data)) {
+        setScanFailureDiagnostic(data);
+        trackScanFailedFromUrl(targetUrl, data.code);
         return;
       }
 
@@ -310,6 +340,7 @@ export default function Home() {
       );
     } finally {
       setLoading(false);
+      setScanStartedAt(null);
     }
   }
 
@@ -327,8 +358,10 @@ export default function Home() {
             loading={loading}
             error={error}
             nonEcommerceMessage={nonEcommerceMessage}
-            botVerificationMessage={botVerificationMessage}
+            botVerificationDiagnostic={botVerificationDiagnostic}
+            scanFailureDiagnostic={scanFailureDiagnostic}
             turnstileToken={turnstileToken}
+            scanStartedAt={scanStartedAt}
             onUrlChange={setUrl}
             onSubmit={handleSubmit}
             onTurnstileTokenChange={setTurnstileToken}
@@ -336,7 +369,8 @@ export default function Home() {
               trackNewScanClicked(result?.reportId);
               setError(null);
               setNonEcommerceMessage(null);
-              setBotVerificationMessage(null);
+              setBotVerificationDiagnostic(null);
+              setScanFailureDiagnostic(null);
               setUrl("");
               setResult(null);
               setFixes(null);

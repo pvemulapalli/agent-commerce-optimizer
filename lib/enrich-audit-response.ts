@@ -1,6 +1,5 @@
 import { computeAuditConfidence } from "./audit-confidence";
 import { buildAuditReportMetadata } from "./audit-metadata";
-import { recordAuditHistory } from "./audit-history";
 import { getPlatformBenchmark } from "./benchmarking";
 import type { AuditConfidenceReport } from "./audit-confidence";
 import type { AuditReportMetadata } from "./audit-metadata";
@@ -38,14 +37,6 @@ export async function enrichAuditResponse(input: {
     platform: input.audit.platform.platform,
     score: report.score,
   });
-
-  if (input.audit.cacheStatus !== "HIT") {
-    await recordAuditHistory({
-      audit: input.audit,
-      confidenceScore: auditConfidence.score,
-      merchantName: auditMetadata.merchantName,
-    });
-  }
 
   return {
     ...input.audit,

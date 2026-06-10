@@ -239,6 +239,18 @@ export function trackReportViewed(context: ScanAnalyticsProperties & { reportId:
   );
 }
 
+export function trackPermalinkOpened(
+  context: ScanAnalyticsProperties & { reportId: string; domainSlug: string },
+): void {
+  void captureAnalyticsEvent(
+    "permalink_opened",
+    withScanContext(context, {
+      reportId: context.reportId,
+      domainSlug: context.domainSlug,
+    }),
+  );
+}
+
 export function trackNewScanClicked(currentReportId?: string): void {
   void captureAnalyticsEvent("new_scan_clicked", {
     currentReportId: currentReportId ?? null,

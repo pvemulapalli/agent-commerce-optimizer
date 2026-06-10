@@ -3,6 +3,7 @@
 import { AuditResultsSection } from "@/components/audit-results";
 import { trackReportViewed } from "@/lib/analytics-events";
 import { scanContextFromAudit } from "@/lib/analytics-properties";
+import { buildShareReportUrl } from "@/lib/share-report-url";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import type { GenerateFixesApiResponse } from "@/lib/types";
 import Link from "next/link";
@@ -37,7 +38,7 @@ export function SharedReportView({ reportId }: { reportId: string }) {
         }
 
         setResult(data.result);
-        setShareUrl(`/report/${reportId}`);
+        setShareUrl(buildShareReportUrl(reportId));
         trackReportViewed({
           reportId,
           ...scanContextFromAudit(data.result),
