@@ -165,11 +165,27 @@ export function classifyFullAuditFailure(error: unknown): FullAuditFailureInfo {
   }
 
   if (error instanceof DomainUnreachableError) {
-    return buildFullAuditFailureInfo(mapScanFailureCode(error.diagnostic.code), {
-      httpStatus: error.diagnostic.httpStatus,
-      message: error.diagnostic.message.startsWith("Technology signals")
-        ? error.diagnostic.message
-        : undefined,
+    const diagnostic = error.diagnostic;
+    const useDiagnosticCopy =
+      diagnostic.code === "headers_overflow" ||
+      diagnostic.message.startsWith("Technology signals");
+
+    return buildFullAuditFailureInfo(mapScanFailureCode(diagnostic.code), {
+      httpStatus: diagnostic.httpStatus,
+      ...(useDiagnosticCopy
+        ? {
+            title: diagnostic.title,
+            message: diagnostic.message,
+            ...(diagnostic.code === "headers_overflow"
+              ? {
+                  suggestedNextSteps: [
+                    "Ask your web team to review oversized security headers such as Content-Security-Policy.",
+                    "Retry after header configuration changes, or scan a lighter entry URL if available.",
+                  ],
+                }
+              : {}),
+          }
+        : {}),
     });
   }
 

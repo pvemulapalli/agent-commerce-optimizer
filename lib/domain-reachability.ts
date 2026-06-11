@@ -20,11 +20,12 @@ import {
   type ScanFailureDiagnostic,
 } from "./scan-failure-diagnostics";
 import { isValidAuditHostname } from "./audit-url-validation";
+import { MERCHANT_SIGNALS_CRAWLER_USER_AGENT } from "./crawler-identity";
+import { storefrontFetch } from "./storefront-fetch";
 import type { CrawlData, PageData } from "./types";
 
 const REACHABILITY_TIMEOUT_MS = 12_000;
-const USER_AGENT =
-  "AI-Commerce-Discoverability-Audit/1.2 (+https://github.com/agent-commerce-optimizer)";
+const USER_AGENT = MERCHANT_SIGNALS_CRAWLER_USER_AGENT;
 
 export const DOMAIN_UNREACHABLE_MESSAGE =
   "Unable to reach this website. Please verify the URL and try again.";
@@ -86,7 +87,7 @@ async function probeSite(url: URL): Promise<void> {
   const timeout = setTimeout(() => controller.abort(), REACHABILITY_TIMEOUT_MS);
 
   try {
-    const response = await fetch(url.href, {
+    const response = await storefrontFetch(url.href, {
       method: "GET",
       signal: controller.signal,
       redirect: "follow",

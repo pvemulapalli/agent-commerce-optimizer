@@ -395,6 +395,12 @@ export function trackContactClicked(location: "header" | "footer" | "mobile_nav"
   void captureAnalyticsEvent("contact_clicked", { location });
 }
 
+export function trackCrawlerPageViewed(referrer: string | null): void {
+  void captureAnalyticsEvent("crawler_page_viewed", {
+    referrer: referrer || null,
+  });
+}
+
 export function trackFeedbackSubmitted(sentiment: string, reportId?: string): void {
   void captureAnalyticsEvent("feedback_submitted", {
     sentiment,

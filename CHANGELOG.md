@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.5.9] - 2026-06-10
+
+### [Infrastructure]
+- Added official `MerchantSignalsBot/1.0` User-Agent for storefront crawl requests with a link to the crawler transparency page
+- Added `/crawler` to the public sitemap
+
+### [Transparency]
+- Added public Merchant Signals Crawler page documenting MerchantSignalsBot purpose, behavior, contact information, opt-out guidance, and robots transparency
+- Added placeholder section for future crawler verification information
+
+### [Crawler]
+- MerchantSignalsBot performs read-only analysis of public storefront content and does not impersonate browsers or search engines
+
+### [Analytics]
+- Added `crawler_page_viewed` event with `referrer` property
+
 ## [3.5.8] - 2026-06-10
 
 ### [Infrastructure]

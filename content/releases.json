@@ -1,6 +1,23 @@
 {
   "releases": [
     {
+      "version": "3.5.9",
+      "date": "2026-06-10",
+      "title": "MerchantSignalsBot Transparency Page",
+      "summary": "Added a public crawler transparency page documenting MerchantSignalsBot, including crawler purpose, behavior, contact information, and opt-out guidance. This improves transparency and prepares Merchant Signals for future merchant and platform engagement.",
+      "categories": [
+        "Infrastructure",
+        "Transparency",
+        "Crawler"
+      ],
+      "changes": [
+        "Added official MerchantSignalsBot User-Agent for storefront crawl requests",
+        "Added public /crawler transparency page with purpose, behavior, contact, and opt-out guidance",
+        "Added Crawler footer link and crawler_page_viewed analytics event",
+        "Prepared structure for future crawler verification and IP range documentation"
+      ]
+    },
+    {
       "version": "3.5.8",
       "date": "2026-06-10",
       "title": "Storefront Review Request Workflow",

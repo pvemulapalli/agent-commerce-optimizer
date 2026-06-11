@@ -16,6 +16,7 @@ export const PUBLIC_SITEMAP_PATHS = [
   "/api-docs",
   "/release-notes",
   "/contributors",
+  "/crawler",
   "/contact",
 ] as const;
 

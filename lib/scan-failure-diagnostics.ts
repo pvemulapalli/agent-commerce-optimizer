@@ -20,6 +20,7 @@ export type ScanFailureCode =
   | "gateway_error"
   | "not_found"
   | "site_unreachable"
+  | "headers_overflow"
   | "unknown";
 
 export interface ScanFailureDiagnostic {
@@ -105,6 +106,12 @@ const DIAGNOSTIC_COPY: Record<
       "Merchant Signals could not retrieve a usable HTML response from this storefront. Verify the URL and try again.",
     confidence: "medium",
   },
+  headers_overflow: {
+    title: "Storefront returned oversized HTTP headers",
+    message:
+      "This storefront returned unusually large HTTP response headers (often from extensive security policies) that blocked automated analysis before the page body could be read.",
+    confidence: "high",
+  },
   unknown: {
     title: "Scan could not be completed",
     message:
@@ -181,6 +188,10 @@ export function diagnosticFromReachabilityError(error: unknown): ScanFailureDiag
 
     if (/invalid hostname|valid website url/i.test(combined)) {
       return buildScanFailureDiagnostic("invalid_hostname");
+    }
+
+    if (/headers overflow|header overflow|hpe_header_overflow|max.*header.*size exceeded/i.test(combined)) {
+      return buildScanFailureDiagnostic("headers_overflow");
     }
   }
 

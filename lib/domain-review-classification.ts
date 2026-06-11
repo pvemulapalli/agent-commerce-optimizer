@@ -23,6 +23,7 @@ export function classifyDomainReviewTypeFromScanFailureCode(
     case "not_found":
     case "invalid_hostname":
     case "site_unreachable":
+    case "headers_overflow":
     case "unknown":
       return "UNKNOWN";
     default:

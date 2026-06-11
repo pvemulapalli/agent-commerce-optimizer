@@ -60,6 +60,18 @@ export default function ContactPage() {
 
         <dl className="mt-6 space-y-5 text-sm">
           <div>
+            <dt className="font-medium text-text-secondary">Email</dt>
+            <dd className="mt-1">
+              <a
+                href="mailto:contact@merchantsignals.com"
+                className="break-all text-blue-900 hover:underline dark:text-blue-300"
+              >
+                contact@merchantsignals.com
+              </a>
+            </dd>
+          </div>
+
+          <div>
             <dt className="font-medium text-text-secondary">X</dt>
             <dd className="mt-1">
               <a

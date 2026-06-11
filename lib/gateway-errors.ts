@@ -8,6 +8,9 @@ export const SITE_ERROR_MESSAGE =
 export const SSL_CERTIFICATE_MESSAGE =
   "This website's SSL certificate could not be verified. The scan cannot run until the site's certificate is valid.";
 
+export const HEADERS_OVERFLOW_MESSAGE =
+  "This storefront returned unusually large HTTP response headers (often from extensive security policies) that blocked automated analysis before the page body could be read.";
+
 const GATEWAY_ERROR_PATTERNS = [
   /502 bad gateway/i,
   /503 service unavailable/i,
@@ -71,6 +74,13 @@ export function formatFetchError(error: unknown): string {
   return parts.filter(Boolean).join(": ");
 }
 
+export function isHeadersOverflowError(error: unknown): boolean {
+  const combined = combinedFetchErrorText(error);
+  return /headers overflow|header overflow|hpe_header_overflow|max.*header.*size exceeded/i.test(
+    combined,
+  );
+}
+
 function combinedFetchErrorText(error: unknown): string {
   if (typeof error === "string") {
     return error.toLowerCase();
@@ -118,6 +128,10 @@ export function classifyFetchFailureCode(error: unknown): ScanFailureCode | null
     return "redirect_loop";
   }
 
+  if (isHeadersOverflowError(error)) {
+    return "headers_overflow";
+  }
+
   if (/econnrefused|econnreset|enetunreach|ehostunreach|network/i.test(combined)) {
     return "site_unreachable";
   }
@@ -142,6 +156,10 @@ export function mapFetchReachabilityError(error: unknown): string {
 
   if (code === "redirect_loop") {
     return "The storefront redirected repeatedly and never returned a stable page. Check canonical URLs and redirect rules.";
+  }
+
+  if (code === "headers_overflow") {
+    return HEADERS_OVERFLOW_MESSAGE;
   }
 
   if (error instanceof Error) {

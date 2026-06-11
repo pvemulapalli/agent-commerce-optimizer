@@ -20,6 +20,7 @@ const ELIGIBLE_FAILURE_TYPES = new Set<string>([
   "timeout",
   "unknown",
   "site_unreachable",
+  "headers_overflow",
   "redirect_loop",
   "ssl_failure",
   "ssl_error",

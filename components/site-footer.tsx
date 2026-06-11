@@ -12,6 +12,7 @@ const FOOTER_LINKS = [
   { href: "/docs", label: "API Docs" },
   { href: "/release-notes", label: "Release Notes" },
   { href: "/contributors", label: "Contributors" },
+  { href: "/crawler", label: "Crawler" },
   { href: "/contact", label: "Contact" },
 ];
 

@@ -15,12 +15,13 @@ import {
 } from "./sitemap";
 import type { CrawlData, PageData, ResourceFetch } from "./types";
 import { formatFetchError } from "./gateway-errors";
+import { MERCHANT_SIGNALS_CRAWLER_USER_AGENT } from "./crawler-identity";
+import { storefrontFetch } from "./storefront-fetch";
 
 const FETCH_TIMEOUT_MS = 15_000;
 const MAX_LINK_FOLLOW_UP_PAGES = 5;
 const MAX_RELATED_DOMAIN_PAGES = 10;
-const USER_AGENT =
-  "AI-Commerce-Discoverability-Audit/1.2 (+https://github.com/agent-commerce-optimizer)";
+const USER_AGENT = MERCHANT_SIGNALS_CRAWLER_USER_AGENT;
 
 const RELEVANCE_KEYWORDS = [
   "returns",
@@ -169,7 +170,7 @@ async function fetchWithTimeout(
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    return await fetch(url, {
+    return await storefrontFetch(url, {
       signal: controller.signal,
       headers: {
         "User-Agent": USER_AGENT,
