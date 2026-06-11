@@ -1,294 +1,76 @@
-import { normalizeHostname } from "./banned-domains";
-import { normalizeAuditUrl } from "./audit-url";
+export {
+  addNonEcommerceDomain,
+  createQuarantinedNonEcommerceResponse,
+  createDomainReviewBlockedResponse,
+  evaluateDomainReviewBlock,
+  getDomainReviewQueue,
+  getDomainReviewRecord,
+  isQuarantinedNonEcommerceDomain,
+  isQuarantinedNonEcommerceUrl,
+  normalizeDomainReviewInput as normalizeNonEcommerceDomainInput,
+  recordDomainReviewFailure,
+  removeDomainReviewRecord as removeNonEcommerceDomain,
+  upsertDomainReviewRecord,
+  updateDomainReviewNotes as updateNonEcommerceDomainNotes,
+  updateDomainReviewStatus,
+  REDIS_DOMAIN_REVIEW_QUEUE_KEY as REDIS_NON_ECOMMERCE_DOMAINS_KEY,
+} from "./domain-review-queue";
+
+export type { DomainReviewRecord as NonEcommerceDomainRecord } from "./domain-review-queue";
+
+import type { DomainReviewRecord } from "./domain-review-queue";
 import {
-  QUARANTINED_NON_ECOMMERCE_MESSAGE,
-  QUARANTINED_NON_ECOMMERCE_SCAN_STATUS,
-} from "./non-ecommerce-quarantine-messages";
-import { getRedis, isRedisConfigured } from "./redis";
+  getDomainReviewQueue,
+  normalizeDomainReviewInput,
+  updateDomainReviewStatus,
+} from "./domain-review-queue";
 
-export const REDIS_NON_ECOMMERCE_DOMAINS_KEY = "aco:admin:non-ecommerce-domains";
-
-export interface NonEcommerceDomainRecord {
-  domain: string;
-  reason: string;
-  firstDetectedAt: string;
-  reviewed: boolean;
-  reviewedBy: string | null;
-  notes: string | null;
-}
-
-function parseStoredRecords(raw: unknown): NonEcommerceDomainRecord[] | null {
-  if (!raw) {
-    return null;
-  }
-
-  let parsed: unknown = raw;
-
-  if (typeof raw === "string") {
-    parsed = JSON.parse(raw) as unknown;
-  }
-
-  if (!Array.isArray(parsed)) {
-    return null;
-  }
-
-  return parsed
-    .map((entry) => {
-      if (!entry || typeof entry !== "object") {
-        return null;
-      }
-
-      const record = entry as Record<string, unknown>;
-      const domain = normalizeStoredDomain(String(record.domain ?? ""));
-
-      if (!domain) {
-        return null;
-      }
-
-      return {
-        domain,
-        reason: String(record.reason ?? "non_ecommerce"),
-        firstDetectedAt: String(record.firstDetectedAt ?? new Date().toISOString()),
-        reviewed: Boolean(record.reviewed),
-        reviewedBy:
-          record.reviewedBy === null || record.reviewedBy === undefined
-            ? null
-            : String(record.reviewedBy),
-        notes:
-          record.notes === null || record.notes === undefined
-            ? null
-            : String(record.notes),
-      } satisfies NonEcommerceDomainRecord;
-    })
-    .filter((entry): entry is NonEcommerceDomainRecord => Boolean(entry));
-}
-
-async function readRecords(): Promise<NonEcommerceDomainRecord[]> {
-  if (!isRedisConfigured()) {
-    return [];
-  }
-
-  try {
-    const redis = getRedis();
-    const raw = await redis.get(REDIS_NON_ECOMMERCE_DOMAINS_KEY);
-    const parsed = parseStoredRecords(raw) ?? [];
-    return dedupeRecords(parsed);
-  } catch (error) {
-    console.error("[non-ecommerce-domains] read failed:", error);
-    return [];
-  }
-}
-
-function dedupeRecords(records: NonEcommerceDomainRecord[]): NonEcommerceDomainRecord[] {
-  const byDomain = new Map<string, NonEcommerceDomainRecord>();
-
-  for (const record of records) {
-    const existing = byDomain.get(record.domain);
-    if (!existing) {
-      byDomain.set(record.domain, record);
-      continue;
-    }
-
-    byDomain.set(record.domain, {
-      ...existing,
-      reviewed: existing.reviewed || record.reviewed,
-      reviewedBy: existing.reviewedBy ?? record.reviewedBy,
-      notes: existing.notes ?? record.notes,
-      firstDetectedAt:
-        new Date(existing.firstDetectedAt).getTime() <=
-        new Date(record.firstDetectedAt).getTime()
-          ? existing.firstDetectedAt
-          : record.firstDetectedAt,
-    });
-  }
-
-  return [...byDomain.values()];
-}
-
-async function writeRecords(records: NonEcommerceDomainRecord[]): Promise<void> {
-  if (!isRedisConfigured()) {
-    throw new Error("Redis is not configured. Non-ecommerce domain quarantine requires Redis.");
-  }
-
-  const redis = getRedis();
-  await redis.set(REDIS_NON_ECOMMERCE_DOMAINS_KEY, JSON.stringify(records));
-}
-
-export async function getNonEcommerceDomains(search?: string): Promise<NonEcommerceDomainRecord[]> {
-  const records = await readRecords();
-
-  if (!search?.trim()) {
-    return records.sort(
-      (left, right) =>
-        new Date(right.firstDetectedAt).getTime() - new Date(left.firstDetectedAt).getTime(),
-    );
-  }
-
-  const query = search.trim().toLowerCase();
+/** @deprecated Use getDomainReviewQueue */
+export async function getNonEcommerceDomains(search?: string): Promise<
+  Array<{
+    domain: string;
+    reason: string;
+    firstDetectedAt: string;
+    reviewed: boolean;
+    reviewedBy: string | null;
+    notes: string | null;
+  }>
+> {
+  const records = await getDomainReviewQueue(search);
   return records
-    .filter(
-      (record) =>
-        record.domain.includes(query) ||
-        record.reason.toLowerCase().includes(query) ||
-        (record.notes?.toLowerCase().includes(query) ?? false),
-    )
-    .sort(
-      (left, right) =>
-        new Date(right.firstDetectedAt).getTime() - new Date(left.firstDetectedAt).getTime(),
-    );
+    .filter((record) => record.type === "NON_ECOMMERCE")
+    .map(toLegacyNonEcommerceRecord);
 }
 
-export async function getNonEcommerceDomain(
-  domain: string,
-): Promise<NonEcommerceDomainRecord | undefined> {
-  const normalized = normalizeNonEcommerceDomainInput(domain);
-  return (await readRecords()).find((record) => record.domain === normalized);
+/** @deprecated Use getDomainReviewRecord */
+export async function getNonEcommerceDomain(domain: string) {
+  const { getDomainReviewRecord } = await import("./domain-review-queue");
+  const record = await getDomainReviewRecord(domain);
+  return record?.type === "NON_ECOMMERCE" ? toLegacyNonEcommerceRecord(record) : undefined;
 }
 
-export async function isQuarantinedNonEcommerceDomain(hostname: string): Promise<boolean> {
-  const normalized = normalizeNonEcommerceDomainInput(hostname);
-  return (await readRecords()).some((record) => {
-    return record.domain === normalized || normalized.endsWith(`.${record.domain}`);
-  });
-}
-
-export async function isQuarantinedNonEcommerceUrl(url: string): Promise<boolean> {
-  try {
-    const hostname = new URL(normalizeAuditUrl(url)).hostname;
-    return isQuarantinedNonEcommerceDomain(hostname);
-  } catch {
-    return false;
-  }
-}
-
-export async function addNonEcommerceDomain(input: {
-  domain: string;
-  reason: string;
-}): Promise<NonEcommerceDomainRecord> {
-  const domain = normalizeNonEcommerceDomainInput(input.domain);
-  const records = await readRecords();
-  const existing = records.find((record) => record.domain === domain);
-
-  if (existing) {
-    return existing;
-  }
-
-  const record: NonEcommerceDomainRecord = {
-    domain,
-    reason: input.reason.trim() || "non_ecommerce",
-    firstDetectedAt: new Date().toISOString(),
-    reviewed: false,
-    reviewedBy: null,
-    notes: null,
-  };
-
-  await writeRecords(dedupeRecords([record, ...records]));
-  return record;
-}
-
-export async function removeNonEcommerceDomain(domain: string): Promise<boolean> {
-  const normalized = normalizeNonEcommerceDomainInput(domain);
-  const records = await readRecords();
-  const next = records.filter((record) => record.domain !== normalized);
-
-  if (next.length === records.length) {
-    return false;
-  }
-
-  await writeRecords(next);
-  return true;
-}
-
+/** @deprecated Use updateDomainReviewStatus with APPROVED */
 export async function approveNonEcommerceDomain(input: {
   domain: string;
   reviewedBy: string;
   notes?: string | null;
-}): Promise<NonEcommerceDomainRecord | null> {
-  const normalized = normalizeNonEcommerceDomainInput(input.domain);
-  const records = await readRecords();
-  let updated: NonEcommerceDomainRecord | null = null;
-
-  const next = records.map((record) => {
-    if (record.domain !== normalized) {
-      return record;
-    }
-
-    updated = {
-      ...record,
-      reviewed: true,
-      reviewedBy: input.reviewedBy.trim() || "admin",
-      notes: input.notes?.trim() || record.notes,
-    };
-    return updated;
+}) {
+  const record = await updateDomainReviewStatus({
+    domain: input.domain,
+    status: "APPROVED",
+    reviewedBy: input.reviewedBy,
+    notes: input.notes ?? null,
   });
-
-  if (!updated) {
-    return null;
-  }
-
-  await writeRecords(next);
-  return updated;
+  return record?.type === "NON_ECOMMERCE" ? toLegacyNonEcommerceRecord(record) : null;
 }
 
-export async function updateNonEcommerceDomainNotes(input: {
-  domain: string;
-  notes: string | null;
-}): Promise<NonEcommerceDomainRecord | null> {
-  const normalized = normalizeNonEcommerceDomainInput(input.domain);
-  const records = await readRecords();
-  let updated: NonEcommerceDomainRecord | null = null;
-
-  const next = records.map((record) => {
-    if (record.domain !== normalized) {
-      return record;
-    }
-
-    updated = {
-      ...record,
-      notes: input.notes?.trim() || null,
-    };
-    return updated;
-  });
-
-  if (!updated) {
-    return null;
-  }
-
-  await writeRecords(next);
-  return updated;
-}
-
-export function createQuarantinedNonEcommerceResponse(): Response {
-  return new Response(
-    JSON.stringify({
-      scanStatus: QUARANTINED_NON_ECOMMERCE_SCAN_STATUS,
-      message: QUARANTINED_NON_ECOMMERCE_MESSAGE,
-    }),
-    {
-      status: 422,
-      headers: { "Content-Type": "application/json" },
-    },
-  );
-}
-
-export function normalizeNonEcommerceDomainInput(input: string): string {
-  const trimmed = input.trim();
-
-  if (!trimmed) {
-    return "";
-  }
-
-  try {
-    if (trimmed.includes("://")) {
-      return normalizeHostname(new URL(trimmed).hostname);
-    }
-  } catch {
-    // fall through
-  }
-
-  return normalizeHostname(trimmed);
-}
-
-function normalizeStoredDomain(input: string): string {
-  return normalizeNonEcommerceDomainInput(input);
+function toLegacyNonEcommerceRecord(record: DomainReviewRecord) {
+  return {
+    domain: record.domain,
+    reason: record.reason,
+    firstDetectedAt: record.firstSeenAt,
+    reviewed: record.status === "APPROVED",
+    reviewedBy: record.reviewedBy,
+    notes: record.notes,
+  };
 }

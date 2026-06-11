@@ -9,6 +9,7 @@ import { deleteCachedAuditsForHostname, normalizeAuditUrl } from "./cache";
 import {
   gatewayErrorMessage,
   isGatewayErrorContent,
+  isGenericHttpBlockPage,
   mapFetchReachabilityError,
   pageContentHaystack,
   SITE_ERROR_MESSAGE,
@@ -124,6 +125,15 @@ async function probeSite(url: URL): Promise<void> {
     if (response.status === 403) {
       throw new DomainUnreachableError(
         buildScanFailureDiagnostic("blocked_403", { httpStatus: 403 }),
+      );
+    }
+
+    if (
+      (response.status === 404 || response.status === 410) &&
+      isGenericHttpBlockPage(snippet, response.status)
+    ) {
+      throw new DomainUnreachableError(
+        buildScanFailureDiagnostic("blocked_403", { httpStatus: response.status }),
       );
     }
 
@@ -250,8 +260,8 @@ export function assertMinimumCrawlHealth(data: CrawlData): void {
   }
 }
 
-/** Validates DNS resolution and HTTP reachability before crawling. */
-export async function validateDomainReachability(inputUrl: string): Promise<void> {
+/** Validates DNS resolution before HTTP probing or crawling. */
+export async function ensureDomainResolvable(inputUrl: string): Promise<void> {
   let url: URL;
 
   try {
@@ -270,7 +280,12 @@ export async function validateDomainReachability(inputUrl: string): Promise<void
   }
 
   await resolveHostname(hostname);
-  await probeSite(url);
+}
+
+/** Validates DNS resolution and HTTP reachability before crawling. */
+export async function validateDomainReachability(inputUrl: string): Promise<void> {
+  await ensureDomainResolvable(inputUrl);
+  await probeSite(new URL(inputUrl));
 }
 
 /**

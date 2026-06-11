@@ -9,6 +9,7 @@ import {
 import {
   compactAnalyticsProperties,
   scanContextFromRecentScan,
+  scanContextFromUrl,
   type ScanAnalyticsProperties,
 } from "@/lib/analytics-properties";
 import type { RecentScanRecord } from "@/lib/scan-activity-types";
@@ -153,6 +154,175 @@ export function trackScanStarted(context: ScanAnalyticsProperties): void {
   void captureAnalyticsEvent("scan_started", withScanContext(context));
 }
 
+export function trackTechnologyDetectionStarted(context: ScanAnalyticsProperties): void {
+  void captureAnalyticsEvent("technology_detection_started", withScanContext(context));
+}
+
+export function trackTechnologyDetectionCompleted(
+  context: ScanAnalyticsProperties & {
+    platformConfidence?: string;
+    reportType?: string;
+  },
+): void {
+  void captureAnalyticsEvent(
+    "technology_detection_completed",
+    withScanContext(context, {
+      platformConfidence: context.platformConfidence ?? null,
+      reportType: context.reportType ?? null,
+    }),
+  );
+}
+
+export function trackTechnologyDetectionFailed(
+  context: ScanAnalyticsProperties & { failureReason?: string },
+): void {
+  void captureAnalyticsEvent(
+    "technology_detection_failed",
+    withScanContext(context, { failureReason: context.failureReason ?? null }),
+  );
+}
+
+export function trackFullAuditStarted(context: ScanAnalyticsProperties): void {
+  void captureAnalyticsEvent("full_audit_started", withScanContext(context));
+}
+
+export function trackFullAuditCompleted(
+  context: ScanAnalyticsProperties & { scanDuration: number | null; reportType?: string },
+): void {
+  void captureAnalyticsEvent(
+    "full_audit_completed",
+    withScanContext(context, {
+      scanDuration: context.scanDuration,
+      reportType: context.reportType ?? "full",
+    }),
+  );
+}
+
+export function trackFullAuditFailed(
+  context: ScanAnalyticsProperties & { failureReason?: string; reportType?: string },
+): void {
+  void captureAnalyticsEvent(
+    "full_audit_failed",
+    withScanContext(context, {
+      failureReason: context.failureReason ?? null,
+      reportType: context.reportType ?? null,
+    }),
+  );
+}
+
+export function trackPartialReportCreated(
+  context: ScanAnalyticsProperties & {
+    failureReason?: string;
+    platformConfidence?: string;
+  },
+): void {
+  void captureAnalyticsEvent(
+    "partial_report_created",
+    withScanContext(context, {
+      failureReason: context.failureReason ?? null,
+      platformConfidence: context.platformConfidence ?? null,
+      reportType: "partial",
+    }),
+  );
+}
+
+export function trackDomainReviewCreated(
+  context: ScanAnalyticsProperties & { reviewType?: string; reviewStatus?: string },
+): void {
+  void captureAnalyticsEvent(
+    "domain_review_created",
+    withScanContext(context, {
+      type: context.reviewType ?? null,
+      status: context.reviewStatus ?? null,
+    }),
+  );
+}
+
+export function trackDomainReviewUpdated(
+  context: ScanAnalyticsProperties & { reviewType?: string; reviewStatus?: string },
+): void {
+  void captureAnalyticsEvent(
+    "domain_review_updated",
+    withScanContext(context, {
+      type: context.reviewType ?? null,
+      status: context.reviewStatus ?? null,
+    }),
+  );
+}
+
+export function trackDomainReviewReclassified(
+  context: ScanAnalyticsProperties & { reviewType?: string; reviewStatus?: string },
+): void {
+  void captureAnalyticsEvent(
+    "domain_review_reclassified",
+    withScanContext(context, {
+      type: context.reviewType ?? null,
+      status: context.reviewStatus ?? null,
+    }),
+  );
+}
+
+export function trackDomainReviewWhitelisted(
+  context: ScanAnalyticsProperties & { reviewType?: string; reviewStatus?: string },
+): void {
+  void captureAnalyticsEvent(
+    "domain_review_whitelisted",
+    withScanContext(context, {
+      type: context.reviewType ?? null,
+      status: context.reviewStatus ?? null,
+    }),
+  );
+}
+
+export function trackDomainReviewBlocked(
+  context: ScanAnalyticsProperties & { reviewType?: string; reviewStatus?: string },
+): void {
+  void captureAnalyticsEvent(
+    "domain_review_updated",
+    withScanContext(context, {
+      type: context.reviewType ?? null,
+      status: context.reviewStatus ?? null,
+      failureReason: "blocked_scan_attempt",
+    }),
+  );
+}
+
+export function trackStorefrontReviewRequested(
+  context: ScanAnalyticsProperties & { failureType?: string },
+): void {
+  void captureAnalyticsEvent(
+    "storefront_review_requested",
+    withScanContext(context, {
+      failureType: context.failureType ?? null,
+    }),
+  );
+}
+
+export function trackStorefrontReviewSubmitted(
+  context: ScanAnalyticsProperties & { failureType?: string; relationship?: string },
+): void {
+  void captureAnalyticsEvent(
+    "storefront_review_submitted",
+    withScanContext(context, {
+      failureType: context.failureType ?? null,
+      relationship: context.relationship ?? null,
+    }),
+  );
+}
+
+export function trackStorefrontReviewCompleted(
+  context: ScanAnalyticsProperties & { failureType?: string; relationship?: string; status?: string },
+): void {
+  void captureAnalyticsEvent(
+    "storefront_review_completed",
+    withScanContext(context, {
+      failureType: context.failureType ?? null,
+      relationship: context.relationship ?? null,
+      status: context.status ?? null,
+    }),
+  );
+}
+
 export function trackScanCompleted(
   context: ScanAnalyticsProperties & { scanDuration: number | null },
 ): void {
@@ -258,7 +428,9 @@ export function trackNewScanClicked(currentReportId?: string): void {
 }
 
 export function trackScanStartedFromUrl(url: string): void {
-  trackScanStarted({ domain: analyticsDomainFromUrl(url) });
+  const context = scanContextFromUrl(url);
+  trackScanStarted(context);
+  trackTechnologyDetectionStarted(context);
 }
 
 export function trackScanFailedFromUrl(

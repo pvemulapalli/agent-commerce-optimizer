@@ -5,15 +5,17 @@ import type { AuditConfidenceReport } from "./audit-confidence";
 import type { AuditReportMetadata } from "./audit-metadata";
 import type { PlatformBenchmark } from "./benchmarking";
 import { buildReadinessReport } from "./readiness-score";
-import type { AuditApiResponse, GenerationContext } from "./types";
+import type { AuditApiResponse, GenerationContext, TechnologyDetectionResult } from "./types";
 import type { CrawlSummary } from "./crawl-quality";
 
 export interface EnrichedAuditResponse extends AuditApiResponse {
+  reportType?: "full";
   crawlSummary: CrawlSummary;
   crawlDurationSec: number | null;
   auditMetadata: AuditReportMetadata;
   auditConfidence: AuditConfidenceReport;
   benchmark: PlatformBenchmark | null;
+  technologyDetection?: TechnologyDetectionResult;
 }
 
 export async function enrichAuditResponse(input: {
@@ -21,6 +23,7 @@ export async function enrichAuditResponse(input: {
   crawlSummary: CrawlSummary;
   crawlDurationSec: number | null;
   generationContext?: GenerationContext;
+  technologyDetection?: TechnologyDetectionResult;
 }): Promise<EnrichedAuditResponse> {
   const auditMetadata = buildAuditReportMetadata({
     audit: input.audit,
@@ -40,10 +43,12 @@ export async function enrichAuditResponse(input: {
 
   return {
     ...input.audit,
+    reportType: "full",
     crawlSummary: input.crawlSummary,
     crawlDurationSec: input.crawlDurationSec,
     auditMetadata,
     auditConfidence,
     benchmark,
+    technologyDetection: input.technologyDetection,
   };
 }

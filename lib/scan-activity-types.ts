@@ -10,9 +10,10 @@ export interface RecentScanRecord {
   scannedAt: string;
   cacheStatus: string;
   summary: string;
-  readinessScore: number;
-  grade: string;
-  topGap: string;
+  readinessScore: number | null;
+  grade: string | null;
+  topGap: string | null;
+  reportType?: "full" | "partial";
   reportId?: string;
   shareUrl?: string;
 }

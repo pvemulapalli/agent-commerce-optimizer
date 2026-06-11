@@ -1,12 +1,15 @@
 "use client";
 
+import { StorefrontReviewRequestPanel } from "@/components/storefront-review-request-panel";
 import type { ScanFailureDiagnostic } from "@/lib/scan-failure-diagnostics";
 
 export function ScanFailureNotice({
   diagnostic,
+  storefrontUrl,
   onScanAnother,
 }: {
   diagnostic: ScanFailureDiagnostic;
+  storefrontUrl: string;
   onScanAnother: () => void;
 }) {
   return (
@@ -37,6 +40,11 @@ export function ScanFailureNotice({
       >
         Try Another Site
       </button>
+
+      <StorefrontReviewRequestPanel
+        storefrontUrl={storefrontUrl}
+        failureType={diagnostic.code}
+      />
     </div>
   );
 }

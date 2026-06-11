@@ -3,6 +3,7 @@
 import { ActivityFeed } from "@/components/activity-feed";
 import { AuditHero } from "@/components/audit-hero";
 import { AuditResultsSection } from "@/components/audit-results";
+import { PartialReportSection } from "@/components/partial-report-section";
 import { MarketingSections } from "@/components/marketing-sections";
 import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import { RecentAuditsPreview } from "@/components/recent-audits";
@@ -10,6 +11,7 @@ import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
 import { useRecentScans } from "@/hooks/use-recent-scans";
 import { isBotVerificationScanResponse } from "@/lib/bot-verification-messages";
 import type { BotVerificationDiagnostic } from "@/lib/bot-verification-diagnostics";
+import { isDomainReviewBlockedScanResponse } from "@/lib/domain-review-messages";
 import { isNonEcommerceScanResponse } from "@/lib/non-ecommerce-messages";
 import { isScanFailureResponse } from "@/lib/scan-failure-diagnostics";
 import type { ScanFailureDiagnostic } from "@/lib/scan-failure-diagnostics";
@@ -18,29 +20,50 @@ import { normalizeAuditUrl } from "@/lib/audit-url";
 import { getAuditUrlValidationError } from "@/lib/audit-url-validation";
 import { parseApiResponse } from "@/lib/parse-api-response";
 import { scrollToAuditOverview, scrollToElementById } from "@/lib/scroll-utils";
+import { isPartialReportResponse } from "@/lib/partial-report";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
-import type { GenerateFixesApiResponse } from "@/lib/types";
+import type { GenerateFixesApiResponse, PartialReportResponse } from "@/lib/types";
 import type { RecentScanRecord } from "@/lib/scan-activity-types";
 import {
+  trackFullAuditCompleted,
+  trackFullAuditFailed,
   trackNewScanClicked,
+  trackPartialReportCreated,
   trackPlatformDetected,
   trackRecentScanClickedFromEntry,
   trackScanCompleted,
   trackScanFailedFromUrl,
   trackScanStartedFromUrl,
+  trackTechnologyDetectionCompleted,
+  trackTechnologyDetectionFailed,
+  trackDomainReviewBlocked,
 } from "@/lib/analytics-events";
-import { scanContextFromAudit } from "@/lib/analytics-properties";
+import { scanContextFromAudit, scanContextFromPartialReport } from "@/lib/analytics-properties";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type AuditResponse = EnrichedAuditResponse & {
   scanRecord?: { id: string; hostname: string };
   reportId?: string;
   shareUrl?: string;
+  reportType?: "full";
+};
+type PartialAuditResponse = PartialReportResponse & {
+  scanRecord?: { id: string; hostname: string };
 };
 type FixesResponse = GenerateFixesApiResponse;
 
 function trackSuccessfulAudit(data: AuditResponse): void {
   const scanContext = scanContextFromAudit(data);
+  trackTechnologyDetectionCompleted({
+    ...scanContext,
+    platformConfidence: data.platform.confidence,
+    reportType: "full",
+  });
+  trackFullAuditCompleted({
+    ...scanContext,
+    scanDuration: data.crawlDurationSec,
+    reportType: "full",
+  });
   trackScanCompleted({
     ...scanContext,
     scanDuration: data.crawlDurationSec,
@@ -52,16 +75,64 @@ function trackSuccessfulAudit(data: AuditResponse): void {
   });
 }
 
+function trackPartialAudit(data: PartialAuditResponse): void {
+  const scanContext = scanContextFromPartialReport(data);
+  trackTechnologyDetectionCompleted({
+    ...scanContext,
+    platformConfidence: data.technologyDetection.platformConfidence,
+    reportType: "partial",
+  });
+  trackFullAuditFailed({
+    ...scanContext,
+    failureReason: data.fullAuditFailure.reason,
+    reportType: "partial",
+  });
+  trackPartialReportCreated({
+    ...scanContext,
+    failureReason: data.fullAuditFailure.reason,
+    platformConfidence: data.technologyDetection.platformConfidence,
+  });
+  trackPlatformDetected({
+    ...scanContext,
+    confidence: data.technologyDetection.platformConfidence,
+    confidenceScore: data.technologyDetection.detectedPlatform.confidenceScore,
+  });
+}
+
+function handleAuditApiResponse(
+  targetUrl: string,
+  data: AuditResponse | PartialAuditResponse,
+  responseOk: boolean,
+): "partial" | "full" | "handled" {
+  if (isPartialReportResponse(data)) {
+    trackPartialAudit(data);
+    return "partial";
+  }
+
+  if (!responseOk) {
+    return "handled";
+  }
+
+  trackSuccessfulAudit(data as AuditResponse);
+  return "full";
+}
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nonEcommerceMessage, setNonEcommerceMessage] = useState<string | null>(null);
+  const [domainReviewNotice, setDomainReviewNotice] = useState<{
+    title: string;
+    message: string;
+    reviewType?: string;
+  } | null>(null);
   const [botVerificationDiagnostic, setBotVerificationDiagnostic] =
     useState<BotVerificationDiagnostic | null>(null);
   const [scanFailureDiagnostic, setScanFailureDiagnostic] =
     useState<ScanFailureDiagnostic | null>(null);
   const [result, setResult] = useState<AuditResponse | null>(null);
+  const [partialResult, setPartialResult] = useState<PartialAuditResponse | null>(null);
   const [fixesLoading, setFixesLoading] = useState(false);
   const [fixesError, setFixesError] = useState<string | null>(null);
   const [fixes, setFixes] = useState<FixesResponse | null>(null);
@@ -153,9 +224,11 @@ export default function Home() {
     setLoadingRecentId(entry.id);
     setError(null);
     setNonEcommerceMessage(null);
+    setDomainReviewNotice(null);
     setBotVerificationDiagnostic(null);
     setScanFailureDiagnostic(null);
     setResult(null);
+    setPartialResult(null);
     setFixes(null);
     setFixesError(null);
     scrollToElementById("audit-hero");
@@ -173,14 +246,31 @@ export default function Home() {
         body: JSON.stringify(payload),
       });
 
-      const data = await parseApiResponse<AuditResponse & { error?: string }>(
-        response,
-        "Audit request failed",
-      );
+      const data = await parseApiResponse<
+        (AuditResponse | PartialAuditResponse) & { error?: string }
+      >(response, "Audit request failed");
 
       if (isBotVerificationScanResponse(data)) {
         setBotVerificationDiagnostic(data);
         trackScanFailedFromUrl(scanUrl, "bot_verification_blocked");
+        trackTechnologyDetectionFailed({
+          domain: scanUrl,
+          failureReason: "bot_verification",
+        });
+        return;
+      }
+
+      if (isDomainReviewBlockedScanResponse(data)) {
+        setDomainReviewNotice({
+          title: data.title ?? "Scanning temporarily paused",
+          message: data.message,
+          reviewType: data.reviewType,
+        });
+        trackDomainReviewBlocked({
+          domain: scanUrl,
+          reviewType: data.reviewType,
+          reviewStatus: data.reviewStatus,
+        });
         return;
       }
 
@@ -193,6 +283,17 @@ export default function Home() {
       if (isScanFailureResponse(data)) {
         setScanFailureDiagnostic(data);
         trackScanFailedFromUrl(scanUrl, data.code);
+        trackTechnologyDetectionFailed({
+          domain: scanUrl,
+          failureReason: data.code,
+        });
+        return;
+      }
+
+      if (isPartialReportResponse(data)) {
+        handleAuditApiResponse(scanUrl, data, response.ok);
+        setPartialResult(data);
+        scrollToAuditOverview("instant");
         return;
       }
 
@@ -200,8 +301,8 @@ export default function Home() {
         throw new Error(data.error ?? "Audit request failed");
       }
 
-      trackSuccessfulAudit(data);
-      setResult(data);
+      handleAuditApiResponse(scanUrl, data, response.ok);
+      setResult(data as AuditResponse);
       await generateFixes(data.url, turnstileToken, data.reportId);
       scrollToAuditOverview("instant");
     } catch (loadError) {
@@ -222,7 +323,7 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (typeof window === "undefined" || loading || result || activityLoading) {
+    if (typeof window === "undefined" || loading || result || partialResult || activityLoading) {
       return;
     }
 
@@ -258,7 +359,7 @@ export default function Home() {
       grade: "-",
       topGap: "",
     });
-  }, [activity.recentScans, activityLoading, loading, result]);
+  }, [activity.recentScans, activityLoading, loading, partialResult, result]);
 
   async function runAudit(targetUrl: string) {
     if (shouldShowTurnstileWidget() && !turnstileToken) {
@@ -276,9 +377,11 @@ export default function Home() {
     setScanStartedAt(Date.now());
     setError(null);
     setNonEcommerceMessage(null);
+    setDomainReviewNotice(null);
     setBotVerificationDiagnostic(null);
     setScanFailureDiagnostic(null);
     setResult(null);
+    setPartialResult(null);
     setFixes(null);
     setFixesError(null);
     trackScanStartedFromUrl(targetUrl);
@@ -295,14 +398,31 @@ export default function Home() {
         body: JSON.stringify(payload),
       });
 
-      const data = await parseApiResponse<AuditResponse & { error?: string }>(
-        response,
-        "Audit request failed",
-      );
+      const data = await parseApiResponse<
+        (AuditResponse | PartialAuditResponse) & { error?: string }
+      >(response, "Audit request failed");
 
       if (isBotVerificationScanResponse(data)) {
         setBotVerificationDiagnostic(data);
         trackScanFailedFromUrl(targetUrl, "bot_verification_blocked");
+        trackTechnologyDetectionFailed({
+          domain: targetUrl,
+          failureReason: "bot_verification",
+        });
+        return;
+      }
+
+      if (isDomainReviewBlockedScanResponse(data)) {
+        setDomainReviewNotice({
+          title: data.title ?? "Scanning temporarily paused",
+          message: data.message,
+          reviewType: data.reviewType,
+        });
+        trackDomainReviewBlocked({
+          domain: targetUrl,
+          reviewType: data.reviewType,
+          reviewStatus: data.reviewStatus,
+        });
         return;
       }
 
@@ -315,6 +435,19 @@ export default function Home() {
       if (isScanFailureResponse(data)) {
         setScanFailureDiagnostic(data);
         trackScanFailedFromUrl(targetUrl, data.code);
+        trackTechnologyDetectionFailed({
+          domain: targetUrl,
+          failureReason: data.code,
+        });
+        return;
+      }
+
+      if (isPartialReportResponse(data)) {
+        markOwnScan(data.scanRecord?.id);
+        await refresh();
+        handleAuditApiResponse(targetUrl, data, response.ok);
+        setPartialResult(data);
+        scrollToAuditOverview("instant");
         return;
       }
 
@@ -324,8 +457,8 @@ export default function Home() {
 
       markOwnScan(data.scanRecord?.id);
       await refresh();
-      trackSuccessfulAudit(data);
-      setResult(data);
+      handleAuditApiResponse(targetUrl, data, response.ok);
+      setResult(data as AuditResponse);
       await generateFixes(data.url, turnstileToken, data.reportId);
       scrollToAuditOverview("instant");
     } catch (submitError) {
@@ -358,6 +491,7 @@ export default function Home() {
             loading={loading}
             error={error}
             nonEcommerceMessage={nonEcommerceMessage}
+            domainReviewNotice={domainReviewNotice}
             botVerificationDiagnostic={botVerificationDiagnostic}
             scanFailureDiagnostic={scanFailureDiagnostic}
             turnstileToken={turnstileToken}
@@ -366,22 +500,24 @@ export default function Home() {
             onSubmit={handleSubmit}
             onTurnstileTokenChange={setTurnstileToken}
             onScanAnother={() => {
-              trackNewScanClicked(result?.reportId);
+              trackNewScanClicked(result?.reportId ?? partialResult?.reportId);
               setError(null);
               setNonEcommerceMessage(null);
+    setDomainReviewNotice(null);
               setBotVerificationDiagnostic(null);
               setScanFailureDiagnostic(null);
               setUrl("");
               setResult(null);
+              setPartialResult(null);
               setFixes(null);
               setFixesError(null);
             }}
           />
         </div>
 
-        {!result && <MarketingSections />}
+        {!result && !partialResult && <MarketingSections />}
 
-        {!result ? (
+        {!result && !partialResult ? (
           <RecentAuditsPreview
             entries={activity.recentScans}
             totalCount={activity.totalScans}
@@ -396,9 +532,18 @@ export default function Home() {
           />
         ) : null}
 
-        {!result && activity.platformStats.length > 0 ? (
+        {!result && !partialResult && activity.platformStats.length > 0 ? (
           <PlatformReadinessCards stats={activity.platformStats} />
         ) : null}
+
+        {partialResult && (
+          <PartialReportSection
+            report={partialResult}
+            reportId={partialResult.reportId}
+            shareUrl={partialResult.shareUrl}
+            scanContext={scanContextFromPartialReport(partialResult)}
+          />
+        )}
 
         {result && (
           <AuditResultsSection

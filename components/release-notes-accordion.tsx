@@ -21,6 +21,12 @@ const CATEGORY_STYLES: Record<ReleaseCategory, string> = {
     "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-950/50 dark:text-emerald-100",
   Fixes:
     "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/50 dark:text-amber-100",
+  Analytics:
+    "border-indigo-200 bg-indigo-50 text-indigo-900 dark:border-indigo-500/40 dark:bg-indigo-950/50 dark:text-indigo-100",
+  "Scan Reliability":
+    "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-950/50 dark:text-emerald-100",
+  "Product Feedback":
+    "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-900 dark:border-fuchsia-500/40 dark:bg-fuchsia-950/50 dark:text-fuchsia-100",
 };
 
 function ReleaseArticleBody({ release }: { release: ReleaseEntry }) {
@@ -52,11 +58,21 @@ function ReleaseArticleBody({ release }: { release: ReleaseEntry }) {
   );
 }
 
+function releaseAnchorId(release: ReleaseEntry): string {
+  const slug = release.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `v${release.version.replace(/\./g, "-")}-${slug}`;
+}
+
 function ReleaseArticle({ release, expanded = false }: { release: ReleaseEntry; expanded?: boolean }) {
+  const anchorId = releaseAnchorId(release);
+
   if (expanded) {
     return (
       <article
-        id={`v${release.version.replace(/\./g, "-")}`}
+        id={anchorId}
         className="scroll-mt-28 rounded-xl border border-card-border bg-card-muted p-5"
       >
         <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -91,7 +107,7 @@ function ReleaseArticle({ release, expanded = false }: { release: ReleaseEntry; 
         </div>
       </summary>
       <div
-        id={`v${release.version.replace(/\./g, "-")}`}
+        id={anchorId}
         className="scroll-mt-28 border-t border-card-border px-5 py-4"
       >
         <ReleaseArticleBody release={release} />
@@ -130,7 +146,7 @@ export function ReleaseNotesAccordion({ releases }: { releases: ReleaseEntry[] }
               </summary>
               <div className="space-y-3 border-t border-card-border px-6 py-5 sm:px-8">
                 {group.releases.map((release) => (
-                  <ReleaseArticle key={release.version} release={release} />
+                  <ReleaseArticle key={`${release.version}-${release.title}`} release={release} />
                 ))}
               </div>
             </details>

@@ -7,7 +7,7 @@ import {
   type PlatformLeaderboardStat,
 } from "./platform-leaderboard";
 import { recordBenchmarkSample } from "./benchmark-samples";
-import type { AuditApiResponse } from "./types";
+import type { AuditApiResponse, PartialReportResponse } from "./types";
 import { buildReadinessReport } from "./readiness-score";
 import { getRedis, isRedisConfigured } from "./redis";
 import type { RecentScanRecord, ScanActivityResponse } from "./scan-activity-types";
@@ -63,16 +63,15 @@ function parseRecentScanList(entries: unknown[]): RecentScanRecord[] {
 }
 
 function normalizeScanRecord(record: RecentScanRecord): RecentScanRecord {
-  const readinessScore = record.readinessScore ?? 0;
-  const grade = record.grade ?? "F";
-  const topGap = record.topGap ?? "Structured Data";
+  const isPartial = record.reportType === "partial";
 
   return {
     ...record,
     id: normalizeHostname(record.hostname),
-    readinessScore,
-    grade,
-    topGap,
+    readinessScore: isPartial ? null : (record.readinessScore ?? 0),
+    grade: isPartial ? null : (record.grade ?? "F"),
+    topGap: isPartial ? null : (record.topGap ?? "Structured Data"),
+    reportType: record.reportType ?? "full",
   };
 }
 
@@ -215,6 +214,7 @@ export function createScanRecord(
     readinessScore: reportData.score,
     grade: reportData.grade,
     topGap: reportData.topGap,
+    reportType: "full",
     reportId: report?.reportId,
     shareUrl: report?.shareUrl,
   };
@@ -378,6 +378,69 @@ export async function updateRecentScanPlatform(
   } catch (error) {
     console.error("[scan-activity] platform update failed:", error);
     return false;
+  }
+}
+
+export function createPartialScanRecord(
+  partialReport: PartialReportResponse,
+  merchantName?: string,
+): RecentScanRecord {
+  const hostname = new URL(partialReport.url).hostname;
+  const platform = partialReport.technologyDetection.detectedPlatform.platform;
+
+  return {
+    id: normalizeHostname(hostname),
+    url: normalizeAuditUrl(partialReport.url),
+    hostname,
+    merchant: extractMerchantName(partialReport.url, merchantName),
+    platform,
+    confidence: partialReport.technologyDetection.platformConfidence,
+    scannedAt: partialReport.crawledAt,
+    cacheStatus: partialReport.cacheStatus,
+    summary: "Partial report · technology detection only",
+    readinessScore: null,
+    grade: null,
+    topGap: null,
+    reportType: "partial",
+    reportId: partialReport.reportId,
+    shareUrl: partialReport.shareUrl,
+  };
+}
+
+export async function recordPartialScan(
+  partialReport: PartialReportResponse,
+): Promise<RecentScanRecord | null> {
+  if (partialReport.cacheStatus === "HIT") {
+    return null;
+  }
+
+  const record = createPartialScanRecord(partialReport);
+
+  try {
+    const existing = await getAllStoredScanRecords();
+    const isNewHostname = !hostnameExistsInRecent(record.hostname, existing);
+
+    if (isRedisConfigured()) {
+      const redis = getRedis();
+      await upsertRecentScanInRedis(record);
+
+      if (isNewHostname) {
+        await redis.incr(TOTAL_KEY);
+      }
+
+      return record;
+    }
+
+    upsertRecentScanInMemory(record);
+
+    if (isNewHostname) {
+      memoryTotalScans += 1;
+    }
+
+    return record;
+  } catch (error) {
+    console.error("[scan-activity] partial record failed:", error);
+    return null;
   }
 }
 

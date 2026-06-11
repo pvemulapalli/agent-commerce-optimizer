@@ -47,11 +47,17 @@ function RecentAuditSummaryCard({
   entry: RecentScanRecord;
   linkable?: boolean;
 }) {
+  const isPartial = entry.reportType === "partial";
   const cardBody = (
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-medium text-slate-900 dark:text-slate-100">{entry.merchant}</p>
+          {isPartial ? (
+            <p className="mt-1 text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300">
+              Partial Report · No Score
+            </p>
+          ) : null}
           {linkable ? (
             <span className="mt-1 block break-all text-xs text-slate-500 dark:text-slate-400">
               {entry.hostname}
@@ -63,7 +69,7 @@ function RecentAuditSummaryCard({
             />
           )}
         </div>
-        <GradeBadge grade={entry.grade || "-"} />
+        <GradeBadge grade={isPartial ? "—" : entry.grade || "-"} />
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
@@ -72,7 +78,7 @@ function RecentAuditSummaryCard({
             Score
           </dt>
           <dd className="mt-1 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-            {entry.readinessScore ?? "-"}
+            {isPartial ? "Partial" : (entry.readinessScore ?? "-")}
           </dd>
         </div>
         <div>

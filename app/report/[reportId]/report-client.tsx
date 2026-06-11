@@ -1,11 +1,13 @@
 "use client";
 
 import { AuditResultsSection } from "@/components/audit-results";
+import { PartialReportSection } from "@/components/partial-report-section";
 import { trackReportViewed } from "@/lib/analytics-events";
-import { scanContextFromAudit } from "@/lib/analytics-properties";
+import { scanContextFromAudit, scanContextFromPartialReport } from "@/lib/analytics-properties";
 import { buildShareReportUrl } from "@/lib/share-report-url";
+import type { ShareableReportRecord } from "@/lib/shareable-reports";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
-import type { GenerateFixesApiResponse } from "@/lib/types";
+import type { GenerateFixesApiResponse, PartialReportResponse } from "@/lib/types";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -13,6 +15,7 @@ type FixesResponse = GenerateFixesApiResponse;
 
 export function SharedReportView({ reportId }: { reportId: string }) {
   const [result, setResult] = useState<EnrichedAuditResponse | null>(null);
+  const [partialReport, setPartialReport] = useState<PartialReportResponse | null>(null);
   const [shareUrl, setShareUrl] = useState<string | undefined>();
   const [fixes, setFixes] = useState<FixesResponse | null>(null);
   const [fixesLoading, setFixesLoading] = useState(false);
@@ -27,18 +30,28 @@ export function SharedReportView({ reportId }: { reportId: string }) {
 
       try {
         const response = await fetch(`/api/report/${reportId}`);
-        const data = (await response.json()) as {
-          result?: EnrichedAuditResponse;
-          fixes?: FixesResponse | null;
-          error?: string;
-        };
+        const data = (await response.json()) as ShareableReportRecord & { error?: string };
 
-        if (!response.ok || !data.result) {
+        if (!response.ok) {
           throw new Error(data.error ?? "Report not found.");
         }
 
-        setResult(data.result);
         setShareUrl(buildShareReportUrl(reportId));
+
+        if (data.reportType === "partial" && data.partialReport) {
+          setPartialReport(data.partialReport);
+          trackReportViewed({
+            reportId,
+            ...scanContextFromPartialReport(data.partialReport),
+          });
+          return;
+        }
+
+        if (!data.result) {
+          throw new Error("Report not found.");
+        }
+
+        setResult(data.result);
         trackReportViewed({
           reportId,
           ...scanContextFromAudit(data.result),
@@ -84,23 +97,23 @@ export function SharedReportView({ reportId }: { reportId: string }) {
     setFixesError(null);
 
     try {
-      const response = await fetch("/api/generate-fixes", {
+      const fixesResponse = await fetch("/api/generate-fixes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: result.url, reportId }),
       });
-      const data = (await response.json()) as FixesResponse & { error?: string };
+      const fixesData = (await fixesResponse.json()) as FixesResponse & { error?: string };
 
-      if (!response.ok) {
-        throw new Error(data.error ?? "Fix generation failed");
+      if (!fixesResponse.ok) {
+        throw new Error(fixesData.error ?? "Fix generation failed");
       }
 
-      setFixes(data);
+      setFixes(fixesData);
     } catch (regenerateError) {
       setFixesError(
         regenerateError instanceof Error
           ? regenerateError.message
-          : "Something went wrong generating fixes",
+          : "Unable to regenerate fixes.",
       );
     } finally {
       setFixesLoading(false);
@@ -109,35 +122,53 @@ export function SharedReportView({ reportId }: { reportId: string }) {
 
   if (loading) {
     return (
-      <main className="mx-auto w-full min-w-0 max-w-6xl px-6 py-10 lg:px-8 lg:py-14">
-        <p className="text-sm text-text-secondary">Loading shared report…</p>
-      </main>
+      <div className="mx-auto max-w-6xl px-6 py-16 text-center text-text-secondary">
+        Loading report…
+      </div>
     );
   }
 
-  if (error || !result) {
+  if (error) {
     return (
-      <main className="mx-auto w-full min-w-0 max-w-6xl px-6 py-10 lg:px-8 lg:py-14">
-        <p className="text-sm text-rose-700 dark:text-rose-300">{error ?? "Report not found."}</p>
-        <Link href="/" className="mt-4 inline-block text-sm font-medium text-blue-900 hover:underline dark:text-blue-300">
-          ← Back to homepage
+      <div className="mx-auto max-w-6xl px-6 py-16 text-center">
+        <p className="text-text-primary">{error}</p>
+        <Link href="/" className="mt-4 inline-block text-blue-700 hover:underline dark:text-blue-300">
+          Run a new scan
         </Link>
-      </main>
+      </div>
     );
+  }
+
+  if (partialReport) {
+    return (
+      <div className="mx-auto w-full min-w-0 max-w-6xl space-y-8 px-6 py-10 lg:px-8 lg:py-14">
+        <PartialReportSection
+          report={partialReport}
+          reportId={reportId}
+          shareUrl={shareUrl}
+          scanContext={scanContextFromPartialReport(partialReport)}
+          isSharedReport
+        />
+      </div>
+    );
+  }
+
+  if (!result) {
+    return null;
   }
 
   return (
-    <main className="mx-auto w-full min-w-0 max-w-6xl space-y-8 px-6 py-10 lg:px-8 lg:py-14">
+    <div className="mx-auto w-full min-w-0 max-w-6xl space-y-8 px-6 py-10 lg:px-8 lg:py-14">
       <AuditResultsSection
         result={result}
         fixes={fixes}
         fixesLoading={fixesLoading}
         fixesError={fixesError}
-        onRegenerateFixes={() => void regenerateFixes()}
+        onRegenerateFixes={regenerateFixes}
         reportId={reportId}
         shareUrl={shareUrl}
         isSharedReport
       />
-    </main>
+    </div>
   );
 }

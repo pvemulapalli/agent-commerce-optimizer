@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.5.8] - 2026-06-10
+
+### [Infrastructure]
+- Added two-phase scan architecture separating lightweight technology detection from full readiness auditing
+- Added Partial Report experience when deeper crawling is blocked, rate-limited, or interrupted
+- Prevented partial reports from polluting readiness benchmarks and average score calculations
+
+### [Platform Detection]
+- Added Technology Detection Mode for shallow homepage-based platform identification
+- Improved public platform confidence presentation without exposing internal scoring mechanics
+
+### [UX]
+- Partial reports now show detected platform, confidence, failure reason, and suggested next steps instead of a generic failed scan screen
+- Shareable URLs supported for partial reports with clear Partial Report labeling
+- Added Storefront Review Request workflow for blocked or failed scans so merchants, agencies, and partners can request future support evaluation
+
+### [Analytics]
+- Added `technology_detection_started`, `technology_detection_completed`, `technology_detection_failed`, `full_audit_started`, `full_audit_completed`, `full_audit_failed`, and `partial_report_created` events
+- Added `domain_review_created`, `domain_review_updated`, `domain_review_reclassified`, and `domain_review_whitelisted` events
+- Added `storefront_review_requested`, `storefront_review_submitted`, and `storefront_review_completed` events
+
+### [Fixes]
+- Improved full audit failure classification with actionable messaging when technology signals were detected but readiness auditing could not complete
+- Improved DNS and fetch failure messaging instead of exposing raw internal errors such as "fetch failed"
+
+### [Admin]
+- Expanded Non-Ecommerce Domain review into a unified Domain Review Queue for bot-blocked storefronts, server errors, rate limits, DNS failures, SSL failures, and other scan classifications
+- Added retry controls, administrative review actions, and smarter scan suppression to reduce unnecessary rescanning
+- Added Storefront Review Requests admin queue with status management, review notes, and notification email foundation
+
+### [Product Feedback]
+- Added storefront review request collection for unsupported or blocked storefronts without implying manual scans or bypassing protections
+
+### [Scan Reliability]
+- Automatically classifies repeated scan failures and suppresses rescans during configurable retry windows
+
 ## [3.5.7] - 2026-06-09
 
 ### [Platform Detection]

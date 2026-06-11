@@ -1,6 +1,65 @@
 {
   "releases": [
     {
+      "version": "3.5.8",
+      "date": "2026-06-10",
+      "title": "Storefront Review Request Workflow",
+      "summary": "Added a Storefront Review Request workflow that allows users to submit unsupported or blocked storefronts for future evaluation. The new workflow helps Merchant Signals identify platform coverage gaps, prioritize improvements, and collect feedback from merchants, agencies, and technology partners.",
+      "categories": [
+        "UX",
+        "Admin",
+        "Product Feedback"
+      ],
+      "changes": [
+        "Added storefront review request CTA on blocked and failed scan outcomes",
+        "Added review request form with email, relationship, and optional context fields",
+        "Added admin Storefront Review Requests queue with status and notes management",
+        "Stored notification email foundation for future platform and crawler improvement updates",
+        "Added storefront review analytics events"
+      ]
+    },
+    {
+      "version": "3.5.8",
+      "date": "2026-06-10",
+      "title": "Domain Review Queue Expansion",
+      "summary": "Expanded the existing Non-Ecommerce review workflow into a unified Domain Review Queue capable of managing bot-blocked storefronts, server errors, rate limits, DNS failures, SSL failures, and other scan classifications. Added retry controls, administrative review actions, and smarter scan suppression to reduce unnecessary rescanning of known problem domains.",
+      "categories": [
+        "Admin",
+        "Infrastructure",
+        "Scan Reliability"
+      ],
+      "changes": [
+        "Replaced Non-Ecommerce Domains with unified Domain Review Queue",
+        "Added classification types for bot blocks, server errors, rate limits, timeouts, DNS failures, and SSL failures",
+        "Added retry-after windows with admin override for temporary scan suppression",
+        "Added approve, reject, whitelist, retry now, reclassify, and notes admin actions",
+        "Automatically enqueues domains on scan failures with type-specific user messaging",
+        "Migrated existing non-ecommerce entries automatically"
+      ]
+    },
+    {
+      "version": "3.5.8",
+      "date": "2026-06-10",
+      "title": "Two-Phase Scan Architecture and Technology Detection Mode",
+      "summary": "Merchant Signals now separates lightweight technology detection from full readiness auditing, allowing users to see platform detection results even when deeper storefront crawling is blocked, rate-limited, or interrupted. This improves scan resilience, user guidance, and platform detection transparency without exposing internal detection mechanics.",
+      "categories": [
+        "Infrastructure",
+        "Platform Detection",
+        "UX",
+        "Analytics",
+        "Fixes"
+      ],
+      "changes": [
+        "Added lightweight Technology Detection Mode",
+        "Added two-phase scan architecture",
+        "Added Partial Report experience when full audits cannot complete",
+        "Improved scan failure classification",
+        "Improved platform confidence presentation",
+        "Added analytics events for technology detection and full audit phases",
+        "Prevented partial reports from polluting readiness benchmarks"
+      ]
+    },
+    {
       "version": "3.5.7",
       "date": "2026-06-09",
       "title": "Detection Accuracy, Scan Reliability, and Report Sharing Foundation",

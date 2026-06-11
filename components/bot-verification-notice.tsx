@@ -1,11 +1,14 @@
 import type { BotVerificationDiagnostic } from "@/lib/bot-verification-diagnostics";
 import { BOT_VERIFICATION_ACTIONS } from "@/lib/bot-verification-diagnostics";
+import { StorefrontReviewRequestPanel } from "@/components/storefront-review-request-panel";
 
 export function BotVerificationNotice({
   diagnostic,
+  storefrontUrl,
   onScanAnother,
 }: {
   diagnostic: BotVerificationDiagnostic;
+  storefrontUrl: string;
   onScanAnother: () => void;
 }) {
   return (
@@ -48,6 +51,8 @@ export function BotVerificationNotice({
       >
         Try Another Site
       </button>
+
+      <StorefrontReviewRequestPanel storefrontUrl={storefrontUrl} failureType="bot_verification" />
     </div>
   );
 }

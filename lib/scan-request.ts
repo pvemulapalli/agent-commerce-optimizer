@@ -1,16 +1,8 @@
 import { readCachedAudit, normalizeAuditUrl } from "./cache";
 import {
-  createBannedDomainResponse,
-  isBannedScanUrl,
-} from "./banned-domains";
-import { createBotVerificationResponse } from "./bot-verification-api";
-import { BotVerificationBlockedError } from "./bot-verification";
-import {
-  createQuarantinedNonEcommerceResponse,
-  isQuarantinedNonEcommerceUrl,
-} from "./non-ecommerce-domains";
-import { ensureDomainReachable, DomainUnreachableError } from "./domain-reachability";
-import { createScanFailureResponseFromError } from "./scan-failure-api";
+  createDomainReviewBlockedResponse,
+  evaluateDomainReviewBlock,
+} from "./domain-review-queue";
 import { enforceScanRateLimit } from "./rate-limit";
 import { verifyTurnstileToken } from "./turnstile";
 
@@ -43,32 +35,15 @@ export async function validateScanRequest(
   url: string,
   turnstileToken: string | undefined,
 ): Promise<Response | null> {
-  if (await isBannedScanUrl(url)) {
-    return createBannedDomainResponse();
-  }
-
-  if (await isQuarantinedNonEcommerceUrl(url)) {
-    return createQuarantinedNonEcommerceResponse();
+  const reviewBlock = await evaluateDomainReviewBlock(url);
+  if (reviewBlock) {
+    return createDomainReviewBlockedResponse(reviewBlock);
   }
 
   const normalizedUrl = normalizeAuditUrl(url);
   const cached = await readCachedAudit(normalizedUrl);
   if (cached) {
     return null;
-  }
-
-  try {
-    await ensureDomainReachable(normalizedUrl);
-  } catch (error) {
-    if (error instanceof BotVerificationBlockedError) {
-      return createBotVerificationResponse(error);
-    }
-
-    if (error instanceof DomainUnreachableError) {
-      return createScanFailureResponseFromError(error);
-    }
-
-    throw error;
   }
 
   return enforceScanRequestGuards(request, turnstileToken);

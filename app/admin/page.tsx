@@ -12,12 +12,8 @@ export const metadata: Metadata = {
 
 export default function AdminPage() {
   return (
-    <main className="mx-auto w-full min-w-0 max-w-4xl px-6 py-10 lg:px-8 lg:py-14">
-      <PageHeader
-        eyebrow="Maintenance"
-        title="Admin Tools"
-        description="Server-verified maintenance tools for Commerce Optimizer Redis data. This page is not linked from the public site."
-      />
+    <main className="mx-auto w-full min-w-0 max-w-[96rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+      <PageHeader eyebrow="Maintenance" title="Admin Tools" />
 
       <div className="mt-10">
         <AdminClient />

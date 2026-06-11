@@ -42,7 +42,7 @@ async function resolvePlatformAnalysis(
   return override ? applyPlatformOverride(platform, override) : platform;
 }
 
-async function buildCachedAuditRunResult(
+export async function buildCachedAuditRunResult(
   cached: NonNullable<Awaited<ReturnType<typeof readCachedAudit>>>,
 ): Promise<AuditRunResult> {
   const platform = await resolvePlatformAnalysis(cached.url, cached.platform);
@@ -94,7 +94,18 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
     }
   }
 
-  await ensureDomainReachable(normalizedUrl);
+  return runFullReadinessAudit(normalizedUrl);
+}
+
+export async function runFullReadinessAudit(
+  url: string,
+  options?: { skipInitialReachability?: boolean },
+): Promise<AuditRunResult> {
+  const normalizedUrl = normalizeAuditUrl(url);
+
+  if (!options?.skipInitialReachability) {
+    await ensureDomainReachable(normalizedUrl);
+  }
 
   const crawlData = await crawlSite(normalizedUrl);
   assertMinimumCrawlHealth(crawlData);

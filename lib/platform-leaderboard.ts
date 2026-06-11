@@ -76,7 +76,11 @@ function buildLeaderboardRow(
     label,
     domainsScanned,
     averageScore: Math.round(scores.reduce((sum, score) => sum + score, 0) / domainsScanned),
-    topGap: mode(group.map((record) => record.topGap).filter(Boolean)),
+    topGap: mode(
+      group
+        .map((record) => record.topGap)
+        .filter((value): value is string => Boolean(value)),
+    ),
     topScore: Math.max(...scores),
   };
 }
@@ -84,9 +88,15 @@ function buildLeaderboardRow(
 export function computePlatformLeaderboard(
   records: RecentScanRecord[],
 ): PlatformLeaderboardStat[] {
+  const scoredRecords = records.filter(
+    (record) =>
+      record.reportType !== "partial" &&
+      record.readinessScore != null &&
+      record.grade != null,
+  );
   const byPlatform = new Map<string, RecentScanRecord[]>();
 
-  for (const record of records) {
+  for (const record of scoredRecords) {
     const key = record.platform || "Unknown";
     const bucket = byPlatform.get(key) ?? [];
     bucket.push(record);

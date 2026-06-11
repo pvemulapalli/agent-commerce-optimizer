@@ -89,11 +89,6 @@ function PlatformAnalysisSection({
           <dt className="text-sm font-medium text-text-secondary">Confidence</dt>
           <dd className="mt-2 flex flex-wrap items-center gap-2">
             <ConfidenceBadge confidence={platform.confidence} />
-            {platform.platform !== "Unknown" && platform.confidenceScore > 0 ? (
-              <span className="text-sm font-medium tabular-nums text-text-primary">
-                {platform.confidenceScore}%
-              </span>
-            ) : null}
           </dd>
         </div>
       </dl>

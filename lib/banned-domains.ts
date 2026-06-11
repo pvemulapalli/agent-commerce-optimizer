@@ -2,7 +2,7 @@
  * Banned scan domains.
  *
  * Edit BANNED_SCAN_DOMAINS in .env.local or Vercel env vars for the default list.
- * Use /admin to update the Redis override in production (takes priority when present).
+ * Use the maintenance UI to update the Redis override in production (takes priority when present).
  */
 
 import {
@@ -60,21 +60,16 @@ function parseStoredDomains(raw: unknown): string[] | null {
 }
 
 export async function getBannedDomains(): Promise<string[]> {
-  if (isRedisConfigured()) {
-    try {
-      const redis = getRedis();
-      const override = await redis.get(REDIS_BANNED_KEY);
-      const parsedOverride = parseStoredDomains(override);
-
-      if (parsedOverride) {
-        return parsedOverride;
-      }
-    } catch (error) {
-      console.error("[banned-domains] read override failed:", error);
-    }
+  try {
+    const { getDomainReviewQueue } = await import("./domain-review-queue");
+    const records = await getDomainReviewQueue();
+    return records
+      .filter((record) => record.type === "MANUAL_BLOCK")
+      .map((record) => record.domain);
+  } catch (error) {
+    console.error("[banned-domains] read from review queue failed:", error);
+    return parseBannedDomainsFromEnv();
   }
-
-  return parseBannedDomainsFromEnv();
 }
 
 export async function saveBannedDomains(domains: string[]): Promise<string[]> {
@@ -86,8 +81,34 @@ export async function saveBannedDomains(domains: string[]): Promise<string[]> {
     );
   }
 
+  const { upsertDomainReviewRecord, removeDomainReviewRecord, getDomainReviewQueue } =
+    await import("./domain-review-queue");
+
+  const existing = await getDomainReviewQueue();
+  const existingManualBlocks = new Set(
+    existing.filter((record) => record.type === "MANUAL_BLOCK").map((record) => record.domain),
+  );
+  const nextManualBlocks = new Set(normalized);
+
+  for (const domain of normalized) {
+    await upsertDomainReviewRecord({
+      domain,
+      type: "MANUAL_BLOCK",
+      reason: "manual_block",
+      source: "admin",
+      status: "APPROVED",
+      retryAfter: null,
+    });
+  }
+
+  for (const domain of existingManualBlocks) {
+    if (!nextManualBlocks.has(domain)) {
+      await removeDomainReviewRecord(domain);
+    }
+  }
+
   const redis = getRedis();
-  await redis.set(REDIS_BANNED_KEY, JSON.stringify(normalized));
+  await redis.set(REDIS_BANNED_KEY, JSON.stringify([]));
 
   return normalized;
 }

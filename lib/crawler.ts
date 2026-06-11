@@ -14,6 +14,7 @@ import {
   SITEMAP_URL_LIMIT,
 } from "./sitemap";
 import type { CrawlData, PageData, ResourceFetch } from "./types";
+import { formatFetchError } from "./gateway-errors";
 
 const FETCH_TIMEOUT_MS = 15_000;
 const MAX_LINK_FOLLOW_UP_PAGES = 5;
@@ -202,7 +203,7 @@ async function fetchResource(url: string): Promise<ResourceFetch> {
       status: null,
       content: null,
       contentType: null,
-      error: error instanceof Error ? error.message : "Fetch failed",
+      error: formatFetchError(error),
     };
   }
 }
@@ -323,7 +324,7 @@ async function fetchPage(
       discoveredLinks: [],
       internalLinks: [],
       status: null,
-      error: error instanceof Error ? error.message : "Fetch failed",
+      error: formatFetchError(error),
     };
   }
 }
@@ -378,6 +379,12 @@ async function resolveInitialSitemapUrl(
   }
 
   return null;
+}
+
+/** Single-page homepage fetch for Phase 1 technology detection (no sitemap or link follow-up). */
+export async function fetchShallowEntryPage(inputUrl: string): Promise<PageData> {
+  const initialUrl = normalizeInputUrl(inputUrl).href;
+  return fetchPage(initialUrl, "pending", "pending");
 }
 
 export async function crawlSite(inputUrl: string): Promise<CrawlData> {

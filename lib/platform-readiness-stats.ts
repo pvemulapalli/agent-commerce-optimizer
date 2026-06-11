@@ -55,6 +55,10 @@ export function computePlatformReadinessStats(
   const byPlatform = new Map<string, RecentScanRecord[]>();
 
   for (const record of records) {
+    if (record.reportType === "partial" || record.readinessScore == null) {
+      continue;
+    }
+
     const key = record.platform || "Unknown";
     const bucket = byPlatform.get(key) ?? [];
     bucket.push(record);
@@ -80,7 +84,11 @@ export function computePlatformReadinessStats(
     const averageScore = Math.round(
       group.reduce((sum, record) => sum + (record.readinessScore ?? 0), 0) / scanCount,
     );
-    const topGap = mode(group.map((record) => record.topGap).filter(Boolean));
+    const topGap = mode(
+      group
+        .map((record) => record.topGap)
+        .filter((value): value is string => Boolean(value)),
+    );
 
     return {
       key,

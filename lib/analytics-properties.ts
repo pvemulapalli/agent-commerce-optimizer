@@ -2,6 +2,7 @@ import { analyticsDomainFromUrl } from "@/lib/analytics-domain";
 import { buildReadinessReport } from "@/lib/readiness-score";
 import type { EnrichedAuditResponse } from "@/lib/enrich-audit-response";
 import type { RecentScanRecord } from "@/lib/scan-activity-types";
+import type { PartialReportResponse } from "@/lib/types";
 
 export interface ScanAnalyticsProperties {
   domain?: string;
@@ -38,6 +39,18 @@ export function scanContextFromRecentScan(entry: RecentScanRecord): ScanAnalytic
     score: entry.readinessScore ?? null,
     grade: entry.grade || null,
     top_gap: entry.topGap || null,
+  };
+}
+
+export function scanContextFromPartialReport(
+  report: PartialReportResponse,
+): ScanAnalyticsProperties {
+  return {
+    domain: analyticsDomainFromUrl(report.url),
+    platform: report.technologyDetection.detectedPlatform.platform,
+    score: null,
+    grade: null,
+    top_gap: null,
   };
 }
 

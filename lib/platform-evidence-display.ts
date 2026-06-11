@@ -45,13 +45,7 @@ export function getPlatformEvidenceForDisplay(
 }
 
 export function formatPlatformConfidenceSummary(platform: PlatformAnalysis): string {
-  const level = platform.confidence.charAt(0).toUpperCase() + platform.confidence.slice(1);
-
-  if (platform.platform === "Unknown" || platform.confidenceScore <= 0) {
-    return level;
-  }
-
-  return `${level} · ${platform.confidenceScore}%`;
+  return platform.confidence.charAt(0).toUpperCase() + platform.confidence.slice(1);
 }
 
 export function getPlatformDetectionSummary(showInternalEvidence: boolean): string {

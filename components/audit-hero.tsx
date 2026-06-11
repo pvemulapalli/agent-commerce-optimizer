@@ -2,6 +2,7 @@
 
 import { AuditProgressBar } from "@/components/audit-progress";
 import { BotVerificationNotice } from "@/components/bot-verification-notice";
+import { DomainReviewNotice } from "@/components/domain-review-notice";
 import { NonEcommerceNotice } from "@/components/non-ecommerce-notice";
 import { ScanFailureNotice } from "@/components/scan-failure-notice";
 import { ScanningRestrictedNotice } from "@/components/scanning-restricted-notice";
@@ -91,6 +92,7 @@ export function AuditHero({
   loading,
   error,
   nonEcommerceMessage,
+  domainReviewNotice,
   botVerificationDiagnostic,
   scanFailureDiagnostic,
   turnstileToken,
@@ -104,6 +106,7 @@ export function AuditHero({
   loading: boolean;
   error: string | null;
   nonEcommerceMessage: string | null;
+  domainReviewNotice: { title: string; message: string; reviewType?: string } | null;
   botVerificationDiagnostic: BotVerificationDiagnostic | null;
   scanFailureDiagnostic: ScanFailureDiagnostic | null;
   turnstileToken: string | null;
@@ -162,6 +165,7 @@ export function AuditHero({
         {botVerificationDiagnostic ? (
           <BotVerificationNotice
             diagnostic={botVerificationDiagnostic}
+            storefrontUrl={url}
             onScanAnother={onScanAnother}
           />
         ) : null}
@@ -169,6 +173,17 @@ export function AuditHero({
         {scanFailureDiagnostic ? (
           <ScanFailureNotice
             diagnostic={scanFailureDiagnostic}
+            storefrontUrl={url}
+            onScanAnother={onScanAnother}
+          />
+        ) : null}
+
+        {domainReviewNotice ? (
+          <DomainReviewNotice
+            title={domainReviewNotice.title}
+            message={domainReviewNotice.message}
+            storefrontUrl={url}
+            reviewType={domainReviewNotice.reviewType}
             onScanAnother={onScanAnother}
           />
         ) : null}
@@ -183,6 +198,7 @@ export function AuditHero({
         {error &&
         !restrictedDomain &&
         !nonEcommerceMessage &&
+        !domainReviewNotice &&
         !botVerificationDiagnostic &&
         !scanFailureDiagnostic ? (
           <div className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/50 dark:text-rose-200">

@@ -9,7 +9,10 @@ export type ReleaseCategory =
   | "Infrastructure"
   | "API"
   | "Scoring"
-  | "Fixes";
+  | "Fixes"
+  | "Analytics"
+  | "Scan Reliability"
+  | "Product Feedback";
 
 export interface ReleaseEntry {
   version: string;

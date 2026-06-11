@@ -277,18 +277,18 @@ Never use a `NEXT_PUBLIC_` prefix for this value and never commit it to git.
 
 ### Admin page
 
-Open `/admin` in your browser (this route is not linked from the public site).
+Open `/ops-ms-7k2p9x` in your browser (this route is not linked from the public site). The path is configurable via `ADMIN_ROUTE_PATH`; direct requests to `/admin` return 404.
 
 1. Enter your `ADMIN_RESET_TOKEN` in the password field.
 2. The token is stored in `sessionStorage` for the current browser session only.
-3. Use the page to reset all Redis data, delete a single audit by domain, or manage banned domains.
+3. Use the page to reset all Redis data, delete a single audit by domain, or manage the domain review queue.
 
 All admin actions are verified server-side on every API request.
 
 ### Banned domains source of truth
 
 - **Default:** `BANNED_SCAN_DOMAINS` in `.env.local` or Vercel environment variables (comma-separated registrable domains).
-- **Production override:** When Redis is configured, `/admin` can save a banned-domain list to Redis that takes priority over the env var.
+- **Production override:** When Redis is configured, the maintenance UI can save a banned-domain list to Redis that takes priority over the env var.
 - The public UI and public API never expose the full banned list.
 
 Example env default:

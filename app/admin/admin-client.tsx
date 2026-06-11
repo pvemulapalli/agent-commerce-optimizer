@@ -7,6 +7,38 @@ import {
   TELEMETRY_DIRECTIVE_RESUME,
   TELEMETRY_DIRECTIVE_SUPPRESS,
 } from "@/lib/telemetry-context";
+import { DomainReviewQueueSection } from "@/components/domain-review-queue-section";
+import { StorefrontReviewRequestsSection } from "@/components/storefront-review-requests-section";
+import type { DomainReviewRecord, DomainReviewType } from "@/lib/domain-review-types";
+import type {
+  StorefrontReviewRequest,
+  StorefrontReviewRequestStatus,
+} from "@/lib/storefront-review-types";
+import {
+  trackDomainReviewCreated,
+  trackDomainReviewReclassified,
+  trackDomainReviewUpdated,
+  trackDomainReviewWhitelisted,
+  trackStorefrontReviewCompleted,
+} from "@/lib/analytics-events";
+import {
+  adminBodyClass,
+  adminCodeClass,
+  adminHeadingClass,
+  adminInputClass,
+  adminLabelClass,
+  adminNestedPanelClass,
+  adminSecondaryButtonClass,
+  adminSectionClass,
+  adminTableCellClass,
+  adminTableHeadClass,
+  adminTableHeaderCellClass,
+  adminTableRowClass,
+  adminTableWrapClass,
+  adminTextareaClass,
+  adminTextareaMonoClass,
+} from "@/lib/admin-theme-classes";
+import { cardSurfaceClass, textPrimaryClass, textSecondaryClass } from "@/lib/theme-classes";
 import { useCallback, useEffect, useState } from "react";
 
 const ADMIN_TOKEN_SESSION_KEY = "aco-admin-token";
@@ -73,10 +105,10 @@ function StatusMessage({
 }) {
   const classes =
     tone === "success"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-950/50 dark:text-emerald-100"
       : tone === "error"
-        ? "border-rose-200 bg-rose-50 text-rose-900"
-        : "border-slate-200 bg-slate-50 text-slate-800";
+        ? "border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-500/40 dark:bg-rose-950/50 dark:text-rose-100"
+        : "border-card-border bg-card-muted text-text-secondary";
 
   return (
     <pre className={`mt-4 overflow-x-auto rounded-lg border px-4 py-3 text-sm whitespace-pre-wrap ${classes}`}>
@@ -91,20 +123,15 @@ export default function AdminClient() {
   const [checkingStoredToken, setCheckingStoredToken] = useState(true);
   const [unlocking, setUnlocking] = useState(false);
   const [deleteDomain, setDeleteDomain] = useState("");
-  const [bannedDomainsText, setBannedDomainsText] = useState("");
-  const [nonEcommerceDomains, setNonEcommerceDomains] = useState<
-    Array<{
-      domain: string;
-      reason: string;
-      firstDetectedAt: string;
-      reviewed: boolean;
-      reviewedBy: string | null;
-      notes: string | null;
-    }>
+  const [domainReviewDomains, setDomainReviewDomains] = useState<DomainReviewRecord[]>([]);
+  const [domainReviewSearch, setDomainReviewSearch] = useState("");
+  const [domainReviewAddDomain, setDomainReviewAddDomain] = useState("");
+  const [loadingDomainReview, setLoadingDomainReview] = useState(false);
+  const [storefrontReviewRequests, setStorefrontReviewRequests] = useState<
+    StorefrontReviewRequest[]
   >([]);
-  const [nonEcommerceSearch, setNonEcommerceSearch] = useState("");
-  const [nonEcommerceAddDomain, setNonEcommerceAddDomain] = useState("");
-  const [loadingNonEcommerce, setLoadingNonEcommerce] = useState(false);
+  const [storefrontReviewSearch, setStorefrontReviewSearch] = useState("");
+  const [loadingStorefrontReview, setLoadingStorefrontReview] = useState(false);
   const [contributorsIntro, setContributorsIntro] = useState("");
   const [contributorsText, setContributorsText] = useState("");
   const [subscriberEmails, setSubscriberEmails] = useState<string[]>([]);
@@ -122,7 +149,6 @@ export default function AdminClient() {
     message: string;
     tone: "success" | "error" | "info";
   } | null>(null);
-  const [loadingBanned, setLoadingBanned] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [founderModeActive, setFounderModeActive] = useState(false);
   const [founderModeExampleOrigin, setFounderModeExampleOrigin] = useState("");
@@ -148,76 +174,33 @@ export default function AdminClient() {
     setStatus(null);
   }, []);
 
-  const loadBannedDomains = useCallback(async (adminToken: string) => {
-    setLoadingBanned(true);
-    setStatus(null);
-
-    try {
-      const trimmed = adminToken.trim();
-      const response = await fetch(
-        `/api/admin/banned-domains?token=${encodeURIComponent(trimmed)}`,
-        { headers: adminHeaders(trimmed) },
-      );
-      const data = (await response.json()) as {
-        domains?: string[];
-        error?: string;
-        redisConfigured?: boolean;
-      };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Failed to load banned domains");
-      }
-
-      setBannedDomainsText((data.domains ?? []).join("\n"));
-
-      if (!data.redisConfigured) {
-        setStatus({
-          tone: "info",
-          message:
-            "Redis is not configured. Banned domains are read from BANNED_SCAN_DOMAINS env vars. Saving requires Redis.",
-        });
-      }
-    } catch (loadError) {
-      setStatus({
-        tone: "error",
-        message:
-          loadError instanceof Error
-            ? loadError.message
-            : "Failed to load banned domains",
-      });
-    } finally {
-      setLoadingBanned(false);
-    }
-  }, []);
-
-  const loadNonEcommerceDomains = useCallback(async (adminToken: string, search?: string) => {
-    setLoadingNonEcommerce(true);
+  const loadDomainReviewQueue = useCallback(async (adminToken: string, search?: string) => {
+    setLoadingDomainReview(true);
     setStatus(null);
 
     try {
       const trimmed = adminToken.trim();
       const query = search?.trim() ? `&search=${encodeURIComponent(search.trim())}` : "";
       const response = await fetch(
-        `/api/admin/non-ecommerce-domains?token=${encodeURIComponent(trimmed)}${query}`,
+        `/api/admin/domain-review?token=${encodeURIComponent(trimmed)}${query}`,
         { headers: adminHeaders(trimmed) },
       );
       const data = (await response.json()) as {
-        domains?: typeof nonEcommerceDomains;
+        domains?: DomainReviewRecord[];
         error?: string;
         redisConfigured?: boolean;
       };
 
       if (!response.ok) {
-        throw new Error(data.error ?? "Failed to load non-ecommerce domains");
+        throw new Error(data.error ?? "Failed to load Domain Review Queue");
       }
 
-      setNonEcommerceDomains(data.domains ?? []);
+      setDomainReviewDomains(data.domains ?? []);
 
       if (!data.redisConfigured) {
         setStatus({
           tone: "info",
-          message:
-            "Redis is not configured. Non-ecommerce domain quarantine requires Redis.",
+          message: "Redis is not configured. Domain Review Queue requires Redis.",
         });
       }
     } catch (loadError) {
@@ -226,17 +209,143 @@ export default function AdminClient() {
         message:
           loadError instanceof Error
             ? loadError.message
-            : "Failed to load non-ecommerce domains",
+            : "Failed to load Domain Review Queue",
       });
     } finally {
-      setLoadingNonEcommerce(false);
+      setLoadingDomainReview(false);
     }
   }, []);
 
-  async function handleNonEcommerceAction(
-    action: "remove" | "approve" | "notes" | "add",
+  async function handleDomainReviewAction(
+    action: "add" | "remove" | "block_scans" | "allow_scans" | "notes" | "reclassify",
     domain: string,
-    notes?: string | null,
+    extra?: { notes?: string | null; type?: DomainReviewType },
+  ) {
+    if (!token) {
+      return;
+    }
+
+    const apiAction =
+      action === "allow_scans"
+        ? "allow_scans"
+        : action === "block_scans"
+          ? "block_scans"
+          : action;
+
+    const silent = action === "notes" || action === "reclassify";
+    if (!silent) {
+      setBusy(`review-${domain}-${action}`);
+    }
+    setStatus(null);
+
+    try {
+      const response = await fetch("/api/admin/domain-review", {
+        method: "POST",
+        headers: adminHeaders(token),
+        body: JSON.stringify({
+          token,
+          action: apiAction,
+          domain,
+          notes: extra?.notes ?? null,
+          type: extra?.type,
+        }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        domain?: DomainReviewRecord;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Action failed");
+      }
+
+      if (data.domain) {
+        const analyticsContext = {
+          domain: data.domain.domain,
+          reviewType: data.domain.type,
+          reviewStatus: data.domain.status,
+        };
+
+        switch (action) {
+          case "add":
+            trackDomainReviewCreated(analyticsContext);
+            break;
+          case "allow_scans":
+            trackDomainReviewWhitelisted(analyticsContext);
+            break;
+          case "reclassify":
+            trackDomainReviewReclassified(analyticsContext);
+            break;
+          case "remove":
+            break;
+          default:
+            trackDomainReviewUpdated(analyticsContext);
+        }
+      }
+
+      await loadDomainReviewQueue(token, domainReviewSearch);
+      if (!silent) {
+        setStatus({ tone: "success", message: `Updated ${domain}.` });
+      }
+    } catch (actionError) {
+      setStatus({
+        tone: "error",
+        message:
+          actionError instanceof Error ? actionError.message : "Action failed unexpectedly",
+      });
+    } finally {
+      if (!silent) {
+        setBusy(null);
+      }
+    }
+  }
+
+  const loadStorefrontReviewRequests = useCallback(async (adminToken: string, search?: string) => {
+    setLoadingStorefrontReview(true);
+    setStatus(null);
+
+    try {
+      const trimmed = adminToken.trim();
+      const query = search?.trim() ? `&search=${encodeURIComponent(search.trim())}` : "";
+      const response = await fetch(
+        `/api/admin/storefront-review?token=${encodeURIComponent(trimmed)}${query}`,
+        { headers: adminHeaders(trimmed) },
+      );
+      const data = (await response.json()) as {
+        requests?: StorefrontReviewRequest[];
+        error?: string;
+        redisConfigured?: boolean;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Failed to load Storefront Review Requests");
+      }
+
+      setStorefrontReviewRequests(data.requests ?? []);
+
+      if (!data.redisConfigured) {
+        setStatus({
+          tone: "info",
+          message: "Redis is not configured. Storefront Review Requests require Redis.",
+        });
+      }
+    } catch (loadError) {
+      setStatus({
+        tone: "error",
+        message:
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load Storefront Review Requests",
+      });
+    } finally {
+      setLoadingStorefrontReview(false);
+    }
+  }, []);
+
+  async function handleStorefrontReviewAction(
+    action: "status" | "notes" | "mark_supported" | "mark_not_supported" | "close",
+    id: string,
+    extra?: { status?: StorefrontReviewRequestStatus; reviewNotes?: string | null },
   ) {
     if (!token) {
       return;
@@ -244,29 +353,53 @@ export default function AdminClient() {
 
     const silent = action === "notes";
     if (!silent) {
-      setBusy(`non-ecommerce-${action}-${domain}`);
+      setBusy(id);
     }
     setStatus(null);
 
     try {
-      const response = await fetch("/api/admin/non-ecommerce-domains", {
+      const response = await fetch("/api/admin/storefront-review", {
         method: "POST",
         headers: adminHeaders(token),
         body: JSON.stringify({
           token,
           action,
-          domain,
-          notes: notes ?? null,
+          id,
+          status: extra?.status,
+          reviewNotes: extra?.reviewNotes ?? null,
         }),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as {
+        error?: string;
+        request?: StorefrontReviewRequest;
+      };
 
       if (!response.ok) {
         throw new Error(data.error ?? "Action failed");
       }
 
-      await loadNonEcommerceDomains(token, nonEcommerceSearch);
-      setStatus({ tone: "success", message: `Updated ${domain}.` });
+      if (
+        data.request &&
+        (action === "mark_supported" ||
+          action === "mark_not_supported" ||
+          action === "close" ||
+          (action === "status" &&
+            (extra?.status === "SUPPORTED" ||
+              extra?.status === "NOT_SUPPORTED" ||
+              extra?.status === "CLOSED")))
+      ) {
+        trackStorefrontReviewCompleted({
+          domain: data.request.normalizedDomain,
+          failureType: data.request.failureType,
+          relationship: data.request.relationship,
+          status: data.request.status,
+        });
+      }
+
+      await loadStorefrontReviewRequests(token, storefrontReviewSearch);
+      if (!silent) {
+        setStatus({ tone: "success", message: "Updated storefront review request." });
+      }
     } catch (actionError) {
       setStatus({
         tone: "error",
@@ -411,8 +544,8 @@ export default function AdminClient() {
       if (verification.ok) {
         setToken(stored);
         await Promise.all([
-          loadBannedDomains(stored),
-          loadNonEcommerceDomains(stored),
+          loadDomainReviewQueue(stored),
+          loadStorefrontReviewRequests(stored),
           loadContributors(stored),
           loadEmailSubscribers(stored),
           loadPlatformFeedback(stored),
@@ -430,7 +563,7 @@ export default function AdminClient() {
     return () => {
       cancelled = true;
     };
-  }, [loadBannedDomains, loadContributors, loadEmailSubscribers, loadNonEcommerceDomains, loadPlatformFeedback]);
+  }, [loadContributors, loadEmailSubscribers, loadDomainReviewQueue, loadPlatformFeedback, loadStorefrontReviewRequests]);
 
   useEffect(() => {
     if (!token) {
@@ -468,8 +601,8 @@ export default function AdminClient() {
     storeAdminToken(nextToken);
     setToken(nextToken);
     await Promise.all([
-      loadBannedDomains(nextToken),
-      loadNonEcommerceDomains(nextToken),
+      loadDomainReviewQueue(nextToken),
+      loadStorefrontReviewRequests(nextToken),
       loadContributors(nextToken),
       loadEmailSubscribers(nextToken),
       loadPlatformFeedback(nextToken),
@@ -563,51 +696,6 @@ export default function AdminClient() {
         tone: "error",
         message:
           deleteError instanceof Error ? deleteError.message : "Delete failed",
-      });
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function handleSaveBannedDomains() {
-    if (!token) {
-      return;
-    }
-
-    setBusy("banned");
-    setStatus(null);
-
-    const domains = bannedDomainsText
-      .split(/\r?\n|,/)
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-
-    try {
-      const response = await fetch("/api/admin/banned-domains", {
-        method: "POST",
-        headers: adminHeaders(token),
-        body: JSON.stringify({ token: token.trim(), domains }),
-      });
-      const data = (await response.json()) as {
-        status?: string;
-        domains?: string[];
-        error?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Save failed");
-      }
-
-      setBannedDomainsText((data.domains ?? domains).join("\n"));
-      setStatus({
-        tone: "success",
-        message: JSON.stringify(data, null, 2),
-      });
-    } catch (saveError) {
-      setStatus({
-        tone: "error",
-        message:
-          saveError instanceof Error ? saveError.message : "Save failed",
       });
     } finally {
       setBusy(null);
@@ -765,7 +853,7 @@ export default function AdminClient() {
 
   if (checkingStoredToken) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-600">
+      <div className={`${cardSurfaceClass} px-6 py-10 text-center text-sm ${textSecondaryClass}`}>
         Verifying admin session…
       </div>
     );
@@ -773,29 +861,29 @@ export default function AdminClient() {
 
   if (!token) {
     return (
-      <div className="max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold text-slate-900">Admin access</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+      <div className={`max-w-lg ${adminSectionClass}`}>
+        <h2 className={adminHeadingClass}>Admin access</h2>
+        <p className={adminBodyClass}>
           Enter your server-side admin token to unlock maintenance tools. The
           token is verified on the server before any tools are shown, then stored
           in this browser session only.
         </p>
         <form className="mt-6 space-y-4" onSubmit={(event) => void handleUnlock(event)}>
-          <label className="block text-sm font-medium text-slate-700">
+          <label className={`block text-sm font-medium ${textPrimaryClass}`}>
             Admin token
             <input
               type="password"
               autoComplete="off"
               value={tokenInput}
               onChange={(event) => setTokenInput(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+              className={`mt-2 w-full ${adminInputClass}`}
               placeholder="Paste ADMIN_RESET_TOKEN"
             />
           </label>
           <button
             type="submit"
             disabled={unlocking}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+            className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60 dark:bg-blue-700 dark:hover:bg-blue-600"
           >
             {unlocking ? "Verifying…" : "Unlock admin tools"}
           </button>
@@ -807,27 +895,29 @@ export default function AdminClient() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className={`flex flex-wrap items-center justify-between gap-4 ${adminSectionClass}`}>
         <div>
-          <p className="text-sm font-medium text-emerald-700">Admin session active</p>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+            Admin session active
+          </p>
+          <p className={`mt-1 text-sm ${textSecondaryClass}`}>
             Token verified with the server and stored in sessionStorage for this tab only.
           </p>
         </div>
         <button
           type="button"
           onClick={clearToken}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="rounded-lg border border-card-border px-4 py-2 text-sm font-medium text-text-primary hover:bg-card-muted"
         >
           Lock admin tools
         </button>
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className={adminSectionClass}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Founder Mode</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
+            <h2 className={adminHeadingClass}>Founder Mode</h2>
+            <p className={adminBodyClass}>
               Excludes GA4 and PostHog tracking in this browser only. Use it while
               testing or validating scans so internal activity does not affect analytics
               reporting. The setting persists across refreshes, tabs, and return visits.
@@ -837,16 +927,16 @@ export default function AdminClient() {
             className={
               founderModeActive
                 ? "inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900"
-                : "inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
+                : "inline-flex rounded-full bg-card-muted px-3 py-1 text-xs font-semibold text-text-secondary"
             }
           >
             {founderModeActive ? "Active in this browser" : "Inactive in this browser"}
           </span>
         </div>
 
-        <div className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
-          <p className="text-sm font-medium text-slate-900">Enable or disable via query string</p>
-          <p className="text-sm leading-6 text-slate-600">
+        <div className={adminNestedPanelClass}>
+          <p className={`text-sm font-medium ${textPrimaryClass}`}>Enable or disable via query string</p>
+          <p className={adminBodyClass}>
             Visit any page on this site with one of the query parameters below. The
             parameter is removed from the address bar immediately after it is applied.
             You can append it to the homepage or any other route.
@@ -854,20 +944,20 @@ export default function AdminClient() {
 
           <dl className="space-y-3 text-sm">
             <div>
-              <dt className="font-medium text-slate-900">Enable Founder Mode</dt>
-              <dd className="mt-1 break-all font-mono text-slate-700">
+              <dt className={`font-medium ${textPrimaryClass}`}>Enable Founder Mode</dt>
+              <dd className={`mt-1 break-all font-mono ${textSecondaryClass}`}>
                 ?{TELEMETRY_DIRECTIVE_PARAM}={TELEMETRY_DIRECTIVE_SUPPRESS}
               </dd>
-              <dd className="mt-2 break-all font-mono text-xs text-slate-600">
+              <dd className={`mt-2 break-all font-mono text-xs ${textSecondaryClass}`}>
                 {buildFounderModeUrl(TELEMETRY_DIRECTIVE_SUPPRESS)}
               </dd>
             </div>
             <div>
-              <dt className="font-medium text-slate-900">Disable Founder Mode</dt>
-              <dd className="mt-1 break-all font-mono text-slate-700">
+              <dt className={`font-medium ${textPrimaryClass}`}>Disable Founder Mode</dt>
+              <dd className={`mt-1 break-all font-mono ${textSecondaryClass}`}>
                 ?{TELEMETRY_DIRECTIVE_PARAM}={TELEMETRY_DIRECTIVE_RESUME}
               </dd>
-              <dd className="mt-2 break-all font-mono text-xs text-slate-600">
+              <dd className={`mt-2 break-all font-mono text-xs ${textSecondaryClass}`}>
                 {buildFounderModeUrl(TELEMETRY_DIRECTIVE_RESUME)}
               </dd>
             </div>
@@ -882,30 +972,45 @@ export default function AdminClient() {
             </a>
             <a
               href={buildFounderModeUrl(TELEMETRY_DIRECTIVE_RESUME)}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className={adminSecondaryButtonClass}
             >
               Disable Founder Mode
             </a>
-            <a
-              href="/analytics-status"
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
+            <a href="/analytics-status" className={adminSecondaryButtonClass}>
               Open analytics status
             </a>
           </div>
         </div>
 
-        <p className="mt-4 text-sm leading-6 text-slate-600">
+        <p className={`mt-4 text-sm leading-6 ${textSecondaryClass}`}>
           When active, a small &ldquo;Founder Mode Active&rdquo; indicator appears in the
           bottom-right corner of every page in this browser.
         </p>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold text-slate-900">
+      <DomainReviewQueueSection
+        token={token}
+        domains={domainReviewDomains}
+        search={domainReviewSearch}
+        addDomain={domainReviewAddDomain}
+        loading={loadingDomainReview}
+        busy={busy}
+        onSearchChange={setDomainReviewSearch}
+        onAddDomainChange={setDomainReviewAddDomain}
+        onLoad={() => void loadDomainReviewQueue(token, domainReviewSearch)}
+        onAction={(action, domain, extra) => {
+          if (action === "add") {
+            setDomainReviewAddDomain("");
+          }
+          void handleDomainReviewAction(action, domain, extra);
+        }}
+      />
+
+      <section className={adminSectionClass}>
+        <h2 className={adminHeadingClass}>
           Reset All Commerce Optimizer Data
         </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+        <p className={adminBodyClass}>
           Deletes all Redis keys under the Commerce Optimizer prefixes (scan
           activity, audit cache, rate limits, and admin overrides).
         </p>
@@ -919,9 +1024,9 @@ export default function AdminClient() {
         </button>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold text-slate-900">Delete Audit</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+      <section className={adminSectionClass}>
+        <h2 className={adminHeadingClass}>Delete Audit</h2>
+        <p className={adminBodyClass}>
           Remove cached audit data and the matching recent audit entry for a
           single hostname.
         </p>
@@ -931,7 +1036,7 @@ export default function AdminClient() {
             value={deleteDomain}
             onChange={(event) => setDeleteDomain(event.target.value)}
             placeholder="allbirds.com or https://www.allbirds.com"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+            className={`min-w-0 flex-1 ${adminInputClass}`}
           />
           <button
             type="button"
@@ -944,195 +1049,39 @@ export default function AdminClient() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold text-slate-900">Banned Domains</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Default list comes from BANNED_SCAN_DOMAINS. When Redis is configured,
-          saving here stores a production override that takes priority.
-        </p>
-        <textarea
-          value={bannedDomainsText}
-          onChange={(event) => setBannedDomainsText(event.target.value)}
-          rows={8}
-          disabled={loadingBanned}
-          placeholder="amazon.com&#10;walmart.com"
-          className="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900"
-        />
-        <div className="mt-4 flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled={loadingBanned}
-            onClick={() => void loadBannedDomains(token)}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-          >
-            {loadingBanned ? "Loading…" : "Load Banned Domains"}
-          </button>
-          <button
-            type="button"
-            disabled={busy === "banned" || loadingBanned}
-            onClick={() => void handleSaveBannedDomains()}
-            className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
-          >
-            {busy === "banned" ? "Saving…" : "Save Banned Domains"}
-          </button>
-        </div>
-      </section>
+      <StorefrontReviewRequestsSection
+        requests={storefrontReviewRequests}
+        search={storefrontReviewSearch}
+        loading={loadingStorefrontReview}
+        busy={busy}
+        onSearchChange={setStorefrontReviewSearch}
+        onLoad={() => void loadStorefrontReviewRequests(token, storefrontReviewSearch)}
+        onAction={(action, id, extra) => {
+          void handleStorefrontReviewAction(action, id, extra);
+        }}
+      />
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold text-slate-900">Non-Ecommerce Domains</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Domains quarantined after non-storefront classification. Future scans against these
-          domains are blocked immediately and excluded from benchmarks and recent audits.
-        </p>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <input
-            type="text"
-            value={nonEcommerceSearch}
-            onChange={(event) => setNonEcommerceSearch(event.target.value)}
-            placeholder="Search domain, reason, or notes"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
-          />
-          <button
-            type="button"
-            disabled={loadingNonEcommerce}
-            onClick={() => void loadNonEcommerceDomains(token, nonEcommerceSearch)}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-          >
-            {loadingNonEcommerce ? "Loading…" : "Search"}
-          </button>
-        </div>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <input
-            type="text"
-            value={nonEcommerceAddDomain}
-            onChange={(event) => setNonEcommerceAddDomain(event.target.value)}
-            placeholder="Add domain manually (example.com)"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
-          />
-          <button
-            type="button"
-            disabled={busy !== null || !nonEcommerceAddDomain.trim()}
-            onClick={() => {
-              const domain = nonEcommerceAddDomain.trim();
-              setNonEcommerceAddDomain("");
-              void handleNonEcommerceAction("add", domain);
-            }}
-            className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-60"
-          >
-            Add Domain
-          </button>
-        </div>
-        <div className="mt-4 max-h-96 overflow-auto rounded-lg border border-slate-200">
-          <table className="min-w-full text-left text-sm">
-            <thead className="sticky top-0 bg-slate-50">
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-3 py-2">Domain</th>
-                <th className="px-3 py-2">Reason</th>
-                <th className="px-3 py-2">First Detected</th>
-                <th className="px-3 py-2">Reviewed</th>
-                <th className="px-3 py-2">Notes</th>
-                <th className="px-3 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {nonEcommerceDomains.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-3 py-4 text-slate-500">
-                    No quarantined domains yet.
-                  </td>
-                </tr>
-              ) : (
-                nonEcommerceDomains.map((entry) => {
-                  const rowBusy =
-                    busy === `non-ecommerce-remove-${entry.domain}` ||
-                    busy === `non-ecommerce-approve-${entry.domain}`;
-
-                  return (
-                  <tr key={entry.domain} className="border-b border-slate-100 align-top">
-                    <td className="px-3 py-3 font-medium text-slate-900">{entry.domain}</td>
-                    <td className="px-3 py-3 text-slate-700">{entry.reason}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-slate-600">
-                      {new Date(entry.firstDetectedAt).toLocaleString()}
-                    </td>
-                    <td className="px-3 py-3 text-slate-700">
-                      {entry.reviewed
-                        ? `Yes${entry.reviewedBy ? ` (${entry.reviewedBy})` : ""}`
-                        : "No"}
-                    </td>
-                    <td className="max-w-xs px-3 py-3 text-slate-600">
-                      <textarea
-                        defaultValue={entry.notes ?? ""}
-                        rows={2}
-                        className="w-full rounded border border-slate-200 px-2 py-1 text-xs"
-                        onBlur={(event) => {
-                          const nextNotes = event.target.value.trim();
-                          if (nextNotes === (entry.notes ?? "")) {
-                            return;
-                          }
-                          void handleNonEcommerceAction("notes", entry.domain, nextNotes || null);
-                        }}
-                      />
-                    </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      <div className="flex flex-col gap-2">
-                        <button
-                          type="button"
-                          disabled={rowBusy || entry.reviewed}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => void handleNonEcommerceAction("approve", entry.domain)}
-                          className="text-sm font-medium text-blue-900 hover:underline disabled:opacity-50"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          disabled={rowBusy}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `Remove ${entry.domain} from the quarantine list? Future scans will be allowed.`,
-                              )
-                            ) {
-                              void handleNonEcommerceAction("remove", entry.domain);
-                            }
-                          }}
-                          className="text-sm font-medium text-rose-700 hover:underline disabled:opacity-50"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold text-slate-900">Community Contributors</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+      <section className={adminSectionClass}>
+        <h2 className={adminHeadingClass}>Community Contributors</h2>
+        <p className={adminBodyClass}>
           Edit the public page at{" "}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">/contributors</code>.
+          <code className={adminCodeClass}>/contributors</code>.
           One line per contributor:{" "}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+          <code className={adminCodeClass}>
             Name | LinkedIn | Company | Company URL | Note | active
           </code>
           . Set active to <code className="text-xs">false</code> to hide on the public page.
         </p>
-        <label className="mt-4 block text-sm font-medium text-slate-700">
+        <label className={`mt-4 ${adminLabelClass}`}>
           Intro text
           <textarea
             value={contributorsIntro}
             onChange={(event) => setContributorsIntro(event.target.value)}
             rows={3}
-            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+            className={adminTextareaClass}
           />
         </label>
-        <label className="mt-4 block text-sm font-medium text-slate-700">
+        <label className={`mt-4 ${adminLabelClass}`}>
           Contributors
           <textarea
             value={contributorsText}
@@ -1141,7 +1090,7 @@ export default function AdminClient() {
             placeholder={
               "Jane Doe | https://www.linkedin.com/in/jane | Acme Corp | https://acme.com | Helped test audits | true"
             }
-            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900"
+            className={adminTextareaMonoClass}
           />
         </label>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -1149,7 +1098,7 @@ export default function AdminClient() {
             type="button"
             disabled={busy === "contributors"}
             onClick={() => void loadContributors(token)}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className={adminSecondaryButtonClass}
           >
             Reload Contributors
           </button>
@@ -1164,9 +1113,9 @@ export default function AdminClient() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold text-slate-900">Newsletter Signups</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+      <section className={adminSectionClass}>
+        <h2 className={adminHeadingClass}>Newsletter Signups</h2>
+        <p className={adminBodyClass}>
           Email addresses collected from the header and Contact page signup forms.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -1174,7 +1123,7 @@ export default function AdminClient() {
             type="button"
             disabled={busy === "subscribers"}
             onClick={() => void loadEmailSubscribers(token)}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className={adminSecondaryButtonClass}
           >
             Reload signups
           </button>
@@ -1184,14 +1133,14 @@ export default function AdminClient() {
           value={subscriberEmails.join("\n")}
           rows={8}
           placeholder="No signups yet"
-          className="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900"
+          className={`mt-4 w-full font-mono ${adminInputClass}`}
         />
-        <p className="mt-2 text-sm text-slate-600">{subscriberEmails.length} subscriber(s)</p>
+        <p className={`mt-2 text-sm ${textSecondaryClass}`}>{subscriberEmails.length} subscriber(s)</p>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold text-slate-900">Platform Detection Feedback</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+      <section className={adminSectionClass}>
+        <h2 className={adminHeadingClass}>Platform Detection Feedback</h2>
+        <p className={adminBodyClass}>
           User-submitted corrections when platform detection is unknown or low confidence.
           Apply a platform override to update recent audits, history, benchmark samples, and cached audits.
         </p>
@@ -1200,41 +1149,43 @@ export default function AdminClient() {
             type="button"
             disabled={busy === "feedback"}
             onClick={() => void loadPlatformFeedback(token)}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className={adminSecondaryButtonClass}
           >
             Reload feedback
           </button>
         </div>
-        <div className="mt-4 max-h-80 overflow-auto rounded-lg border border-slate-200">
+        <div className={`${adminTableWrapClass} max-h-80 overflow-auto`}>
           <table className="min-w-full text-left text-sm">
-            <thead className="sticky top-0 bg-slate-50">
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-3 py-2">When</th>
-                <th className="px-3 py-2">Domain</th>
-                <th className="px-3 py-2">Suggested</th>
-                <th className="px-3 py-2">Comments</th>
-                <th className="px-3 py-2">Action</th>
+            <thead className={adminTableHeadClass}>
+              <tr>
+                <th className={adminTableHeaderCellClass}>When</th>
+                <th className={adminTableHeaderCellClass}>Domain</th>
+                <th className={adminTableHeaderCellClass}>Suggested</th>
+                <th className={adminTableHeaderCellClass}>Comments</th>
+                <th className={adminTableHeaderCellClass}>Action</th>
               </tr>
             </thead>
             <tbody>
               {platformFeedback.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-3 py-4 text-slate-500">
+                  <td colSpan={5} className={`px-3 py-4 ${textSecondaryClass}`}>
                     No feedback submitted yet.
                   </td>
                 </tr>
               ) : (
                 platformFeedback.map((entry) => (
-                  <tr key={`${entry.timestamp}-${entry.domain}`} className="border-b border-slate-100">
-                    <td className="px-3 py-2 whitespace-nowrap text-slate-600">
+                  <tr key={`${entry.timestamp}-${entry.domain}`} className={adminTableRowClass}>
+                    <td className={`${adminTableCellClass} whitespace-nowrap`}>
                       {new Date(entry.timestamp).toLocaleString()}
                     </td>
-                    <td className="px-3 py-2 font-medium text-slate-900">{entry.domain}</td>
-                    <td className="px-3 py-2 text-slate-700">{entry.platform ?? "-"}</td>
-                    <td className="max-w-xs px-3 py-2 text-slate-600">
+                    <td className={`${adminTableCellClass} font-medium text-text-primary`}>
+                      {entry.domain}
+                    </td>
+                    <td className={adminTableCellClass}>{entry.platform ?? "-"}</td>
+                    <td className={`max-w-xs ${adminTableCellClass}`}>
                       {entry.comments ?? "-"}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className={adminTableCellClass}>
                       <button
                         type="button"
                         disabled={busy === "reclassify"}
@@ -1257,9 +1208,9 @@ export default function AdminClient() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-lg font-semibold text-slate-900">Reclassify Platform</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+      <section className={adminSectionClass}>
+        <h2 className={adminHeadingClass}>Reclassify Platform</h2>
+        <p className={adminBodyClass}>
           Change a domain from Other Platforms (or any incorrect label) to the correct commerce platform.
           Sets a persistent override for future audits.
         </p>
@@ -1269,12 +1220,12 @@ export default function AdminClient() {
             value={reclassifyDomain}
             onChange={(event) => setReclassifyDomain(event.target.value)}
             placeholder="zadig-et-voltaire.com"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+            className={`min-w-0 flex-1 ${adminInputClass}`}
           />
           <select
             value={reclassifyPlatform}
             onChange={(event) => setReclassifyPlatform(event.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+            className={adminInputClass}
           >
             <option value="Shopify">Shopify</option>
             <option value="BigCommerce">BigCommerce</option>

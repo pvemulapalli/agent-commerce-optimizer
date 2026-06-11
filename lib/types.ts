@@ -219,3 +219,69 @@ export interface GenerateFixesApiResponse {
   assets: GeneratedAsset[];
   cacheStatus?: CacheStatus;
 }
+
+export type ReportType = "full" | "partial";
+
+export type TechnologyDetectionStatus = "completed" | "failed";
+
+export type SiteType = "ecommerce" | "unknown" | "non_ecommerce";
+
+export type FullAuditFailureReason =
+  | "bot_verification"
+  | "forbidden"
+  | "rate_limited"
+  | "server_error"
+  | "timeout"
+  | "redirect_loop"
+  | "ssl_error"
+  | "dns_error"
+  | "non_ecommerce"
+  | "unknown";
+
+export interface InternalDetectionEvidence {
+  matchedSignalCategories: string[];
+  confidenceInputs: {
+    confidence: ConfidenceLevel;
+    confidenceScore: number;
+  };
+  detectionNotes: string[];
+  responseHeaderSignals: string[];
+  cookieSignals: string[];
+  scriptReferences: string[];
+  stylesheetReferences: string[];
+  metaTags: string[];
+  canonicalUrl: string | null;
+}
+
+export interface TechnologyDetectionResult {
+  domain: string;
+  normalizedDomain: string;
+  detectedPlatform: PlatformAnalysis;
+  platformConfidence: ConfidenceLevel;
+  siteType: SiteType;
+  detectionStatus: TechnologyDetectionStatus;
+  publicDetectionSummary: string;
+  internalDetectionEvidence: InternalDetectionEvidence;
+  entryUrl: string;
+  crawledAt: string;
+}
+
+export interface FullAuditFailureInfo {
+  reason: FullAuditFailureReason;
+  title: string;
+  message: string;
+  suggestedNextSteps: string[];
+  httpStatus?: number | null;
+}
+
+export interface PartialReportResponse {
+  reportType: "partial";
+  scanStatus: "partial_report";
+  url: string;
+  crawledAt: string;
+  cacheStatus: CacheStatus;
+  technologyDetection: TechnologyDetectionResult;
+  fullAuditFailure: FullAuditFailureInfo;
+  reportId?: string;
+  shareUrl?: string;
+}

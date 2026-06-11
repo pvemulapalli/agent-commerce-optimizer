@@ -1,4 +1,9 @@
 import type { ConfidenceLevel } from "./types";
+import {
+  classifyFetchFailureCode,
+  mapFetchReachabilityError,
+} from "./gateway-errors";
+import type { PageData } from "./types";
 
 export const SCAN_FAILED_STATUS = "scan_failed";
 
@@ -113,10 +118,20 @@ export function buildScanFailureDiagnostic(
   overrides?: Partial<Pick<ScanFailureDiagnostic, "message" | "title" | "confidence" | "httpStatus">>,
 ): ScanFailureDiagnostic {
   const base = DIAGNOSTIC_COPY[code];
+  let message = overrides?.message ?? base.message;
+
+  if (
+    code === "blocked_403" &&
+    overrides?.httpStatus != null &&
+    overrides.message == null
+  ) {
+    message = `The storefront returned HTTP ${overrides.httpStatus} to our automated scan. The site may still load normally in a browser—many stores allow human visitors while blocking audit or bot traffic at the edge (for example nginx, Akamai, or similar WAF rules).`;
+  }
+
   return {
     code,
     title: overrides?.title ?? base.title,
-    message: overrides?.message ?? base.message,
+    message,
     confidence: overrides?.confidence ?? base.confidence,
     httpStatus: overrides?.httpStatus,
   };
@@ -170,6 +185,24 @@ export function diagnosticFromReachabilityError(error: unknown): ScanFailureDiag
   }
 
   return buildScanFailureDiagnostic("site_unreachable");
+}
+
+export function buildScanFailureFromFetchError(error: unknown): ScanFailureDiagnostic {
+  const code = classifyFetchFailureCode(error) ?? "site_unreachable";
+
+  if (code === "site_unreachable") {
+    return buildScanFailureDiagnostic(code, {
+      message: mapFetchReachabilityError(error),
+    });
+  }
+
+  return buildScanFailureDiagnostic(code);
+}
+
+export function buildScanFailureFromPageFetch(
+  page: Pick<PageData, "error" | "status">,
+): ScanFailureDiagnostic {
+  return buildScanFailureFromFetchError(page.error ?? "Fetch failed");
 }
 
 export function isScanFailureResponse(

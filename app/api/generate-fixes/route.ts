@@ -5,7 +5,10 @@ import { EcommerceIneligibleError } from "@/lib/ecommerce-eligibility";
 import { recordEcommerceRejection } from "@/lib/ecommerce-rejection-log";
 import { DomainUnreachableError } from "@/lib/domain-reachability";
 import { generateFixAssets } from "@/lib/generate-assets";
-import { addNonEcommerceDomain } from "@/lib/non-ecommerce-domains";
+import {
+  recordEcommerceIneligibleForDomainReview,
+  recordScanFailureForDomainReview,
+} from "@/lib/domain-review-recording";
 import { runAudit } from "@/lib/run-audit";
 import { validateScanRequest } from "@/lib/scan-request";
 import { scanUrlSchema } from "@/lib/scan-request-schema";
@@ -70,6 +73,7 @@ export async function POST(request: Request) {
     return NextResponse.json(response);
   } catch (error) {
     if (error instanceof BotVerificationBlockedError) {
+      await recordScanFailureForDomainReview({ url: parsed.data.url, error });
       return createBotVerificationResponse();
     }
 
@@ -79,14 +83,15 @@ export async function POST(request: Request) {
         reason: error.assessment.reason,
         ecommerceConfidence: error.assessment.ecommerceConfidence,
       });
-      await addNonEcommerceDomain({
-        domain: parsed.data.url,
+      await recordEcommerceIneligibleForDomainReview({
+        url: parsed.data.url,
         reason: error.assessment.reason,
       });
       return createIneligibleEcommerceResponse(error.assessment);
     }
 
     if (error instanceof DomainUnreachableError) {
+      await recordScanFailureForDomainReview({ url: parsed.data.url, error });
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
