@@ -142,6 +142,22 @@ export async function getAuditHistory(
   }
 }
 
+/** Reads the full audit history list (newest first). */
+export async function getAllAuditHistory(): Promise<AuditHistoryRecord[]> {
+  try {
+    if (isRedisConfigured()) {
+      const redis = getRedis();
+      const raw = await redis.lrange(HISTORY_KEY, 0, -1);
+      return parseHistoryList(raw ?? []);
+    }
+
+    return [...memoryHistory];
+  } catch (error) {
+    console.error("[audit-history] read all failed:", error);
+    return [];
+  }
+}
+
 export async function getAuditHistoryForPlatform(
   platform: string,
   limit = DEFAULT_AUDIT_HISTORY_READ_LIMIT,

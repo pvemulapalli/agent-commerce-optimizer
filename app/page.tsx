@@ -3,8 +3,10 @@
 import { ActivityFeed } from "@/components/activity-feed";
 import { AuditHero } from "@/components/audit-hero";
 import { AuditResultsSection } from "@/components/audit-results";
+import { HowItWorksSection } from "@/components/how-it-works-section";
 import { PartialReportSection } from "@/components/partial-report-section";
 import { MarketingSections } from "@/components/marketing-sections";
+import { ReportPreviewSection } from "@/components/report-preview-section";
 import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
 import { RecentAuditsPreview } from "@/components/recent-audits";
 import { shouldShowTurnstileWidget } from "@/components/turnstile-widget";
@@ -27,6 +29,7 @@ import type { RecentScanRecord } from "@/lib/scan-activity-types";
 import {
   trackFullAuditCompleted,
   trackFullAuditFailed,
+  trackHeroScanStarted,
   trackNewScanClicked,
   trackPartialReportCreated,
   trackPlatformDetected,
@@ -139,7 +142,6 @@ export default function Home() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [scanStartedAt, setScanStartedAt] = useState<number | null>(null);
   const [feedNotifications, setFeedNotifications] = useState<RecentScanRecord[]>([]);
-  const [loadingRecentId, setLoadingRecentId] = useState<string | null>(null);
   const loadedReportUrlRef = useRef<string | null>(null);
 
   const activityFeedEnabled = isActivityFeedEnabled();
@@ -221,7 +223,6 @@ export default function Home() {
     setUrl(scanUrl);
     setLoading(true);
     setScanStartedAt(Date.now());
-    setLoadingRecentId(entry.id);
     setError(null);
     setNonEcommerceMessage(null);
     setDomainReviewNotice(null);
@@ -318,7 +319,6 @@ export default function Home() {
     } finally {
       setLoading(false);
       setScanStartedAt(null);
-      setLoadingRecentId(null);
     }
   }
 
@@ -384,6 +384,7 @@ export default function Home() {
     setPartialResult(null);
     setFixes(null);
     setFixesError(null);
+    trackHeroScanStarted(targetUrl);
     trackScanStartedFromUrl(targetUrl);
 
     try {
@@ -503,7 +504,7 @@ export default function Home() {
               trackNewScanClicked(result?.reportId ?? partialResult?.reportId);
               setError(null);
               setNonEcommerceMessage(null);
-    setDomainReviewNotice(null);
+              setDomainReviewNotice(null);
               setBotVerificationDiagnostic(null);
               setScanFailureDiagnostic(null);
               setUrl("");
@@ -515,21 +516,18 @@ export default function Home() {
           />
         </div>
 
-        {!result && !partialResult && <MarketingSections />}
-
         {!result && !partialResult ? (
-          <RecentAuditsPreview
-            entries={activity.recentScans}
-            totalCount={activity.totalScans}
-            loading={activityLoading}
-            variant="homepage"
-            onSelectEntry={(entry) => {
-              trackRecentScanClickedFromEntry(entry);
-              void loadRecentAudit(entry);
-            }}
-            loadingEntryId={loadingRecentId}
-            auditLoading={loading}
-          />
+          <>
+            <HowItWorksSection />
+            <ReportPreviewSection />
+            <RecentAuditsPreview
+              entries={activity.recentScans}
+              totalCount={activity.totalScans}
+              loading={activityLoading}
+              variant="homepage"
+            />
+            <MarketingSections />
+          </>
         ) : null}
 
         {!result && !partialResult && activity.platformStats.length > 0 ? (

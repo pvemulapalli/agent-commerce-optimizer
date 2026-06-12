@@ -1,6 +1,6 @@
 import { DIFFERENTIATOR_INTRO_COPY } from "@/lib/brand";
 
-const AUDIT_ITEMS = [
+const READINESS_ITEMS = [
   { title: "Product discovery", description: "Catalog URLs, pricing, and product pages." },
   { title: "Merchant identity", description: "Organization schema and homepage metadata." },
   { title: "Policies", description: "Returns, shipping, and support pages linked from the storefront." },
@@ -66,13 +66,13 @@ export function MarketingSections() {
 
       <section className="rounded-2xl border border-card-border bg-card p-8 shadow-sm sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.15em] text-text-secondary">
-          What We Scan
+          Readiness evaluation
         </p>
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
-          Evidence-backed storefront checks
+          Evidence-backed readiness assessment
         </h2>
         <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-          {AUDIT_ITEMS.map((item) => (
+          {READINESS_ITEMS.map((item) => (
             <li
               key={item.title}
               className="rounded-xl border border-card-border bg-card-muted px-4 py-3"

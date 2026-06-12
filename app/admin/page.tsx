@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/page-header";
+import { resolveAdminPagePath } from "@/lib/admin-route";
 import AdminClient from "./admin-client";
 import type { Metadata } from "next";
 
@@ -16,7 +17,7 @@ export default function AdminPage() {
       <PageHeader eyebrow="Maintenance" title="Admin Tools" />
 
       <div className="mt-10">
-        <AdminClient />
+        <AdminClient adminRoutePath={resolveAdminPagePath()} />
       </div>
     </main>
   );

@@ -11,11 +11,13 @@ function handleAdminRouting(request: NextRequest): NextResponse | null {
   const adminPath = resolveAdminPagePath();
   const pathname = request.nextUrl.pathname;
 
-  if (pathname === `/${adminPath}`) {
-    return NextResponse.rewrite(new URL("/admin", request.url));
+  if (pathname === `/${adminPath}` || pathname.startsWith(`/${adminPath}/`)) {
+    const adminSuffix =
+      pathname === `/${adminPath}` ? "" : pathname.slice(`/${adminPath}`.length);
+    return NextResponse.rewrite(new URL(`/admin${adminSuffix}`, request.url));
   }
 
-  if (pathname === "/admin" && adminPath !== "admin") {
+  if ((pathname === "/admin" || pathname.startsWith("/admin/")) && adminPath !== "admin") {
     return new NextResponse(null, { status: 404 });
   }
 

@@ -10,15 +10,21 @@ export const PRODUCT_BYLINE = `${PRODUCT_NAME} by ${PARENT_BRAND}`;
 
 export const OPEN_GRAPH_TITLE = `${PARENT_BRAND} | ${PRODUCT_NAME}`;
 
-export const HERO_HEADLINE = "Optimize Your Store For AI Commerce";
+export const HERO_HEADLINE = "Measure how ready your storefront is for AI agents";
 
-export const HERO_SUPPORTING_COPY =
-  "Understand how AI systems discover, evaluate, and transact with your storefront.";
+export const HERO_SUBHEADLINE =
+  "Understand how AI systems discover, evaluate, and transact with your business.";
+
+export const HERO_PLATFORM_COPY =
+  "Merchant Signals evaluates storefront readiness across discovery, catalog, trust, and transaction experiences to help merchants prepare for the next generation of commerce.";
+
+/** @deprecated Use HERO_SUBHEADLINE for subheadline copy. */
+export const HERO_SUPPORTING_COPY = HERO_SUBHEADLINE;
 
 export const DIFFERENTIATOR_INTRO_COPY =
-  "Most tools tell you if you're visible. Commerce Optimizer shows why and what\u00A0to\u00A0fix.";
+  "Most tools tell you if you're visible. Merchant Signals shows what to improve for agentic commerce readiness.";
 
-export const DEFAULT_SITE_DESCRIPTION = HERO_SUPPORTING_COPY;
+export const DEFAULT_SITE_DESCRIPTION = HERO_PLATFORM_COPY;
 
 export const FOOTER_COPYRIGHT = `© ${new Date().getFullYear()} ${PARENT_BRAND}`;
 

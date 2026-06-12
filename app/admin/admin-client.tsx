@@ -8,6 +8,7 @@ import {
   TELEMETRY_DIRECTIVE_SUPPRESS,
 } from "@/lib/telemetry-context";
 import { DomainReviewQueueSection } from "@/components/domain-review-queue-section";
+import { AdminToolsNav } from "@/components/admin-tools-nav";
 import { StorefrontReviewRequestsSection } from "@/components/storefront-review-requests-section";
 import type { DomainReviewRecord, DomainReviewType } from "@/lib/domain-review-types";
 import type {
@@ -117,7 +118,7 @@ function StatusMessage({
   );
 }
 
-export default function AdminClient() {
+export default function AdminClient({ adminRoutePath }: { adminRoutePath: string }) {
   const [token, setToken] = useState("");
   const [tokenInput, setTokenInput] = useState("");
   const [checkingStoredToken, setCheckingStoredToken] = useState(true);
@@ -904,14 +905,27 @@ export default function AdminClient() {
             Token verified with the server and stored in sessionStorage for this tab only.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={clearToken}
-          className="rounded-lg border border-card-border px-4 py-2 text-sm font-medium text-text-primary hover:bg-card-muted"
-        >
-          Lock admin tools
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={clearToken}
+            className="rounded-lg border border-card-border px-4 py-2 text-sm font-medium text-text-primary hover:bg-card-muted"
+          >
+            Lock admin tools
+          </button>
+        </div>
       </div>
+
+      <section className={adminSectionClass}>
+        <h2 className={adminHeadingClass}>Internal tools</h2>
+        <p className={adminBodyClass}>
+          Diagnostics and health checks for this deployment. Analytics status and agent readiness
+          require the same admin token used above. API health stays public for uptime monitoring.
+        </p>
+        <div className="mt-4">
+          <AdminToolsNav adminRoutePath={adminRoutePath} />
+        </div>
+      </section>
 
       <section className={adminSectionClass}>
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -975,9 +989,6 @@ export default function AdminClient() {
               className={adminSecondaryButtonClass}
             >
               Disable Founder Mode
-            </a>
-            <a href="/analytics-status" className={adminSecondaryButtonClass}>
-              Open analytics status
             </a>
           </div>
         </div>

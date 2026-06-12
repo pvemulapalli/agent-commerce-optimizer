@@ -159,7 +159,7 @@ async function checkMarkdownNegotiation(): Promise<{ pass: boolean; detail: stri
   return { pass: true, detail: "Homepage and About support Accept: text/markdown" };
 }
 
-export function AgentReadinessClient() {
+export function AgentReadinessClient({ embedded = false }: { embedded?: boolean }) {
   const [checks, setChecks] = useState<DiscoverabilityCheck[]>([
     {
       id: "robots",
@@ -251,15 +251,9 @@ export function AgentReadinessClient() {
     };
   }, []);
 
-  return (
-    <main className="mx-auto w-full min-w-0 max-w-4xl px-6 py-10 lg:px-8 lg:py-14">
-      <PageHeader
-        eyebrow="Debug"
-        title="Agent Readiness"
-        description="Informational checks for AI discoverability signals exposed by Merchant Signals. This page does not modify site configuration."
-      />
-
-      <section className="mt-8 rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
+  const content = (
+    <>
+      <section className={`${embedded ? "" : "mt-8 "}rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8`}>
         <p className="text-sm text-text-secondary">
           Version {APP_VERSION} · Live checks against this deployment
         </p>
@@ -295,6 +289,21 @@ export function AgentReadinessClient() {
           ))}
         </ul>
       </section>
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <main className="mx-auto w-full min-w-0 max-w-4xl px-6 py-10 lg:px-8 lg:py-14">
+      <PageHeader
+        eyebrow="Debug"
+        title="Agent Readiness"
+        description="Informational checks for AI discoverability signals exposed by Merchant Signals. This page does not modify site configuration."
+      />
+      {content}
     </main>
   );
 }

@@ -10,3 +10,18 @@ export function resolveAdminPagePath(): string {
 
   return configured.replace(/^\/+|\/+$/g, "");
 }
+
+/** Client-safe admin path for links in browser UI. Prefer passing routePath from the server. */
+export function resolveAdminPagePathClient(): string {
+  return resolveAdminPagePath();
+}
+
+export function adminPageHref(suffix = "", routePath?: string): string {
+  const configured = (routePath ?? resolveAdminPagePath()).replace(/^\/+|\/+$/g, "");
+  const base = `/${configured}`;
+  if (!suffix) {
+    return base;
+  }
+
+  return `${base}${suffix.startsWith("/") ? suffix : `/${suffix}`}`;
+}

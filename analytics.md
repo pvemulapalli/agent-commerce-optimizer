@@ -192,7 +192,12 @@ These are also tracked but were not part of the initial product-event spec:
 
 ## Diagnostics
 
-Visit `/analytics-status` to verify GA4 and PostHog configuration and inspect the latest events captured in the current browser session.
+After unlocking admin tools, open `/{ADMIN_ROUTE_PATH}/analytics-status` (for example `/admin-panel/analytics-status` when `ADMIN_ROUTE_PATH=admin-panel`) to verify GA4 and PostHog configuration and inspect the latest events captured in the current browser session.
+
+Related admin-only diagnostics:
+
+- `/{ADMIN_ROUTE_PATH}/agent-readiness` — live AI discoverability checks
+- `/api/health` — public JSON health check (linked from the admin Internal tools section)
 
 ## Implementation files
 

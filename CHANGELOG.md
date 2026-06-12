@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.6.0] - 2026-06-11
+
+### [UX]
+- Repositioned homepage hero around Agentic Commerce Readiness with updated headline, subheadline, and supporting copy
+- Added How Merchant Signals Works section with a three-step readiness assessment flow
+- Added What You'll Learn report preview section with screenshots of readiness scores, platform detection, recommendations, and fix prompts
+- Renamed Recent Scans to Example Reports on the homepage with supporting text, full-card links, View Report CTA, and hover states
+
+### [Positioning]
+- Shifted homepage language from audit-tool framing toward assessment, readiness evaluation, and agentic commerce readiness
+
+### [Homepage]
+- Reordered pre-scan homepage sections: hero URL input, How It Works, report preview, example reports, then platform marketing content
+
+### [Analytics]
+- Added `hero_scan_started`, `example_report_clicked`, `report_preview_viewed`, and `how_it_works_viewed` events
+
+### [Admin]
+- Moved analytics status and agent readiness diagnostics under the obscured admin path with the same `ADMIN_RESET_TOKEN` session gate as scan analytics
+- Added Internal tools section on the admin landing page with links to scan analytics, analytics status, agent readiness, and public API health
+- Removed public `/analytics-status` and `/agent-readiness` routes
+
 ## [3.5.9] - 2026-06-10
 
 ### [Infrastructure]

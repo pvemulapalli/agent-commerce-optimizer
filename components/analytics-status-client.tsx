@@ -33,7 +33,7 @@ function ConfigBadge({
   );
 }
 
-export function AnalyticsStatusClient() {
+export function AnalyticsStatusClient({ embedded = false }: { embedded?: boolean }) {
   const { suppressed } = useTelemetrySuppression();
   const [events, setEvents] = useState<AnalyticsEventLogEntry[]>([]);
   const ga4Active = isGa4TrackingEnabled() && !suppressed;
@@ -43,15 +43,9 @@ export function AnalyticsStatusClient() {
     setEvents(readAnalyticsEventLog());
   }, [suppressed]);
 
-  return (
-    <main className="mx-auto w-full min-w-0 max-w-4xl px-6 py-10 lg:px-8 lg:py-14">
-      <PageHeader
-        eyebrow="Debug"
-        title="Analytics Status"
-        description="Diagnostics for GA4 and PostHog instrumentation. Tracking runs in production only when the required environment variables are configured."
-      />
-
-      <section className="mt-8 rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
+  const content = (
+    <>
+      <section className={`${embedded ? "" : "mt-8 "}rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8`}>
         <p className="text-sm text-text-secondary">Version {APP_VERSION}</p>
 
         <dl className="mt-6 space-y-4">
@@ -156,6 +150,21 @@ export function AnalyticsStatusClient() {
           </ul>
         )}
       </section>
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <main className="mx-auto w-full min-w-0 max-w-4xl px-6 py-10 lg:px-8 lg:py-14">
+      <PageHeader
+        eyebrow="Debug"
+        title="Analytics Status"
+        description="Diagnostics for GA4 and PostHog instrumentation. Tracking runs in production only when the required environment variables are configured."
+      />
+      {content}
     </main>
   );
 }

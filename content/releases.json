@@ -1,6 +1,28 @@
 {
   "releases": [
     {
+      "version": "3.6.0",
+      "date": "2026-06-11",
+      "title": "Agentic Commerce Readiness Positioning Refresh",
+      "summary": "Repositioned Merchant Signals around Agentic Commerce Readiness, added How It Works guidance, improved example report discoverability, and introduced clearer visitor pathways based on PostHog behavioral analysis.",
+      "categories": [
+        "UX",
+        "Positioning",
+        "Homepage",
+        "Analytics",
+        "Admin"
+      ],
+      "changes": [
+        "Updated homepage hero for Agentic Commerce Readiness positioning",
+        "Added How Merchant Signals Works section below the hero",
+        "Added What You'll Learn report preview with readiness score, platform detection, recommendations, categories, and fix prompts",
+        "Renamed Recent Scans to Example Reports with clickable cards and View Report CTA",
+        "Added hero_scan_started, example_report_clicked, report_preview_viewed, and how_it_works_viewed analytics events",
+        "Moved analytics status and agent readiness diagnostics under the obscured admin path with ADMIN_RESET_TOKEN gating",
+        "Added Internal tools links on the admin landing page for scan analytics, analytics status, agent readiness, and API health"
+      ]
+    },
+    {
       "version": "3.5.9",
       "date": "2026-06-10",
       "title": "MerchantSignalsBot Transparency Page",

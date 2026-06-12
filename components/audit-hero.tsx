@@ -13,15 +13,15 @@ import {
 } from "@/components/turnstile-widget";
 import { isBannedDomainError } from "@/lib/banned-domain-messages";
 import type { BotVerificationDiagnostic } from "@/lib/bot-verification-diagnostics";
-import { HERO_HEADLINE, HERO_SUPPORTING_COPY, PARENT_BRAND } from "@/lib/brand";
+import { HERO_HEADLINE, HERO_PLATFORM_COPY, HERO_SUBHEADLINE, PARENT_BRAND } from "@/lib/brand";
 import { FREE_SCAN_PRIMARY, FREE_SCAN_SECONDARY } from "@/lib/scan-messaging";
 import type { ScanFailureDiagnostic } from "@/lib/scan-failure-diagnostics";
 import { inputClass } from "@/lib/theme-classes";
 
 const BENEFITS = [
-  "Live storefront crawl",
+  "Live storefront assessment",
   "Evidence-backed findings",
-  "Downloadable fixes",
+  "Prioritized recommendations",
 ];
 
 function ScanForm({
@@ -32,7 +32,7 @@ function ScanForm({
   onSubmit,
   onTurnstileTokenChange,
   inputId = "website-url",
-  ctaLabel = "Run Free Scan",
+  ctaLabel = "Assess Storefront",
 }: {
   url: string;
   loading: boolean;
@@ -71,7 +71,7 @@ function ScanForm({
           disabled={submitDisabled}
           className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-900 px-8 py-3.5 text-base font-semibold text-white hover:bg-blue-950 disabled:cursor-not-allowed disabled:bg-slate-400 dark:disabled:bg-slate-600"
         >
-          {loading ? "Running Scan…" : ctaLabel}
+          {loading ? "Assessing…" : ctaLabel}
         </button>
       </div>
 
@@ -127,8 +127,11 @@ export function AuditHero({
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl lg:text-4xl">
           {HERO_HEADLINE}
         </h1>
-        <p className="mt-3 max-w-2xl text-base leading-6 text-text-secondary">
-          {HERO_SUPPORTING_COPY}
+        <p className="mt-3 max-w-2xl text-base font-medium leading-6 text-text-primary">
+          {HERO_SUBHEADLINE}
+        </p>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-text-secondary sm:text-base">
+          {HERO_PLATFORM_COPY}
         </p>
 
         <div className="mt-5 lg:mt-6">

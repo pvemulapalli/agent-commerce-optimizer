@@ -401,6 +401,29 @@ export function trackCrawlerPageViewed(referrer: string | null): void {
   });
 }
 
+export function trackHeroScanStarted(url: string): void {
+  void captureAnalyticsEvent("hero_scan_started", {
+    domain: analyticsDomainFromUrl(url),
+  });
+}
+
+export function trackExampleReportClicked(
+  context: ScanAnalyticsProperties & { reportId?: string | null },
+): void {
+  void captureAnalyticsEvent(
+    "example_report_clicked",
+    withScanContext(context, { reportId: context.reportId ?? null }),
+  );
+}
+
+export function trackReportPreviewViewed(): void {
+  void captureAnalyticsEvent("report_preview_viewed", {});
+}
+
+export function trackHowItWorksViewed(): void {
+  void captureAnalyticsEvent("how_it_works_viewed", {});
+}
+
 export function trackFeedbackSubmitted(sentiment: string, reportId?: string): void {
   void captureAnalyticsEvent("feedback_submitted", {
     sentiment,

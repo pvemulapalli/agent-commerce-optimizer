@@ -3,7 +3,11 @@
 import { GradeBadge } from "@/components/grade-badge";
 import { PlatformLabel } from "@/components/platform-label";
 import { PlatformReadinessCards } from "@/components/platform-readiness-cards";
-import { trackRecentScanClickedFromEntry } from "@/lib/analytics-events";
+import {
+  trackExampleReportClicked,
+  trackRecentScanClickedFromEntry,
+} from "@/lib/analytics-events";
+import { scanContextFromRecentScan } from "@/lib/analytics-properties";
 import type { PlatformLeaderboardStat } from "@/lib/platform-leaderboard";
 import type { RecentAuditSortDirection, RecentAuditSortField } from "@/lib/recent-audits-query";
 import { buildRecentReportUrl } from "@/lib/recent-scan-links";
@@ -278,82 +282,62 @@ export function RecentAuditsList({
   );
 }
 
-function RecentAuditCard({
-  entry,
-  onSelectEntry,
-  compact = false,
-  loading = false,
-}: {
-  entry: RecentScanRecord;
-  onSelectEntry?: (entry: RecentScanRecord) => void;
-  compact?: boolean;
-  loading?: boolean;
-}) {
-  const isClickable = Boolean(onSelectEntry) && !loading;
+function handleExampleReportClick(entry: RecentScanRecord) {
+  trackExampleReportClicked({
+    ...scanContextFromRecentScan(entry),
+    reportId: entry.reportId ?? null,
+  });
+}
+
+function ExampleReportCard({ entry }: { entry: RecentScanRecord }) {
+  const isPartial = entry.reportType === "partial";
 
   return (
-    <button
-      type="button"
-      disabled={!isClickable}
-      onClick={isClickable ? () => onSelectEntry?.(entry) : undefined}
-      aria-busy={loading}
-      className={`relative flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-left transition dark:border-slate-700 dark:bg-slate-900/70 ${
-        compact ? "min-h-[7.5rem]" : "min-h-[168px] p-4"
-      } ${
-        onSelectEntry
-          ? "cursor-pointer hover:border-blue-200 hover:bg-white hover:shadow-sm disabled:cursor-wait dark:hover:border-blue-700 dark:hover:bg-slate-900"
-          : ""
-      } ${loading ? "border-blue-200 ring-2 ring-blue-200/60 dark:border-blue-700 dark:ring-blue-700/40" : ""}`}
+    <Link
+      href={buildRecentReportUrl(entry)}
+      onClick={() => handleExampleReportClick(entry)}
+      className="group flex min-h-[168px] w-full min-w-0 flex-col rounded-xl border border-slate-200 bg-slate-50/80 p-4 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-white hover:shadow-md dark:border-slate-700 dark:bg-slate-900/70 dark:hover:border-blue-600 dark:hover:bg-slate-900"
     >
-      {loading ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/75 dark:bg-slate-900/80">
-          <span className="inline-flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
-            <span
-              className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-900 border-t-transparent dark:border-blue-300 dark:border-t-transparent"
-              aria-hidden
-            />
-            Loading scan…
-          </span>
-        </div>
-      ) : null}
       <div className="flex items-start justify-between gap-2">
-        <p className="line-clamp-1 min-w-0 flex-1 font-semibold text-slate-900 dark:text-slate-100">
+        <p className="line-clamp-1 min-w-0 flex-1 font-semibold text-slate-900 group-hover:text-blue-900 dark:text-slate-100 dark:group-hover:text-blue-200">
           {entry.merchant}
         </p>
-        <GradeBadge grade={entry.grade || "-"} />
+        <GradeBadge grade={isPartial ? "—" : entry.grade || "-"} />
       </div>
 
-      {!compact ? (
-        <p className="mt-1 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">
-          {entry.hostname}
+      <p className="mt-1 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">{entry.hostname}</p>
+
+      {isPartial ? (
+        <p className="mt-2 text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300">
+          Partial report
         </p>
       ) : null}
 
-      <div
-        className={`grid min-w-0 grid-cols-3 gap-x-3 gap-y-2 text-sm ${
-          compact ? "mt-3" : "mt-auto gap-3 pt-4"
-        }`}
-      >
+      <div className="mt-auto grid min-w-0 grid-cols-3 gap-3 pt-4 text-sm">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Score</p>
           <p className="mt-0.5 truncate font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-            {entry.readinessScore ?? "-"}
+            {isPartial ? "Partial" : (entry.readinessScore ?? "-")}
           </p>
         </div>
         <div className="min-w-0 overflow-hidden">
           <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Platform</p>
           <div className="mt-0.5 min-w-0 font-medium text-slate-800 dark:text-slate-200">
-            <PlatformLabel platform={entry.platform} truncate={compact} />
+            <PlatformLabel platform={entry.platform} truncate />
           </div>
         </div>
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Top Gap</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Top gap</p>
           <p className="mt-0.5 truncate font-medium text-slate-800 dark:text-slate-200">
             {entry.topGap || "-"}
           </p>
         </div>
       </div>
-    </button>
+
+      <p className="mt-4 text-sm font-semibold text-blue-900 group-hover:underline dark:text-blue-300">
+        View Report →
+      </p>
+    </Link>
   );
 }
 
@@ -363,18 +347,12 @@ export function RecentAuditsPreview({
   loading,
   platformStats = [],
   variant = "full",
-  onSelectEntry,
-  loadingEntryId = null,
-  auditLoading = false,
 }: {
   entries: RecentScanRecord[];
   totalCount: number;
   loading: boolean;
   platformStats?: PlatformLeaderboardStat[];
   variant?: "homepage" | "full";
-  onSelectEntry?: (entry: RecentScanRecord) => void;
-  loadingEntryId?: string | null;
-  auditLoading?: boolean;
 }) {
   const isHomepage = variant === "homepage";
 
@@ -387,16 +365,32 @@ export function RecentAuditsPreview({
     <section className="rounded-2xl border border-card-border bg-card p-6 shadow-sm sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
-            Global activity
-          </p>
-          <h2 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">Recent scans</h2>
+          {isHomepage ? (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
+                Example reports
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
+                Example Reports
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
+                See real storefront assessments and readiness reports.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
+                Global activity
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">Recent scans</h2>
+            </>
+          )}
         </div>
         <Link
           href="/recent"
           className="text-sm font-medium text-blue-900 hover:underline dark:text-blue-300"
         >
-          View all recent scans
+          {isHomepage ? "View all example reports" : "View all recent scans"}
         </Link>
       </div>
 
@@ -438,26 +432,20 @@ export function RecentAuditsPreview({
       ) : null}
 
       {loading && isHomepage ? (
-        <p className="mt-6 text-sm text-text-secondary">Loading recent scans…</p>
+        <p className="mt-6 text-sm text-text-secondary">Loading example reports…</p>
       ) : null}
 
       {!loading && entries.length > 0 && (
-        <div className={`grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3 ${isHomepage ? "mt-6" : "mt-6"}`}>
-          {entries.slice(0, isHomepage ? 6 : 6).map((entry, index) => (
-            <RecentAuditCard
-              key={`${entry.id}-${entry.scannedAt}-${index}`}
-              entry={entry}
-              onSelectEntry={auditLoading ? undefined : onSelectEntry}
-              compact={isHomepage}
-              loading={loadingEntryId === entry.id}
-            />
+        <div className="mt-6 grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {entries.slice(0, 6).map((entry, index) => (
+            <ExampleReportCard key={`${entry.id}-${entry.scannedAt}-${index}`} entry={entry} />
           ))}
         </div>
       )}
 
       {!loading && entries.length === 0 && isHomepage ? (
         <p className="mt-6 text-sm text-text-secondary">
-          No scans yet. Run the first scan above.
+          No example reports yet. Run the first readiness assessment above.
         </p>
       ) : null}
     </section>
