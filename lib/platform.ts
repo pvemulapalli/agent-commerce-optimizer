@@ -9,7 +9,7 @@ import { getFenicioDomainHint } from "./fenicio-domain-hints";
 import { getMagentoDomainHint } from "./magento-domain-hints";
 import { getShopwareDomainHint } from "./shopware-domain-hints";
 import { crawlHasShopifyHtml } from "./shopify-fingerprints";
-import { isMyshopifyHostname } from "./shopify-storefront-password";
+import { isMyshopifyHostname } from "./shopify-host";
 import {
   crawlHasShopwareContext,
   isShopwareRobotsTxt,

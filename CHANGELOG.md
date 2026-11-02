@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.6.2] - 2026-11-01
+
+### [Fixes]
+- Fixed homepage runtime crash by moving Shopify hostname/password-page helpers into a client-safe module so `undici` / `node:net` are no longer imported into the browser bundle via ecommerce eligibility checks
+
 ## [3.6.1] - 2026-11-01
 
 ### [UX]

@@ -1,7 +1,7 @@
 import { isGatewayErrorContent, pageContentHaystack } from "./gateway-errors";
 import { hasStrongDedicatedPlatform } from "./dedicated-platform-eligibility";
 import { normalizeSchemaType } from "./schema-utils";
-import { isMyshopifyHostname } from "./shopify-storefront-password";
+import { isMyshopifyHostname } from "./shopify-host";
 import type {
   CommercePlatform,
   CrawlData,

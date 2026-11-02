@@ -1,7 +1,7 @@
 import { normalizeAuditUrl } from "./audit-url";
 import type { CrawlRequestContext } from "./crawl-request-context";
+import { isShopifyStorefrontPasswordPage } from "./shopify-host";
 import {
-  isShopifyStorefrontPasswordPage,
   StorefrontPasswordRejectedError,
   unlockShopifyStorefrontPassword,
 } from "./shopify-storefront-password";

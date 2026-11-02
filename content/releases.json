@@ -1,6 +1,20 @@
 {
   "releases": [
     {
+      "version": "3.6.2",
+      "date": "2026-11-01",
+      "title": "Homepage Client Bundle Fix for Shopify Helpers",
+      "summary": "Fixed a homepage runtime crash caused by Node-only storefront fetch code being pulled into the browser bundle through Shopify hostname helpers used by ecommerce eligibility checks.",
+      "categories": [
+        "Fixes",
+        "Infrastructure"
+      ],
+      "changes": [
+        "Moved Shopify hostname and password-page detection into a client-safe module",
+        "Prevented undici/node:net from being imported on the homepage via ecommerce eligibility"
+      ]
+    },
+    {
       "version": "3.6.1",
       "date": "2026-11-01",
       "title": "Password-Protected Shopify Storefront Scanning",

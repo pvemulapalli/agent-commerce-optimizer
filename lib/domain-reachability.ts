@@ -21,7 +21,7 @@ import {
 } from "./scan-failure-diagnostics";
 import { isValidAuditHostname } from "./audit-url-validation";
 import { assertEntryNotPasswordGated } from "./storefront-access";
-import { isShopifyStorefrontPasswordPage } from "./shopify-storefront-password";
+import { isShopifyStorefrontPasswordPage } from "./shopify-host";
 import { StorefrontPasswordRequiredError } from "./storefront-password";
 import { MERCHANT_SIGNALS_CRAWLER_USER_AGENT } from "./crawler-identity";
 import { storefrontFetch } from "./storefront-fetch";
