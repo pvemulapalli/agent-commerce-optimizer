@@ -6,7 +6,10 @@ import {
   buildBotVerificationDiagnostic,
   isBotVerificationResponse,
 } from "./bot-verification";
+import type { CrawlRequestContext } from "./crawl-request-context";
+import { assertEntryNotPasswordGated } from "./storefront-access";
 import { fetchShallowEntryPage } from "./crawler";
+import { StorefrontPasswordRequiredError } from "./storefront-password";
 import {
   DomainUnreachableError,
   ensureDomainResolvable,
@@ -160,6 +163,8 @@ function assertTechnologyDetectionReachable(page: Awaited<ReturnType<typeof fetc
   const snippet = page.htmlSnippet ?? "";
   const status = page.status ?? 0;
 
+  assertEntryNotPasswordGated({ html: snippet, url: page.url });
+
   if (
     isBotVerificationResponse({
       status,
@@ -222,7 +227,10 @@ function assertTechnologyDetectionReachable(page: Awaited<ReturnType<typeof fetc
   }
 }
 
-export async function runTechnologyDetection(url: string): Promise<TechnologyDetectionResult> {
+export async function runTechnologyDetection(
+  url: string,
+  crawlContext?: CrawlRequestContext,
+): Promise<TechnologyDetectionResult> {
   const normalizedUrl = normalizeAuditUrl(url);
   const normalizedDomain = normalizeDomainFromUrl(normalizedUrl);
   const domain = new URL(normalizedUrl).hostname;
@@ -233,8 +241,12 @@ export async function runTechnologyDetection(url: string): Promise<TechnologyDet
   let page: Awaited<ReturnType<typeof fetchShallowEntryPage>>;
 
   try {
-    page = await fetchShallowEntryPage(normalizedUrl);
+    page = await fetchShallowEntryPage(normalizedUrl, crawlContext);
   } catch (error) {
+    if (error instanceof StorefrontPasswordRequiredError) {
+      throw error;
+    }
+
     throw new DomainUnreachableError(buildScanFailureFromFetchError(error));
   }
 
@@ -304,6 +316,7 @@ export function buildTechnologyDetectionFromAudit(audit: {
 export function isTechnologyDetectionFailure(error: unknown): boolean {
   return (
     error instanceof BotVerificationBlockedError ||
-    error instanceof DomainUnreachableError
+    error instanceof DomainUnreachableError ||
+    error instanceof StorefrontPasswordRequiredError
   );
 }

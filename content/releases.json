@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "3.6.1",
+      "date": "2026-11-01",
+      "title": "Password-Protected Shopify Storefront Scanning",
+      "summary": "Merchant Signals can now unlock password-gated Shopify development stores, crawl nested product sitemaps with the unlock session, and complete readiness assessments instead of failing or misclassifying those storefronts as non-ecommerce.",
+      "categories": [
+        "UX",
+        "Infrastructure",
+        "Fixes",
+        "Platform Detection"
+      ],
+      "changes": [
+        "Added Shopify storefront password prompt and unlock flow for password-gated development stores",
+        "Fixed unlock handshake for Shopify password forms that reject MerchantSignalsBot User-Agent",
+        "Forwarded crawl cookies when fetching nested sitemap files so product sitemaps are reachable after unlock",
+        "Decoded HTML entities in sitemap loc URLs so Shopify product sitemap query strings resolve",
+        "Treated *.myshopify.com hosts as Shopify ecommerce storefronts for eligibility and platform detection"
+      ]
+    },
+    {
       "version": "3.6.0",
       "date": "2026-06-11",
       "title": "Agentic Commerce Readiness Positioning Refresh",
@@ -253,7 +272,7 @@
     },
     {
       "version": "3.4.1",
-      "date": "2026-06-06",
+      "date": "2026-06-07",
       "title": "Platform Detection Accuracy & UX Improvements",
       "summary": "This release focuses on improving platform detection quality, expanding support for international commerce platforms, strengthening platform confidence scoring, and improving navigation through stored scan results.",
       "categories": [

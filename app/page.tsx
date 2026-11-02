@@ -17,6 +17,8 @@ import { isDomainReviewBlockedScanResponse } from "@/lib/domain-review-messages"
 import { isNonEcommerceScanResponse } from "@/lib/non-ecommerce-messages";
 import { isScanFailureResponse } from "@/lib/scan-failure-diagnostics";
 import type { ScanFailureDiagnostic } from "@/lib/scan-failure-diagnostics";
+import { isStorefrontPasswordScanResponse } from "@/lib/storefront-password-messages";
+import type { StorefrontPasswordDiagnostic } from "@/lib/storefront-password-diagnostics";
 import { isActivityFeedEnabled } from "@/lib/scan-activity-config";
 import { normalizeAuditUrl } from "@/lib/audit-url";
 import { getAuditUrlValidationError } from "@/lib/audit-url-validation";
@@ -134,6 +136,8 @@ export default function Home() {
     useState<BotVerificationDiagnostic | null>(null);
   const [scanFailureDiagnostic, setScanFailureDiagnostic] =
     useState<ScanFailureDiagnostic | null>(null);
+  const [storefrontPasswordDiagnostic, setStorefrontPasswordDiagnostic] =
+    useState<StorefrontPasswordDiagnostic | null>(null);
   const [result, setResult] = useState<AuditResponse | null>(null);
   const [partialResult, setPartialResult] = useState<PartialAuditResponse | null>(null);
   const [fixesLoading, setFixesLoading] = useState(false);
@@ -361,7 +365,10 @@ export default function Home() {
     });
   }, [activity.recentScans, activityLoading, loading, partialResult, result]);
 
-  async function runAudit(targetUrl: string) {
+  async function runAudit(
+    targetUrl: string,
+    options?: { storefrontPassword?: string },
+  ) {
     if (shouldShowTurnstileWidget() && !turnstileToken) {
       setError("Complete the Turnstile check before running a scan.");
       return;
@@ -380,17 +387,29 @@ export default function Home() {
     setDomainReviewNotice(null);
     setBotVerificationDiagnostic(null);
     setScanFailureDiagnostic(null);
+    if (!options?.storefrontPassword) {
+      setStorefrontPasswordDiagnostic(null);
+    }
     setResult(null);
     setPartialResult(null);
     setFixes(null);
     setFixesError(null);
-    trackHeroScanStarted(targetUrl);
-    trackScanStartedFromUrl(targetUrl);
+    if (!options?.storefrontPassword) {
+      trackHeroScanStarted(targetUrl);
+      trackScanStartedFromUrl(targetUrl);
+    }
 
     try {
-      const payload: { url: string; turnstileToken?: string } = { url: targetUrl };
+      const payload: {
+        url: string;
+        turnstileToken?: string;
+        storefrontPassword?: string;
+      } = { url: targetUrl };
       if (turnstileToken) {
         payload.turnstileToken = turnstileToken;
+      }
+      if (options?.storefrontPassword) {
+        payload.storefrontPassword = options.storefrontPassword;
       }
 
       const response = await fetch("/api/audit", {
@@ -403,7 +422,27 @@ export default function Home() {
         (AuditResponse | PartialAuditResponse) & { error?: string }
       >(response, "Audit request failed");
 
+      if (isStorefrontPasswordScanResponse(data)) {
+        setNonEcommerceMessage(null);
+        setScanFailureDiagnostic(null);
+        setBotVerificationDiagnostic(null);
+        setStorefrontPasswordDiagnostic(data);
+        trackScanFailedFromUrl(
+          targetUrl,
+          data.invalidPassword ? "storefront_password_invalid" : "storefront_password_required",
+        );
+        trackTechnologyDetectionFailed({
+          domain: targetUrl,
+          failureReason: data.invalidPassword
+            ? "storefront_password_invalid"
+            : "storefront_password_required",
+        });
+        scrollToElementById("audit-hero");
+        return;
+      }
+
       if (isBotVerificationScanResponse(data)) {
+        setStorefrontPasswordDiagnostic(null);
         setBotVerificationDiagnostic(data);
         trackScanFailedFromUrl(targetUrl, "bot_verification_blocked");
         trackTechnologyDetectionFailed({
@@ -414,6 +453,7 @@ export default function Home() {
       }
 
       if (isDomainReviewBlockedScanResponse(data)) {
+        setStorefrontPasswordDiagnostic(null);
         setDomainReviewNotice({
           title: data.title ?? "Scanning temporarily paused",
           message: data.message,
@@ -428,12 +468,14 @@ export default function Home() {
       }
 
       if (isNonEcommerceScanResponse(data)) {
+        setStorefrontPasswordDiagnostic(null);
         setNonEcommerceMessage(data.message);
         trackScanFailedFromUrl(targetUrl, "non_ecommerce_site");
         return;
       }
 
       if (isScanFailureResponse(data)) {
+        setStorefrontPasswordDiagnostic(null);
         setScanFailureDiagnostic(data);
         trackScanFailedFromUrl(targetUrl, data.code);
         trackTechnologyDetectionFailed({
@@ -459,6 +501,7 @@ export default function Home() {
       markOwnScan(data.scanRecord?.id);
       await refresh();
       handleAuditApiResponse(targetUrl, data, response.ok);
+      setStorefrontPasswordDiagnostic(null);
       setResult(data as AuditResponse);
       await generateFixes(data.url, turnstileToken, data.reportId);
       scrollToAuditOverview("instant");
@@ -495,11 +538,15 @@ export default function Home() {
             domainReviewNotice={domainReviewNotice}
             botVerificationDiagnostic={botVerificationDiagnostic}
             scanFailureDiagnostic={scanFailureDiagnostic}
+            storefrontPasswordDiagnostic={storefrontPasswordDiagnostic}
             turnstileToken={turnstileToken}
             scanStartedAt={scanStartedAt}
             onUrlChange={setUrl}
             onSubmit={handleSubmit}
             onTurnstileTokenChange={setTurnstileToken}
+            onSubmitStorefrontPassword={(password) => {
+              void runAudit(url, { storefrontPassword: password });
+            }}
             onScanAnother={() => {
               trackNewScanClicked(result?.reportId ?? partialResult?.reportId);
               setError(null);
@@ -507,6 +554,7 @@ export default function Home() {
               setDomainReviewNotice(null);
               setBotVerificationDiagnostic(null);
               setScanFailureDiagnostic(null);
+              setStorefrontPasswordDiagnostic(null);
               setUrl("");
               setResult(null);
               setPartialResult(null);

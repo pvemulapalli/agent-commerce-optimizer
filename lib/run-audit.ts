@@ -6,6 +6,7 @@ import {
   readCachedAudit,
   writeCachedAudit,
 } from "@/lib/cache";
+import type { CrawlRequestContext } from "@/lib/crawl-request-context";
 import { crawlSite } from "@/lib/crawler";
 import { finalizeFindings, groupFindings, runChecks } from "@/lib/checks";
 import { buildCrawlSummary, inferCrawlSummaryFromFindings } from "@/lib/crawl-quality";
@@ -99,7 +100,11 @@ export async function runAudit(url: string): Promise<AuditRunResult> {
 
 export async function runFullReadinessAudit(
   url: string,
-  options?: { skipInitialReachability?: boolean },
+  options?: {
+    skipInitialReachability?: boolean;
+    crawlContext?: CrawlRequestContext;
+    skipCache?: boolean;
+  },
 ): Promise<AuditRunResult> {
   const normalizedUrl = normalizeAuditUrl(url);
 
@@ -107,7 +112,7 @@ export async function runFullReadinessAudit(
     await ensureDomainReachable(normalizedUrl);
   }
 
-  const crawlData = await crawlSite(normalizedUrl);
+  const crawlData = await crawlSite(normalizedUrl, options?.crawlContext);
   assertMinimumCrawlHealth(crawlData);
   const crawlSummary = buildCrawlSummary(crawlData);
   const checks = runChecks(crawlData);
@@ -136,10 +141,11 @@ export async function runFullReadinessAudit(
     grouped,
   };
 
-  const cacheStatus = isCacheEnabled() ? ("MISS" as const) : ("BYPASS" as const);
+  const cacheStatus =
+    isCacheEnabled() && !options?.skipCache ? ("MISS" as const) : ("BYPASS" as const);
   let expiresAt: string | null = null;
 
-  if (isCacheEnabled()) {
+  if (isCacheEnabled() && !options?.skipCache) {
     expiresAt = await writeCachedAudit(normalizedUrl, result, generationContext);
     await mirrorCachedAuditUrls(normalizedUrl, [crawlData.entryUrl], result, generationContext);
   }

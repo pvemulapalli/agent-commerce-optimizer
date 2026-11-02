@@ -5,6 +5,8 @@ import { BotVerificationNotice } from "@/components/bot-verification-notice";
 import { DomainReviewNotice } from "@/components/domain-review-notice";
 import { NonEcommerceNotice } from "@/components/non-ecommerce-notice";
 import { ScanFailureNotice } from "@/components/scan-failure-notice";
+import { StorefrontPasswordNotice } from "@/components/storefront-password-notice";
+import type { StorefrontPasswordDiagnostic } from "@/lib/storefront-password-diagnostics";
 import { ScanningRestrictedNotice } from "@/components/scanning-restricted-notice";
 import {
   TurnstileWidget,
@@ -95,11 +97,13 @@ export function AuditHero({
   domainReviewNotice,
   botVerificationDiagnostic,
   scanFailureDiagnostic,
+  storefrontPasswordDiagnostic,
   turnstileToken,
   scanStartedAt,
   onUrlChange,
   onSubmit,
   onTurnstileTokenChange,
+  onSubmitStorefrontPassword,
   onScanAnother,
 }: {
   url: string;
@@ -109,11 +113,13 @@ export function AuditHero({
   domainReviewNotice: { title: string; message: string; reviewType?: string } | null;
   botVerificationDiagnostic: BotVerificationDiagnostic | null;
   scanFailureDiagnostic: ScanFailureDiagnostic | null;
+  storefrontPasswordDiagnostic: StorefrontPasswordDiagnostic | null;
   turnstileToken: string | null;
   scanStartedAt: number | null;
   onUrlChange: (url: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onTurnstileTokenChange: (token: string | null) => void;
+  onSubmitStorefrontPassword: (password: string) => void;
   onScanAnother: () => void;
 }) {
   const restrictedDomain = isBannedDomainError(error);
@@ -181,6 +187,15 @@ export function AuditHero({
           />
         ) : null}
 
+        {storefrontPasswordDiagnostic ? (
+          <StorefrontPasswordNotice
+            diagnostic={storefrontPasswordDiagnostic}
+            loading={loading}
+            onSubmitPassword={onSubmitStorefrontPassword}
+            onScanAnother={onScanAnother}
+          />
+        ) : null}
+
         {domainReviewNotice ? (
           <DomainReviewNotice
             title={domainReviewNotice.title}
@@ -203,7 +218,8 @@ export function AuditHero({
         !nonEcommerceMessage &&
         !domainReviewNotice &&
         !botVerificationDiagnostic &&
-        !scanFailureDiagnostic ? (
+        !scanFailureDiagnostic &&
+        !storefrontPasswordDiagnostic ? (
           <div className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/50 dark:text-rose-200">
             {error}
           </div>

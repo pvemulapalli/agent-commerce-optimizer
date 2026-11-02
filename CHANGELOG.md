@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.6.1] - 2026-11-01
+
+### [UX]
+- Added Shopify storefront password unlock flow for password-gated development stores, with an on-page password prompt and retry path
+
+### [Infrastructure]
+- Password unlock handshake uses a browser-compatible User-Agent because Shopify rejects unlock requests from MerchantSignalsBot
+- Crawl session cookies are now forwarded when resolving nested sitemap files so password-gated product sitemaps can be read
+
+### [Fixes]
+- Decoded HTML entities in sitemap `<loc>` URLs (for example `&amp;` → `&`) so Shopify product sitemap query strings resolve correctly
+- Treated `*.myshopify.com` hosts as Shopify ecommerce storefronts so unlocked development stores are not misclassified as non-ecommerce
+
+### [Platform Detection]
+- Applied a high-confidence Shopify domain hint for `*.myshopify.com` development hosts
+
 ## [3.6.0] - 2026-06-11
 
 ### [UX]
@@ -195,7 +211,7 @@ Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md
 - Block repeat scans of quarantined domains before crawl or cache lookup
 - Exclude quarantined domains from benchmarks, recent audits, and platform statistics
 
-## [3.4.1] - 2026-06-06
+## [3.4.1] - 2026-06-07
 
 ### [Platform Detection]
 - Improved Adobe Commerce (Magento) platform detection accuracy

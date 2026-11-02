@@ -17,13 +17,22 @@ const PRIORITY_KEYWORDS = [
   "catalog",
 ];
 
+function decodeXmlEntities(value: string): string {
+  return value
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&apos;/gi, "'");
+}
+
 export function extractLocTags(xml: string): string[] {
   const locations: string[] = [];
   const locPattern = /<loc>\s*([^<]+?)\s*<\/loc>/gi;
   let match = locPattern.exec(xml);
 
   while (match) {
-    const loc = match[1].trim();
+    const loc = decodeXmlEntities(match[1].trim());
     if (loc) locations.push(loc);
     match = locPattern.exec(xml);
   }

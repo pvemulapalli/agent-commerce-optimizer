@@ -1,6 +1,7 @@
 import { isGatewayErrorContent, pageContentHaystack } from "./gateway-errors";
 import { hasStrongDedicatedPlatform } from "./dedicated-platform-eligibility";
 import { normalizeSchemaType } from "./schema-utils";
+import { isMyshopifyHostname } from "./shopify-storefront-password";
 import type {
   CommercePlatform,
   CrawlData,
@@ -326,6 +327,29 @@ function computeConfidenceScore(
   return { score: Math.min(score, 100), signals };
 }
 
+function isMyshopifyStorefront(input: {
+  crawlData?: CrawlData;
+  pages: PageData[];
+}): boolean {
+  const candidates = [
+    input.crawlData?.entryUrl,
+    input.crawlData?.origin,
+    ...input.pages.map((page) => page.url),
+  ].filter(Boolean) as string[];
+
+  for (const candidate of candidates) {
+    try {
+      if (isMyshopifyHostname(new URL(candidate).hostname)) {
+        return true;
+      }
+    } catch {
+      // Ignore invalid URLs.
+    }
+  }
+
+  return false;
+}
+
 export function assessEcommerceEligibility(input: {
   findings: Finding[];
   platform: PlatformAnalysis;
@@ -347,6 +371,19 @@ export function assessEcommerceEligibility(input: {
       reason: "no_crawlable_content",
       message: NON_ECOMMERCE_SCAN_MESSAGE,
       signals: [],
+    };
+  }
+
+  // Password-gated Shopify development stores can look sparse before nested
+  // sitemaps are crawled, but *.myshopify.com is always a Shopify host.
+  if (isMyshopifyStorefront({ crawlData: input.crawlData, pages })) {
+    const { score, signals } = computeConfidenceScore(input.findings, input.platform);
+    return {
+      eligible: true,
+      ecommerceConfidence: Math.max(score, ECOMMERCE_CONFIDENCE_THRESHOLD),
+      reason: score >= ECOMMERCE_CONFIDENCE_THRESHOLD ? "eligible" : "myshopify_development_store",
+      message: NON_ECOMMERCE_SCAN_MESSAGE,
+      signals: [...new Set([...signals, "myshopify_host"])],
     };
   }
 

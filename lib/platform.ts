@@ -9,6 +9,7 @@ import { getFenicioDomainHint } from "./fenicio-domain-hints";
 import { getMagentoDomainHint } from "./magento-domain-hints";
 import { getShopwareDomainHint } from "./shopware-domain-hints";
 import { crawlHasShopifyHtml } from "./shopify-fingerprints";
+import { isMyshopifyHostname } from "./shopify-storefront-password";
 import {
   crawlHasShopwareContext,
   isShopwareRobotsTxt,
@@ -1035,6 +1036,19 @@ export function detectPlatform(data: CrawlData): PlatformAnalysis {
       hint: shopwareHint,
       platform: "Shopware",
     });
+  }
+
+  try {
+    if (isMyshopifyHostname(new URL(data.entryUrl).hostname)) {
+      return applyDomainHintOverride({
+        entryUrl: data.entryUrl,
+        ranked,
+        hint: "Shopify development host (*.myshopify.com)",
+        platform: "Shopify",
+      });
+    }
+  } catch {
+    // Ignore invalid entry URLs.
   }
 
   if (

@@ -2,6 +2,9 @@ import { isCacheEnabled, readCachedAudit } from "@/lib/cache";
 import { normalizeAuditUrl } from "./audit-url";
 import { EcommerceIneligibleError } from "./ecommerce-eligibility";
 import { classifyFullAuditFailure } from "./full-audit-failure";
+import type { CrawlRequestContext } from "./crawl-request-context";
+import { resolveStorefrontAccess } from "./storefront-access";
+import { StorefrontPasswordRequiredError } from "./storefront-password";
 import { buildPartialReportResponse } from "./partial-report";
 import { buildCachedAuditRunResult, runFullReadinessAudit } from "./run-audit";
 import {
@@ -23,10 +26,16 @@ export type TwoPhaseAuditOutcome =
       technologyDetection: TechnologyDetectionResult;
     };
 
-export async function runTwoPhaseAudit(url: string): Promise<TwoPhaseAuditOutcome> {
+export async function runTwoPhaseAudit(
+  url: string,
+  options?: { storefrontPassword?: string },
+): Promise<TwoPhaseAuditOutcome> {
   const normalizedUrl = normalizeAuditUrl(url);
+  const access = await resolveStorefrontAccess(normalizedUrl, options?.storefrontPassword);
+  const crawlContext: CrawlRequestContext | undefined = access.crawlContext;
+  const bypassCache = access.bypassCache;
 
-  if (isCacheEnabled()) {
+  if (isCacheEnabled() && !bypassCache) {
     const cached = await readCachedAudit(normalizedUrl);
     if (cached) {
       const auditRun = await buildCachedAuditRunResult(cached);
@@ -39,11 +48,13 @@ export async function runTwoPhaseAudit(url: string): Promise<TwoPhaseAuditOutcom
     }
   }
 
-  const technologyDetection = await runTechnologyDetection(normalizedUrl);
+  const technologyDetection = await runTechnologyDetection(normalizedUrl, crawlContext);
 
   try {
     const auditRun = await runFullReadinessAudit(normalizedUrl, {
       skipInitialReachability: true,
+      crawlContext,
+      skipCache: bypassCache,
     });
 
     return {
@@ -53,6 +64,10 @@ export async function runTwoPhaseAudit(url: string): Promise<TwoPhaseAuditOutcom
     };
   } catch (error) {
     if (error instanceof EcommerceIneligibleError) {
+      throw error;
+    }
+
+    if (error instanceof StorefrontPasswordRequiredError) {
       throw error;
     }
 

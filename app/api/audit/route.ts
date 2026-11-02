@@ -14,6 +14,8 @@ import { recordAuditHistory } from "@/lib/audit-history";
 import { validateScanRequest } from "@/lib/scan-request";
 import { scanUrlSchema } from "@/lib/scan-request-schema";
 import { createScanFailureResponseFromError } from "@/lib/scan-failure-api";
+import { createStorefrontPasswordResponse } from "@/lib/storefront-password-api";
+import { StorefrontPasswordRequiredError } from "@/lib/storefront-password";
 import {
   recordCompletedScan,
   recordPartialScan,
@@ -61,7 +63,9 @@ export async function POST(request: Request) {
 
   try {
     const startedAt = Date.now();
-    const outcome = await runTwoPhaseAudit(parsed.data.url);
+    const outcome = await runTwoPhaseAudit(parsed.data.url, {
+      storefrontPassword: parsed.data.storefrontPassword,
+    });
 
     if (outcome.kind === "partial") {
       await recordPartialAuditFailureForDomainReview({
@@ -126,6 +130,10 @@ export async function POST(request: Request) {
         : {}),
     });
   } catch (error) {
+    if (error instanceof StorefrontPasswordRequiredError) {
+      return createStorefrontPasswordResponse(error);
+    }
+
     if (error instanceof BotVerificationBlockedError) {
       await recordScanFailureForDomainReview({ url: parsed.data.url, error });
       return createBotVerificationResponse(error);

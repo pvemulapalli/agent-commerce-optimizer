@@ -29,4 +29,5 @@ export const scanUrlSchema = z.object({
     .refine(isValidScanUrlInput, { message: "Enter a valid website URL or domain" })
     .transform(normalizeScanUrlInput),
   turnstileToken: z.string().trim().min(1).optional(),
+  storefrontPassword: z.string().trim().min(1).max(256).optional(),
 });

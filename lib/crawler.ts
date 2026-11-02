@@ -15,6 +15,7 @@ import {
 } from "./sitemap";
 import type { CrawlData, PageData, ResourceFetch } from "./types";
 import { formatFetchError } from "./gateway-errors";
+import type { CrawlRequestContext } from "./crawl-request-context";
 import { MERCHANT_SIGNALS_CRAWLER_USER_AGENT } from "./crawler-identity";
 import { storefrontFetch } from "./storefront-fetch";
 
@@ -165,6 +166,7 @@ function selectFollowUpLinks(pages: PageData[], entryUrl: string): string[] {
 async function fetchWithTimeout(
   url: string,
   accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  context?: CrawlRequestContext,
 ): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -175,6 +177,7 @@ async function fetchWithTimeout(
       headers: {
         "User-Agent": USER_AGENT,
         Accept: accept,
+        ...(context?.cookieHeader ? { Cookie: context.cookieHeader } : {}),
       },
       redirect: "follow",
     });
@@ -183,11 +186,15 @@ async function fetchWithTimeout(
   }
 }
 
-async function fetchResource(url: string): Promise<ResourceFetch> {
+async function fetchResource(
+  url: string,
+  context?: CrawlRequestContext,
+): Promise<ResourceFetch> {
   try {
     const response = await fetchWithTimeout(
       url,
       "text/plain,application/xml,text/xml,*/*;q=0.8",
+      context,
     );
     const contentType = response.headers.get("content-type");
     const content = response.ok ? await response.text() : null;
@@ -209,8 +216,8 @@ async function fetchResource(url: string): Promise<ResourceFetch> {
   }
 }
 
-async function fetchXml(url: string): Promise<string | null> {
-  const resource = await fetchResource(url);
+async function fetchXml(url: string, context?: CrawlRequestContext): Promise<string | null> {
+  const resource = await fetchResource(url, context);
   return resource.status === 200 && resource.content ? resource.content : null;
 }
 
@@ -218,9 +225,10 @@ async function fetchPage(
   url: string,
   entryOrigin: string,
   entryUrl: string,
+  context?: CrawlRequestContext,
 ): Promise<PageData> {
   try {
-    const response = await fetchWithTimeout(url);
+    const response = await fetchWithTimeout(url, undefined, context);
     const status = response.status;
     const pageUrl = normalizeCrawlHref(response.url || url);
     const effectiveOrigin =
@@ -383,14 +391,20 @@ async function resolveInitialSitemapUrl(
 }
 
 /** Single-page homepage fetch for Phase 1 technology detection (no sitemap or link follow-up). */
-export async function fetchShallowEntryPage(inputUrl: string): Promise<PageData> {
+export async function fetchShallowEntryPage(
+  inputUrl: string,
+  context?: CrawlRequestContext,
+): Promise<PageData> {
   const initialUrl = normalizeInputUrl(inputUrl).href;
-  return fetchPage(initialUrl, "pending", "pending");
+  return fetchPage(initialUrl, "pending", "pending", context);
 }
 
-export async function crawlSite(inputUrl: string): Promise<CrawlData> {
+export async function crawlSite(
+  inputUrl: string,
+  context?: CrawlRequestContext,
+): Promise<CrawlData> {
   const initialUrl = normalizeInputUrl(inputUrl).href;
-  const entryPage = await fetchPage(initialUrl, "pending", "pending");
+  const entryPage = await fetchPage(initialUrl, "pending", "pending", context);
   const entryUrl = entryPage.url;
   const origin = new URL(entryUrl).origin;
 
@@ -405,10 +419,10 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
 
   const [robotsTxt, sitemapXml, llmsTxt, llmsFullTxt] =
     await Promise.all([
-      limit(() => fetchResource(resourcePaths.robotsTxt)),
-      limit(() => fetchResource(resourcePaths.sitemapXml)),
-      limit(() => fetchResource(resourcePaths.llmsTxt)),
-      limit(() => fetchResource(resourcePaths.llmsFullTxt)),
+      limit(() => fetchResource(resourcePaths.robotsTxt, context)),
+      limit(() => fetchResource(resourcePaths.sitemapXml, context)),
+      limit(() => fetchResource(resourcePaths.llmsTxt, context)),
+      limit(() => fetchResource(resourcePaths.llmsFullTxt, context)),
     ]);
 
   let pages: PageData[] = [entryPage];
@@ -417,7 +431,7 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
   const initialSitemap = await resolveInitialSitemapUrl(
     sitemapCandidates,
     sitemapXml,
-    fetchXml,
+    (url) => fetchXml(url, context),
   );
 
   let sitemapInfo = {
@@ -428,7 +442,11 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
   };
 
   if (initialSitemap) {
-    const resolved = await resolveSitemapUrls(initialSitemap, fetchXml);
+    // Must forward crawl cookies/context — password-gated Shopify stores expose
+    // the index publicly but require the unlock session for nested product sitemaps.
+    const resolved = await resolveSitemapUrls(initialSitemap, (url) =>
+      fetchXml(url, context),
+    );
     const sameOriginUrls = resolved.pageUrls.filter((url) =>
       isSameOrigin(url, origin),
     );
@@ -443,7 +461,7 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
 
     if (selected.length > 0) {
       const sitemapPages = await Promise.all(
-        selected.map((url) => limit(() => fetchPage(url, origin, entryUrl))),
+        selected.map((url) => limit(() => fetchPage(url, origin, entryUrl, context))),
       );
       sitemapInfo.urlsCrawled = sitemapPages
         .filter((page) => page.status === 200)
@@ -458,7 +476,7 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
 
   if (followUpUrls.length > 0) {
     const followUpPages = await Promise.all(
-      followUpUrls.map((url) => limit(() => fetchPage(url, origin, entryUrl))),
+      followUpUrls.map((url) => limit(() => fetchPage(url, origin, entryUrl, context))),
     );
     pages = mergePages(pages, followUpPages);
   }
@@ -478,7 +496,7 @@ export async function crawlSite(inputUrl: string): Promise<CrawlData> {
   if (relatedLinks.length > 0) {
     const relatedPages = await Promise.all(
       relatedLinks.map((link) =>
-        limit(() => fetchPage(link.href, origin, entryUrl)),
+        limit(() => fetchPage(link.href, origin, entryUrl, context)),
       ),
     );
     relatedDomainInfo.urlsCrawled = relatedPages

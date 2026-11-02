@@ -20,6 +20,9 @@ import {
   type ScanFailureDiagnostic,
 } from "./scan-failure-diagnostics";
 import { isValidAuditHostname } from "./audit-url-validation";
+import { assertEntryNotPasswordGated } from "./storefront-access";
+import { isShopifyStorefrontPasswordPage } from "./shopify-storefront-password";
+import { StorefrontPasswordRequiredError } from "./storefront-password";
 import { MERCHANT_SIGNALS_CRAWLER_USER_AGENT } from "./crawler-identity";
 import { storefrontFetch } from "./storefront-fetch";
 import type { CrawlData, PageData } from "./types";
@@ -165,8 +168,16 @@ async function probeSite(url: URL): Promise<void> {
     ) {
       throw new DomainUnreachableError(buildScanFailureDiagnostic("site_unreachable"));
     }
+
+    if (isShopifyStorefrontPasswordPage({ html: snippet, url: response.url })) {
+      throw new StorefrontPasswordRequiredError();
+    }
   } catch (error) {
     if (error instanceof BotVerificationBlockedError) {
+      throw error;
+    }
+
+    if (error instanceof StorefrontPasswordRequiredError) {
       throw error;
     }
 
@@ -212,6 +223,10 @@ export function assertMinimumCrawlHealth(data: CrawlData): void {
   const entry = findEntryPage(data);
   const entryHaystack = entry ? pageContentHaystack(entry) : "";
 
+  if (entry?.htmlSnippet) {
+    assertEntryNotPasswordGated({ html: entry.htmlSnippet, url: entry.url });
+  }
+
   if (
     entry &&
     (entry.status === null ||
@@ -246,13 +261,31 @@ export function assertMinimumCrawlHealth(data: CrawlData): void {
     );
   }
 
-  const healthyPages = data.pages.filter(
-    (page) => page.status === 200 && !isGatewayErrorContent(pageContentHaystack(page)),
-  );
+  const healthyPages = data.pages.filter((page) => {
+    if (page.status !== 200 || isGatewayErrorContent(pageContentHaystack(page))) {
+      return false;
+    }
+
+    if (
+      page.htmlSnippet &&
+      isShopifyStorefrontPasswordPage({ html: page.htmlSnippet, url: page.url })
+    ) {
+      return false;
+    }
+
+    return true;
+  });
 
   if (healthyPages.length === 0) {
     if (detectBotVerificationInCrawl(data)) {
       throw new BotVerificationBlockedError(buildBotVerificationDiagnostic());
+    }
+
+    if (
+      entry?.htmlSnippet &&
+      isShopifyStorefrontPasswordPage({ html: entry.htmlSnippet, url: entry.url })
+    ) {
+      throw new StorefrontPasswordRequiredError();
     }
 
     throw new DomainUnreachableError(
@@ -298,6 +331,10 @@ export async function ensureDomainReachable(inputUrl: string): Promise<void> {
     await validateDomainReachability(inputUrl);
   } catch (error) {
     if (error instanceof BotVerificationBlockedError) {
+      throw error;
+    }
+
+    if (error instanceof StorefrontPasswordRequiredError) {
       throw error;
     }
 
