@@ -1,4 +1,13 @@
-const SITEMAP_URL_LIMIT = 20;
+import {
+  isCollectionPlpUrl,
+  isCollectionsAllUrl,
+  isPolicyOrLegalUrl,
+  isProductPageUrl,
+} from "./page-classification";
+
+export const SITEMAP_URL_LIMIT = 20;
+/** Minimum collection/category PLP URLs reserved in the sitemap fetch budget when available. */
+export const SITEMAP_COLLECTION_RESERVE = 5;
 
 const PRIORITY_KEYWORDS = [
   "returns",
@@ -52,12 +61,20 @@ export function scoreSitemapUrl(url: string): number {
     score += 12;
   }
 
-  if (/\/products\/[^/?#]+/i.test(url)) {
+  if (isProductPageUrl(url)) {
     score += 12;
   }
 
-  if (/\/product\/[^/?#]+/i.test(url)) {
+  if (isCollectionPlpUrl(url)) {
+    score += 11;
+  } else if (isCollectionsAllUrl(url)) {
+    score += 8;
+  } else if (/\/categor(y|ies)\/[^/?#]+/i.test(url)) {
     score += 10;
+  }
+
+  if (isPolicyOrLegalUrl(url)) {
+    score += 4;
   }
 
   for (const keyword of PRIORITY_KEYWORDS) {
@@ -72,6 +89,10 @@ export function scoreSitemapUrl(url: string): number {
 function rankNestedSitemapFile(url: string): number {
   const lower = url.toLowerCase();
 
+  if (/sitemap_collections|collections/i.test(lower)) {
+    return 0;
+  }
+
   if (/sitemap_0|product|catalog/i.test(lower)) {
     return 0;
   }
@@ -83,14 +104,34 @@ function rankNestedSitemapFile(url: string): number {
   return 1;
 }
 
+function isReservedCollectionCandidate(url: string): boolean {
+  return isCollectionPlpUrl(url) || /\/categor(y|ies)\/[^/?#]+/i.test(url);
+}
+
+/**
+ * Select sitemap page URLs with a reserved quota for collection/category PLPs
+ * so product-heavy sitemaps cannot starve catalog discovery.
+ */
 export function prioritizeSitemapUrls(urls: string[], limit = SITEMAP_URL_LIMIT): string[] {
   const unique = [...new Set(urls.map((url) => url.trim()).filter(Boolean))];
-
-  return unique
+  const scored = unique
     .map((url) => ({ url, score: scoreSitemapUrl(url) }))
-    .sort((a, b) => b.score - a.score || a.url.localeCompare(b.url))
-    .slice(0, limit)
+    .sort((a, b) => b.score - a.score || a.url.localeCompare(b.url));
+
+  const collectionCandidates = scored.filter((entry) =>
+    isReservedCollectionCandidate(entry.url),
+  );
+  const reserveCount = Math.min(SITEMAP_COLLECTION_RESERVE, collectionCandidates.length, limit);
+  const reserved = collectionCandidates.slice(0, reserveCount).map((entry) => entry.url);
+  const reservedSet = new Set(reserved);
+
+  const remainingSlots = Math.max(0, limit - reserved.length);
+  const fillers = scored
+    .filter((entry) => !reservedSet.has(entry.url))
+    .slice(0, remainingSlots)
     .map((entry) => entry.url);
+
+  return [...reserved, ...fillers];
 }
 
 export async function resolveSitemapUrls(
@@ -133,4 +174,4 @@ export async function resolveSitemapUrls(
   return { sitemapUrls, pageUrls };
 }
 
-export { SITEMAP_URL_LIMIT, PRIORITY_KEYWORDS };
+export { PRIORITY_KEYWORDS };

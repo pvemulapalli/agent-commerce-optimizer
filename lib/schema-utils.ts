@@ -140,7 +140,9 @@ export function pagesMatchingContent(
 }
 
 export function getCrawlablePages(pages: PageData[]): PageData[] {
-  return pages.filter((page) => page.status === 200 && !page.error);
+  return pages.filter(
+    (page) => page.status === 200 && !page.error && !page.passwordGated,
+  );
 }
 
 export function summarizePages(pages: PageData[], limit = 3): string {

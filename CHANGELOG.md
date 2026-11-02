@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.6.4] - 2026-11-02
+
+### [Data Quality]
+- Hardened crawl evidence with structural collection detection, sitemap collection URL quotas, and policy/legal page exclusions so privacy-policy text is not mistaken for catalog or support signals
+- Tagged password-gate HTML and excluded it from crawlable evidence; surfaced safe crawl coverage diagnostics (discovered/fetched/succeeded, page classes, storefront access)
+- Mapped sitemap-discovered but unfetched collections to `needs_review` with `verificationLimitation: crawl_budget` instead of unsupported `missing`
+
+### [Scoring]
+- Introduced `scoringModelVersion: "2026-11-evidence-v1"` on new enriched reports; historical unstamped reports continue to use legacy scoring
+- Legacy and `2026-11-evidence-v1` scores are not directly comparable without normalization
+- Clarified UCP/ACP copy as foundational readiness proxies, not verified protocol transactions
+- Follow-up: investigate development-store `auditConfidence` decline (Moderate 52 → Limited 40) after evidence-quality changes; do not treat as crawl authentication failure
+
+### [UX]
+- Added Assessment coverage strip and Needs verification grouping alongside verified strengths and confirmed gaps
+- Show scoring-model label on readiness reports
+
+### [Infrastructure]
+- Added Vitest unit suite and optional live evidence validation script (`STOREFRONT_PASSWORD` via env only; never commit credentials)
+
 ## [3.6.3] - 2026-11-02
 
 ### [Fixes]

@@ -1,6 +1,28 @@
 {
   "releases": [
     {
+      "version": "3.6.4",
+      "date": "2026-11-02",
+      "title": "Improve Crawl Evidence Quality and Readiness Reporting",
+      "summary": "Hardens crawl evidence, collection detection, and versioned readiness scoring (scoringModelVersion 2026-11-evidence-v1) so incomplete crawls and policy-page false positives no longer inflate or mislabel findings. Legacy and evidence-v1 scores are not directly comparable without normalization.",
+      "categories": [
+        "Data Quality",
+        "Scoring",
+        "UX",
+        "Infrastructure"
+      ],
+      "changes": [
+        "Stamp scoringModelVersion 2026-11-evidence-v1 on new enriched reports; keep legacy scoring for unstamped historical reports",
+        "Reserve sitemap collection PLP quota and require structural collection evidence (exclude policy/legal false positives)",
+        "Exclude password-gate pages from evidence and surface safe crawl coverage diagnostics",
+        "Map unfetched but discovered collections to needs_review with crawl_budget limitation",
+        "Clarify UCP/ACP as readiness proxies; note legacy vs evidence-v1 scores need normalization to compare",
+        "Add Assessment coverage strip and Needs verification report grouping",
+        "Add Vitest suite and optional live evidence validation script (password via env only)",
+        "Follow-up: investigate development-store auditConfidence decline (52 → 40); not assumed crawl auth failure"
+      ]
+    },
+    {
       "version": "3.6.3",
       "date": "2026-11-02",
       "title": "Fixes Generation for Password-Unlocked Shopify Stores",
@@ -16,6 +38,7 @@
         "Keep unlock password in-memory for the browser session to regenerate recommendations"
       ]
     },
+
     {
       "version": "3.6.2",
       "date": "2026-11-01",

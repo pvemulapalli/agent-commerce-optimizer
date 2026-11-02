@@ -21,9 +21,9 @@ const DIMENSION_BUSINESS_IMPACT: Record<string, string> = {
   "Merchant Information":
     "Shipping, returns, and contact policies build shopper trust. AI assistants need these signals before recommending a purchase.",
   "UCP Readiness":
-    "Universal Commerce Protocol readiness helps future AI checkout flows understand your merchant capabilities.",
+    "This score reflects foundational proxies such as cart and checkout discoverability—not a verified Universal Commerce Protocol transaction.",
   "ACP Readiness":
-    "Agentic Commerce Protocol readiness improves how autonomous agents evaluate your storefront for transactions.",
+    "This score reflects agent documentation signals such as llms.txt and on-site API docs links—not a verified Agentic Commerce Protocol integration.",
 };
 
 const FINDING_ACTIONS: Record<string, string> = {

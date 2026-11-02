@@ -200,12 +200,20 @@ export function AuditResultsSection({
   isSharedReport?: boolean;
 }) {
   const { suppressed: founderModeActive } = useTelemetrySuppression();
-  const report = buildReadinessReport(result);
+  const report = buildReadinessReport(result, {
+    scoringModelVersion: result.scoringModelVersion ?? "legacy",
+  });
   const scanContext = scanContextFromAudit(result);
   const detectedCount = result.grouped.detected.length;
   const missingCount = result.grouped.missing.length;
-  const needsReviewCount = result.grouped.needsReview.length;
-  const actionableFindings = [...result.grouped.missing, ...result.grouped.needsReview];
+  const needsVerificationCount = result.grouped.needsReview.filter(
+    (finding) => Boolean(finding.verificationLimitation),
+  ).length;
+  const needsReviewCount = result.grouped.needsReview.length - needsVerificationCount;
+  const actionableFindings = [
+    ...result.grouped.missing,
+    ...result.grouped.needsReview.filter((finding) => !finding.verificationLimitation),
+  ];
   const assetCount = fixes?.assets.length ?? GENERATED_FIX_ASSET_COUNT;
 
   const visibleSections = [
@@ -234,6 +242,7 @@ export function AuditResultsSection({
         detectedCount={detectedCount}
         missingCount={missingCount}
         needsReviewCount={needsReviewCount}
+        needsVerificationCount={needsVerificationCount}
         isSharedReport={isSharedReport}
         reportId={reportId}
         shareUrl={shareUrl}
@@ -242,6 +251,7 @@ export function AuditResultsSection({
         assetCount={assetCount}
         scanContext={scanContext}
         grouped={result.grouped}
+        crawlSummary={result.crawlSummary}
       />
 
       <AuditMetadataCard metadata={result.auditMetadata} />

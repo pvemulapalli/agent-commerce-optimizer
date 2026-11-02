@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:merchants": "tsx scripts/validate-merchants.mts",
+    "validate:evidence": "tsx scripts/validate-evidence-regression.mts",
     "validate:platforms": "tsx scripts/run-validation.ts",
     "validate:shopware": "tsx scripts/validate-shopware-detection.mts",
     "validate:magento": "tsx scripts/validate-magento-detection.mts",
@@ -38,6 +41,7 @@
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
     "tsx": "^4.20.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

@@ -4,11 +4,13 @@ import type {
   CrawlData,
   DiscoveredLink,
   Finding,
+  FindingEvidenceKind,
   GroupedFindings,
   LinkMatch,
   PageData,
   PlatformAnalysis,
   ProductPriceDetection,
+  VerificationLimitation,
 } from "./types";
 import { detectPlatform } from "./platform";
 import {
@@ -24,6 +26,17 @@ import {
   summarizePages,
   uniqueUrls,
 } from "./schema-utils";
+import {
+  isCollectionPlpUrl,
+  isCollectionsAllUrl,
+  isDeveloperDocsUrl,
+  isPolicyOrLegalUrl,
+} from "./page-classification";
+
+type FindingExtras = {
+  evidenceKind?: FindingEvidenceKind;
+  verificationLimitation?: VerificationLimitation;
+};
 
 function detected(
   id: string,
@@ -33,6 +46,7 @@ function detected(
   evidenceUrls: string[],
   sourceUrl: string,
   discoveredFromUrl: string | null = null,
+  extras: FindingExtras = {},
 ): Finding {
   return {
     id,
@@ -43,10 +57,16 @@ function detected(
     evidenceUrls: uniqueUrls(evidenceUrls),
     sourceUrl,
     discoveredFromUrl,
+    ...extras,
   };
 }
 
-function missing(id: string, label: string, sourceUrl: string): Finding {
+function missing(
+  id: string,
+  label: string,
+  sourceUrl: string,
+  extras: FindingExtras = {},
+): Finding {
   return {
     id,
     label,
@@ -56,6 +76,7 @@ function missing(id: string, label: string, sourceUrl: string): Finding {
     evidenceUrls: [sourceUrl],
     sourceUrl,
     discoveredFromUrl: null,
+    ...extras,
   };
 }
 
@@ -67,6 +88,7 @@ function needsReview(
   evidenceUrls: string[],
   sourceUrl: string,
   discoveredFromUrl: string | null = null,
+  extras: FindingExtras = {},
 ): Finding {
   return {
     id,
@@ -77,7 +99,16 @@ function needsReview(
     evidenceUrls: uniqueUrls(evidenceUrls),
     sourceUrl,
     discoveredFromUrl,
+    ...extras,
   };
+}
+
+function excludePolicyPages(pages: PageData[]): PageData[] {
+  return pages.filter((page) => !isPolicyOrLegalUrl(page.url));
+}
+
+function excludePolicyLinks(links: LinkMatch[]): LinkMatch[] {
+  return links.filter((link) => !isPolicyOrLegalUrl(link.href));
 }
 
 function collectAllLinks(pages: PageData[]): DiscoveredLink[] {
@@ -307,9 +338,12 @@ function checkPageDiscovery(
   linkPatterns: RegExp[],
   options?: {
     isStrongLink?: (link: LinkMatch) => boolean;
+    /** When true, ignore content/link hits on policy/legal URLs. */
+    excludePolicyEvidence?: boolean;
   },
 ): Finding {
   const crawlable = getCrawlablePages(data.pages);
+  const excludePolicy = options?.excludePolicyEvidence ?? false;
 
   const urlMatches = pagesMatchingUrlPatterns(crawlable, urlPatterns);
   if (urlMatches.length > 0) {
@@ -322,11 +356,14 @@ function checkPageDiscovery(
         built.evidence,
         built.evidenceUrls,
         built.sourceUrl,
+        null,
+        { evidenceKind: "url" },
       );
     }
   }
 
-  const contentMatches = pagesMatchingContent(crawlable, contentPatterns).filter(
+  const contentPool = excludePolicy ? excludePolicyPages(crawlable) : crawlable;
+  const contentMatches = pagesMatchingContent(contentPool, contentPatterns).filter(
     (page) => !urlMatches.some((match) => match.url === page.url),
   );
   if (contentMatches.length > 0) {
@@ -342,11 +379,16 @@ function checkPageDiscovery(
         built.evidence,
         built.evidenceUrls,
         built.sourceUrl,
+        null,
+        { evidenceKind: "content" },
       );
     }
   }
 
-  const links = findDiscoveredLinks(data.pages, linkPatterns);
+  let links = findDiscoveredLinks(data.pages, linkPatterns);
+  if (excludePolicy) {
+    links = excludePolicyLinks(links);
+  }
   if (links.length > 0) {
     const best = links[0];
     const strongLinks = options?.isStrongLink
@@ -368,6 +410,7 @@ function checkPageDiscovery(
         uniqueUrls(promotedLinks.map((link) => link.href)),
         promoted.href,
         promoted.discoveredFromUrl,
+        { evidenceKind: "link" },
       );
     }
 
@@ -379,6 +422,7 @@ function checkPageDiscovery(
       uniqueUrls(links.map((link) => link.href)),
       best.discoveredFromUrl,
       best.discoveredFromUrl,
+      { evidenceKind: "link" },
     );
   }
 
@@ -392,9 +436,18 @@ function checkSupportSignal(
   urlPatterns: RegExp[],
   linkPatterns: RegExp[],
   contentPatterns: RegExp[] = [],
+  options?: {
+    /** Disallow policy/legal pages as URL or content evidence. */
+    excludePolicyEvidence?: boolean;
+    /** Only treat dedicated portal hosts/paths as URL hits. */
+    requireNonPolicyUrl?: boolean;
+  },
 ): Finding {
   const crawlable = getCrawlablePages(data.pages);
-  const urlMatches = pagesMatchingUrlPatterns(crawlable, urlPatterns);
+  let urlMatches = pagesMatchingUrlPatterns(crawlable, urlPatterns);
+  if (options?.excludePolicyEvidence || options?.requireNonPolicyUrl) {
+    urlMatches = excludePolicyPages(urlMatches);
+  }
 
   if (urlMatches.length > 0) {
     const built = buildFindingFromPages(urlMatches, "Matching support URL on crawled page");
@@ -409,11 +462,16 @@ function checkSupportSignal(
         built.evidence,
         built.evidenceUrls,
         built.sourceUrl,
+        null,
+        { evidenceKind: "url" },
       );
     }
   }
 
-  const contentMatches = pagesMatchingContent(crawlable, contentPatterns).filter(
+  const contentPool = options?.excludePolicyEvidence
+    ? excludePolicyPages(crawlable)
+    : crawlable;
+  const contentMatches = pagesMatchingContent(contentPool, contentPatterns).filter(
     (page) => !urlMatches.some((match) => match.url === page.url),
   );
   if (contentMatches.length > 0) {
@@ -429,11 +487,16 @@ function checkSupportSignal(
         built.evidence,
         built.evidenceUrls,
         built.sourceUrl,
+        null,
+        { evidenceKind: "content" },
       );
     }
   }
 
-  const links = findDiscoveredLinks(data.pages, linkPatterns);
+  let links = findDiscoveredLinks(data.pages, linkPatterns);
+  if (options?.excludePolicyEvidence) {
+    links = excludePolicyLinks(links);
+  }
   if (links.length > 0) {
     const relatedLinks = links.filter((link) => link.scope === "related-domain");
     const best = relatedLinks[0] ?? links[0];
@@ -447,6 +510,7 @@ function checkSupportSignal(
         uniqueUrls(relatedLinks.map((link) => link.href)),
         best.href,
         best.discoveredFromUrl,
+        { evidenceKind: "link" },
       );
     }
 
@@ -458,6 +522,7 @@ function checkSupportSignal(
       uniqueUrls(links.map((link) => link.href)),
       best.href,
       best.discoveredFromUrl,
+      { evidenceKind: "link" },
     );
   }
 
@@ -493,17 +558,100 @@ function checkProductPages(data: CrawlData, platform: PlatformAnalysis): Finding
   );
 }
 
+function collectionUrlLooksStructural(url: string): boolean {
+  return (
+    isCollectionPlpUrl(url) ||
+    isCollectionsAllUrl(url) ||
+    /\/categor(y|ies)\/[^/?#]+/i.test(url) ||
+    /\/collection\/[^/?#]+/i.test(url)
+  );
+}
+
+function pageLooksLikeCollectionPlp(page: PageData): boolean {
+  if (isPolicyOrLegalUrl(page.url)) return false;
+  if (!collectionUrlLooksStructural(page.url)) return false;
+
+  const productLinks = page.discoveredLinks.filter((link) =>
+    /\/products\/[^/?#]+|\/product\/[^/?#]+|\/p\/[^/?#]+/i.test(link.href),
+  );
+  if (productLinks.length > 0) return true;
+
+  // Editorial collection pages may still be valid PLPs with a clear title.
+  return Boolean(page.title?.trim());
+}
+
 function checkCollectionPages(data: CrawlData, platform: PlatformAnalysis): Finding {
-  const shopifyPatterns =
-    platform.platform === "Shopify" ? [/\/collections\/[^/?#]+/i] : [];
+  const crawlable = getCrawlablePages(data.pages);
+  const fetchedCollections = crawlable.filter(pageLooksLikeCollectionPlp);
+
+  if (fetchedCollections.length > 0) {
+    const built = buildFindingFromPages(
+      fetchedCollections,
+      "Collection or category PLP URL inspected",
+    );
+    if (built) {
+      return detected(
+        "collection-pages",
+        "Collection pages",
+        "high",
+        built.evidence,
+        built.evidenceUrls,
+        built.sourceUrl,
+        null,
+        { evidenceKind: "url" },
+      );
+    }
+  }
+
+  const discoveredFromSitemap = (data.sitemap.collectionUrlsDiscovered ?? []).filter(
+    (url) => collectionUrlLooksStructural(url) && !isPolicyOrLegalUrl(url),
+  );
+  const discoveredFromLinks = excludePolicyLinks(
+    findDiscoveredLinks(data.pages, [
+      /\/collections\/[^/?#]+/i,
+      /\/collection\/[^/?#]+/i,
+      /\/categor(y|ies)\/[^/?#]+/i,
+    ]),
+  ).filter((link) => collectionUrlLooksStructural(link.href));
+
+  const discoveredUrls = uniqueUrls([
+    ...discoveredFromSitemap,
+    ...discoveredFromLinks.map((link) => link.href),
+  ]);
+
+  if (discoveredUrls.length > 0) {
+    const skipped = data.sitemap.urlsSkippedByBudget ?? [];
+    const budgetBlocked = discoveredFromSitemap.some((url) => skipped.includes(url));
+    return needsReview(
+      "collection-pages",
+      "Collection pages",
+      "medium",
+      `Unable to verify: ${discoveredUrls.length} collection URL(s) discovered (sitemap/nav) but none were successfully inspected as collection pages${
+        budgetBlocked ? " (crawl budget)" : ""
+      }. Examples: ${discoveredUrls.slice(0, 3).join("; ")}`,
+      discoveredUrls.slice(0, 5),
+      discoveredUrls[0],
+      discoveredFromLinks[0]?.discoveredFromUrl ?? null,
+      {
+        evidenceKind: "unable_to_verify",
+        verificationLimitation: budgetBlocked ? "crawl_budget" : "crawl_budget",
+      },
+    );
+  }
+
+  // Do not treat bare "collection" keywords on policy pages as catalog evidence.
+  if (platform.platform === "Shopify") {
+    return missing("collection-pages", "Collection pages", data.entryUrl);
+  }
 
   return checkPageDiscovery(
     "collection-pages",
     "Collection pages",
     data,
-    [...shopifyPatterns, /\/collections?\//i, /\/collection\//i],
-    [/collection/i, /shop all/i],
-    [/collection/i, /\/collections?\//i],
+    [/\/collections\/[^/?#]+/i, /\/collection\/[^/?#]+/i],
+    [/\bshop all\b/i, /\bproduct collection\b/i],
+    [/\/collections\/[^/?#]+/i, /\/collection\/[^/?#]+/i],
+    { excludePolicyEvidence: true },
   );
 }
 
@@ -521,8 +669,9 @@ function checkCategoryPages(data: CrawlData, platform: PlatformAnalysis): Findin
       /\/categories\//i,
       /\/catalog\/category\//i,
     ],
-    [/category/i, /browse by/i],
-    [/category/i, /\/categories?\//i],
+    [/\bcategory\b/i, /browse by/i],
+    [/\/categor(y|ies)\//i],
+    { excludePolicyEvidence: true },
   );
 }
 
@@ -545,8 +694,9 @@ function checkCatalogPages(data: CrawlData, platform: PlatformAnalysis): Finding
       /\/shop\b/i,
       /\/store\b/i,
     ],
-    [/catalog/i, /all products/i],
-    [/catalog/i, /\/catalog\b/i],
+    [/\bcatalog\b/i, /all products/i],
+    [/\/catalog\b/i, /\/catalogo\b/i],
+    { excludePolicyEvidence: true },
   );
 }
 
@@ -866,12 +1016,9 @@ function checkCartCheckout(data: CrawlData, platform: PlatformAnalysis): Finding
 }
 
 function checkApiDeveloperDocs(data: CrawlData): Finding {
-  const pages = pagesMatchingUrlPatterns(getCrawlablePages(data.pages), [
-    /\/api\b/i,
-    /developer/i,
-    /\/docs?\b/i,
-    /documentation/i,
-  ]);
+  const pages = getCrawlablePages(data.pages).filter(
+    (page) => isDeveloperDocsUrl(page.url) && !isPolicyOrLegalUrl(page.url),
+  );
 
   if (pages.length > 0) {
     const built = buildFindingFromPages(pages, "API or developer docs URL on crawled page");
@@ -883,26 +1030,32 @@ function checkApiDeveloperDocs(data: CrawlData): Finding {
         built.evidence,
         built.evidenceUrls,
         built.sourceUrl,
+        null,
+        { evidenceKind: "url" },
       );
     }
   }
 
-  const links = findDiscoveredLinks(data.pages, [
-    /\/api\b/i,
-    /developer/i,
-    /\/docs?\b/i,
-    /documentation/i,
-  ]);
+  const links = excludePolicyLinks(
+    findDiscoveredLinks(data.pages, [
+      /\/developers?\b/i,
+      /\/api\/docs/i,
+      /\/docs\/api/i,
+      /developer\./i,
+      /docs\./i,
+    ]),
+  ).filter((link) => isDeveloperDocsUrl(link.href));
 
   if (links.length > 0) {
     return needsReview(
       "api-developer-docs",
       "API or developer docs links",
       "low",
-      `Keyword match only in links: ${formatLinkEvidence(links.slice(0, 3))}`,
+      `Developer docs link discovered: ${formatLinkEvidence(links.slice(0, 3))}`,
       uniqueUrls(links.map((link) => link.href)),
       links[0].href,
       links[0].discoveredFromUrl,
+      { evidenceKind: "link" },
     );
   }
 
@@ -992,21 +1145,24 @@ function reconcileRelatedFindings(
   });
 
   const faqSchema = get("faq-schema");
-  const faqPageEvidence = ["faq-page", "help-center"]
-    .map((id) => get(id))
-    .find((finding) => finding?.status === "detected");
+  const faqPageEvidence = get("faq-page");
+  const faqIsStructural =
+    faqPageEvidence?.status === "detected" &&
+    faqPageEvidence.evidenceKind === "url" &&
+    !faqPageEvidence.evidenceUrls.some((url) => isPolicyOrLegalUrl(url));
 
-  if (faqSchema?.status === "missing" && faqPageEvidence) {
+  if (faqSchema?.status === "missing" && faqIsStructural && faqPageEvidence) {
     byId.set(
       "faq-schema",
       needsReview(
         "faq-schema",
         "FAQ schema",
         "medium",
-        `FAQ or help content was discovered (${faqPageEvidence.label.toLowerCase()}), but FAQPage JSON-LD was not found on crawled pages`,
+        `FAQ page was discovered (${faqPageEvidence.label.toLowerCase()}), but FAQPage JSON-LD was not found on crawled pages`,
         faqPageEvidence.evidenceUrls,
         faqPageEvidence.sourceUrl,
         faqPageEvidence.discoveredFromUrl,
+        { evidenceKind: "inferred" },
       ),
     );
   }
@@ -1103,17 +1259,19 @@ export function runChecks(data: CrawlData): {
       "help-center",
       "Help center",
       data,
-      [/support\.|help\./i, /help.?center/i, /\/help\b/i],
-      [/help.?center/i, /\bhelp\b/i, /support\./i],
+      [/support\.|help\./i, /help.?center/i, /\/help-center\b/i, /\/help\b/i],
+      [/help.?center/i, /support\./i],
       [/help center/i, /customer support/i],
+      { excludePolicyEvidence: true },
     ),
     checkSupportSignal(
       "faq-page",
       "FAQ page",
       data,
-      [/faq/i, /\/faq\b/i, /support\./i],
-      [/faq/i, /frequently asked questions/i, /support\./i],
+      [/\/faq\b/i, /\/faqs\b/i, /frequently[-_]?asked/i],
+      [/\/faq\b/i, /frequently asked questions/i],
       [/frequently asked questions/i, /\bfaq\b/i],
+      { excludePolicyEvidence: true },
     ),
     checkSupportSignal(
       "shipping-page",
@@ -1137,7 +1295,7 @@ export function runChecks(data: CrawlData): {
       data,
       [/returns?-policy/i, /\/returns?\b/i, /returns?\//i],
       [/return policy/i, /returns & exchanges/i],
-      [/return/i, /returns policy/i],
+      [/return policy/i, /returns & exchanges/i],
     ),
     checkSupportSignal(
       "return-policy-page",
@@ -1153,31 +1311,34 @@ export function runChecks(data: CrawlData): {
       data,
       [/refund/i, /\/refund/i],
       [/refund/i, /refund policy/i],
-      [/refund/i],
+      [/refund policy/i],
     ),
     checkSupportSignal(
       "return-portal",
       "Return portal",
       data,
       [/loopreturns/i, /return-portal/i, /make-a-return/i, /returns?\./i],
-      [/loopreturns/i, /make a return/i, /start a return/i],
+      [/loopreturns/i, /make a return/i, /start a return/i, /return portal/i],
       [/make a return/i, /loopreturns/i, /return portal/i],
+      { excludePolicyEvidence: true, requireNonPolicyUrl: true },
     ),
     checkSupportSignal(
       "contact-page",
       "Contact page",
       data,
-      [/contact/i, /\/contact\b/i, /support\./i],
-      [/contact us/i, /customer support/i, /contact support/i],
-      [/contact/i, /support/i, /contact support/i],
+      [/\/contact\b/i, /contact\./i],
+      [/contact us/i, /\/contact\b/i],
+      [/contact us/i],
+      { excludePolicyEvidence: true },
     ),
     checkSupportSignal(
       "contact-support",
       "Contact support",
       data,
-      [/contact/i, /support\./i, /help\./i],
+      [/\/contact\b/i, /support\./i, /help\./i],
       [/contact support/i, /customer support/i],
-      [/contact support/i, /support/i],
+      [/contact support/i],
+      { excludePolicyEvidence: true },
     ),
     checkCartCheckout(data, platform),
     checkApiDeveloperDocs(data),

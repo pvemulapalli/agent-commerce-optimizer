@@ -1,6 +1,5 @@
 import {
   getCrawlablePages,
-  pagesMatchingContent,
   pagesMatchingUrlPatterns,
   uniqueUrls,
 } from "./schema-utils";
@@ -10,6 +9,7 @@ import type {
   GenerationContext,
   PlatformAnalysis,
 } from "./types";
+import { isFaqUrl, isPolicyOrLegalUrl } from "./page-classification";
 
 const SUPPORT_LINK_PATTERNS = [
   /help/i,
@@ -132,7 +132,13 @@ export function buildGenerationContext(
         jsonLdBlocks: page.jsonLdBlocks,
       };
     })(),
-    faqPages: pagesMatchingContent(crawlable, [/faq/i, /help center/i, /support/i])
+    faqPages: crawlable
+      .filter((page) => {
+        if (isPolicyOrLegalUrl(page.url)) return false;
+        if (isFaqUrl(page.url)) return true;
+        const title = page.title?.toLowerCase() ?? "";
+        return /\bfaq\b|frequently asked/.test(title);
+      })
       .slice(0, 5)
       .map((page) => ({
         url: page.url,

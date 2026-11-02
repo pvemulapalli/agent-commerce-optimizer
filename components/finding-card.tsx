@@ -48,7 +48,11 @@ function ImpactBadge({ impact }: { impact: "High" | "Medium" | "Low" }) {
   );
 }
 
-function StatusBadge({ status }: { status: "Passed" | "Missing" | "Needs Review" }) {
+function StatusBadge({
+  status,
+}: {
+  status: "Passed" | "Missing" | "Needs Review" | "Needs Verification";
+}) {
   const classes = {
     Passed:
       "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/70 dark:text-emerald-100",
@@ -56,6 +60,8 @@ function StatusBadge({ status }: { status: "Passed" | "Missing" | "Needs Review"
       "border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/70 dark:text-rose-100",
     "Needs Review":
       "border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/70 dark:text-amber-100",
+    "Needs Verification":
+      "border-sky-200 bg-sky-100 text-sky-900 dark:border-sky-500/40 dark:bg-sky-950/70 dark:text-sky-100",
   }[status];
 
   return (
@@ -122,8 +128,8 @@ export function FindingCard({
 }) {
   const guidance = getFindingGuidance(finding);
   const impact = getFindingImpactLevel(finding);
-  const statusLabel = getFindingStatusLabel(finding.status);
-  const showFixPrompt = finding.status !== "detected";
+  const statusLabel = getFindingStatusLabel(finding.status, finding);
+  const showFixPrompt = finding.status !== "detected" && !finding.verificationLimitation;
 
   return (
     <article className="min-w-0 overflow-hidden rounded-xl border border-card-border bg-card p-5 shadow-sm">

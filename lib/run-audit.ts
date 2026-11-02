@@ -119,13 +119,16 @@ export async function runFullReadinessAudit(
 ): Promise<AuditRunResult> {
   const normalizedUrl = normalizeAuditUrl(url);
 
-  if (!options?.skipInitialReachability) {
+  // Password-unlocked sessions must skip the unauthenticated reachability probe;
+  // it has no storefront cookies and would hit the Shopify password gate.
+  if (!options?.skipInitialReachability && !options?.crawlContext?.cookieHeader) {
     await ensureDomainReachable(normalizedUrl);
   }
 
   const crawlData = await crawlSite(normalizedUrl, options?.crawlContext);
   assertMinimumCrawlHealth(crawlData);
-  const crawlSummary = buildCrawlSummary(crawlData);
+  const storefrontAccess = options?.crawlContext?.cookieHeader ? "unlocked" : "none";
+  const crawlSummary = buildCrawlSummary(crawlData, storefrontAccess);
   const checks = runChecks(crawlData);
   const platform = await resolvePlatformAnalysis(crawlData.entryUrl, checks.platform);
   const findings = checks.findings;

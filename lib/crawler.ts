@@ -18,6 +18,12 @@ import { formatFetchError } from "./gateway-errors";
 import type { CrawlRequestContext } from "./crawl-request-context";
 import { MERCHANT_SIGNALS_CRAWLER_USER_AGENT } from "./crawler-identity";
 import { storefrontFetch } from "./storefront-fetch";
+import { isShopifyStorefrontPasswordPage } from "./shopify-host";
+import { buildCrawlCoverage } from "./crawl-quality";
+import {
+  isCollectionPlpUrl,
+  isCollectionsAllUrl,
+} from "./page-classification";
 
 const FETCH_TIMEOUT_MS = 15_000;
 const MAX_LINK_FOLLOW_UP_PAGES = 5;
@@ -285,6 +291,27 @@ async function fetchPage(
     }
 
     const html = await response.text();
+    const passwordGated = isShopifyStorefrontPasswordPage({ html, url: pageUrl });
+
+    if (passwordGated) {
+      const $gate = cheerio.load(html);
+      return {
+        url: pageUrl,
+        title: $gate("title").first().text().replace(/\s+/g, " ").trim() || null,
+        metaDescription: null,
+        bodyTextSnippet: extractBodyText($gate),
+        htmlSnippet: html.slice(0, 12_000),
+        jsonLdBlocks: [],
+        schemaTypes: [],
+        discoveredLinks: [],
+        internalLinks: [],
+        status,
+        passwordGated: true,
+        verificationLimitation: "password_gate",
+        error: "Shopify storefront password gate",
+      };
+    }
+
     const $ = cheerio.load(html);
     const nextDataScript = $("script#__NEXT_DATA__").html()?.slice(0, 50_000) ?? "";
     const htmlSnippet = `${html.slice(0, 12_000)}\n${nextDataScript}`;
@@ -434,11 +461,13 @@ export async function crawlSite(
     (url) => fetchXml(url, context),
   );
 
-  let sitemapInfo = {
-    sitemapUrls: [] as string[],
+  let sitemapInfo: CrawlData["sitemap"] = {
+    sitemapUrls: [],
     urlsDiscovered: 0,
-    urlsSelected: [] as string[],
-    urlsCrawled: [] as string[],
+    urlsSelected: [],
+    urlsCrawled: [],
+    urlsSkippedByBudget: [],
+    collectionUrlsDiscovered: [],
   };
 
   if (initialSitemap) {
@@ -450,13 +479,20 @@ export async function crawlSite(
     const sameOriginUrls = resolved.pageUrls.filter((url) =>
       isSameOrigin(url, origin),
     );
+    const collectionUrlsDiscovered = sameOriginUrls.filter(
+      (url) => isCollectionPlpUrl(url) || isCollectionsAllUrl(url),
+    );
     const selected = prioritizeSitemapUrls(sameOriginUrls, SITEMAP_URL_LIMIT);
+    const selectedSet = new Set(selected);
+    const urlsSkippedByBudget = sameOriginUrls.filter((url) => !selectedSet.has(url));
 
     sitemapInfo = {
       sitemapUrls: resolved.sitemapUrls,
       urlsDiscovered: sameOriginUrls.length,
       urlsSelected: selected,
       urlsCrawled: [],
+      urlsSkippedByBudget,
+      collectionUrlsDiscovered,
     };
 
     if (selected.length > 0) {
@@ -464,7 +500,7 @@ export async function crawlSite(
         selected.map((url) => limit(() => fetchPage(url, origin, entryUrl, context))),
       );
       sitemapInfo.urlsCrawled = sitemapPages
-        .filter((page) => page.status === 200)
+        .filter((page) => page.status === 200 && !page.passwordGated)
         .map((page) => page.url);
       pages = mergePages(pages, sitemapPages);
     }
@@ -506,8 +542,8 @@ export async function crawlSite(
   }
 
   const hosting = await resolveHostingProfile(new URL(entryUrl).hostname);
-
-  return {
+  const storefrontAccess = context?.cookieHeader ? "unlocked" : "none";
+  const crawlData: CrawlData = {
     entryUrl,
     origin,
     pages,
@@ -522,6 +558,9 @@ export async function crawlSite(
     relatedDomain: relatedDomainInfo,
     crawledAt: new Date().toISOString(),
   };
+  crawlData.coverage = buildCrawlCoverage(crawlData, storefrontAccess);
+
+  return crawlData;
 }
 
 export { extractSchemaTypes, parseJsonLdBlocks };

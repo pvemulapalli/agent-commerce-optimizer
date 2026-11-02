@@ -1,5 +1,11 @@
 import { resolveMerchantDisplayName } from "./merchant-name";
 import { formatPlatformDisplay } from "./platform-labels";
+import {
+  CURRENT_SCORING_MODEL_VERSION,
+  OPTIONAL_STOREFRONT_FINDING_IDS,
+  SCORING_MODEL_EVIDENCE_V1,
+  type ScoringModelVersion,
+} from "./scoring-model";
 import type {
   AuditApiResponse,
   Finding,
@@ -37,10 +43,11 @@ export interface ReadinessReport {
   executiveSummary: string;
   topGap: string;
   recommendations: string[];
+  scoringModelVersion: ScoringModelVersion;
 }
 
 export const SCORE_EVIDENCE_NOTE =
-  "Scores are derived from evidence-backed findings collected during the scan.";
+  "Scores are derived from evidence-backed findings collected during the scan. UCP/ACP dimensions measure foundational readiness proxies (cart/checkout discoverability and agent documentation signals), not verified protocol transactions.";
 
 const DIMENSION_LABELS: Record<ReadinessDimensionId, string> = {
   discoverability: "Discoverability",
@@ -100,7 +107,7 @@ const HIGH_IMPACT_FINDINGS = new Set([
   "faq-schema",
 ]);
 
-function scoreFinding(finding: Finding): number {
+function scoreFindingLegacy(finding: Finding): number {
   if (finding.status === "detected") {
     if (finding.confidence === "high") return 100;
     if (finding.confidence === "medium") return 85;
@@ -114,6 +121,50 @@ function scoreFinding(finding: Finding): number {
   }
 
   return 0;
+}
+
+function scoreFindingEvidenceV1(finding: Finding): number {
+  if (finding.status === "detected") {
+    return scoreFindingLegacy(finding);
+  }
+
+  if (finding.status === "needs_review") {
+    const limitation = finding.verificationLimitation;
+    if (
+      limitation === "crawl_budget" ||
+      limitation === "password_gate" ||
+      limitation === "auth" ||
+      limitation === "fetch_error"
+    ) {
+      // Incomplete verification — partial credit, not a hard zero.
+      return 60;
+    }
+
+    if (
+      OPTIONAL_STOREFRONT_FINDING_IDS.has(finding.id) &&
+      finding.evidenceKind === "inferred"
+    ) {
+      return 50;
+    }
+
+    return scoreFindingLegacy(finding);
+  }
+
+  // Confirmed missing optional signals are softer than required catalog gaps.
+  if (OPTIONAL_STOREFRONT_FINDING_IDS.has(finding.id)) {
+    return 25;
+  }
+
+  return 0;
+}
+
+function scoreFinding(
+  finding: Finding,
+  model: ScoringModelVersion = CURRENT_SCORING_MODEL_VERSION,
+): number {
+  return model === SCORING_MODEL_EVIDENCE_V1
+    ? scoreFindingEvidenceV1(finding)
+    : scoreFindingLegacy(finding);
 }
 
 function scorePlatform(platform: PlatformAnalysis): number {
@@ -130,6 +181,7 @@ function computeDimensionScore(
   id: ReadinessDimensionId,
   findings: Finding[],
   platform: PlatformAnalysis,
+  model: ScoringModelVersion,
 ): ReadinessDimension | null {
   if (id === "platformReadiness") {
     return {
@@ -144,16 +196,34 @@ function computeDimensionScore(
   }
 
   const relatedIds = DIMENSION_FINDINGS[id];
-  const relatedFindings = relatedIds
+  let relatedFindings = relatedIds
     .map((findingId) => findings.find((finding) => finding.id === findingId))
     .filter((finding): finding is Finding => Boolean(finding));
+
+  if (
+    model === SCORING_MODEL_EVIDENCE_V1 &&
+    (id === "catalogReadiness" || id === "merchantInformation" || id === "structuredData")
+  ) {
+    // Optional N/A-style needs_review findings do not dilute the denominator.
+    relatedFindings = relatedFindings.filter((finding) => {
+      if (
+        finding.status === "needs_review" &&
+        OPTIONAL_STOREFRONT_FINDING_IDS.has(finding.id) &&
+        finding.evidenceKind === "inferred" &&
+        !finding.verificationLimitation
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }
 
   if (relatedFindings.length === 0) {
     return null;
   }
 
   const total = relatedFindings.reduce(
-    (sum, finding) => sum + scoreFinding(finding),
+    (sum, finding) => sum + scoreFinding(finding, model),
     0,
   );
 
@@ -168,13 +238,17 @@ function computeDimensionScore(
 function computeDimensionScores(
   findings: Finding[],
   platform: PlatformAnalysis,
+  model: ScoringModelVersion,
 ): ReadinessDimension[] {
   return (Object.keys(DIMENSION_LABELS) as ReadinessDimensionId[])
-    .map((id) => computeDimensionScore(id, findings, platform))
+    .map((id) => computeDimensionScore(id, findings, platform, model))
     .filter((dimension): dimension is ReadinessDimension => Boolean(dimension));
 }
 
-export function computeReadinessScore(grouped: GroupedFindings): number {
+export function computeReadinessScore(
+  grouped: GroupedFindings,
+  model: ScoringModelVersion = CURRENT_SCORING_MODEL_VERSION,
+): number {
   const all = [
     ...grouped.detected,
     ...grouped.missing,
@@ -185,7 +259,7 @@ export function computeReadinessScore(grouped: GroupedFindings): number {
     return 0;
   }
 
-  const total = all.reduce((sum, finding) => sum + scoreFinding(finding), 0);
+  const total = all.reduce((sum, finding) => sum + scoreFinding(finding, model), 0);
   return Math.round(total / all.length);
 }
 
@@ -344,9 +418,18 @@ export function getTopGap(
 
 export function buildReadinessReport(
   audit: AuditApiResponse,
-  options?: { merchantName?: string },
+  options?: {
+    merchantName?: string;
+    scoringModelVersion?: ScoringModelVersion;
+  },
 ): ReadinessReport {
-  const dimensions = computeDimensionScores(audit.findings, audit.platform);
+  const scoringModelVersion =
+    options?.scoringModelVersion ?? CURRENT_SCORING_MODEL_VERSION;
+  const dimensions = computeDimensionScores(
+    audit.findings,
+    audit.platform,
+    scoringModelVersion,
+  );
 
   const score =
     dimensions.length === 0
@@ -386,6 +469,7 @@ export function buildReadinessReport(
     executiveSummary,
     topGap,
     recommendations,
+    scoringModelVersion,
   };
 }
 
@@ -400,9 +484,11 @@ export function getFindingImpactLevel(finding: Finding): "High" | "Medium" | "Lo
 
 export function getFindingStatusLabel(
   status: Finding["status"],
-): "Passed" | "Missing" | "Needs Review" {
+  finding?: Finding,
+): "Passed" | "Missing" | "Needs Review" | "Needs Verification" {
   if (status === "detected") return "Passed";
   if (status === "missing") return "Missing";
+  if (finding?.verificationLimitation) return "Needs Verification";
   return "Needs Review";
 }
 

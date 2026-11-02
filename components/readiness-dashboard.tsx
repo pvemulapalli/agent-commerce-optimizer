@@ -12,6 +12,8 @@ import type { ScanAnalyticsProperties } from "@/lib/analytics-properties";
 import { AUDIT_SECTION_SCROLL_CLASS } from "@/lib/scroll-utils";
 import { FUTURE_AUTOMATION_NOTE } from "@/lib/scan-messaging";
 import { SCORE_EVIDENCE_NOTE, type ReadinessReport } from "@/lib/readiness-score";
+import { scoringModelLabel } from "@/lib/scoring-model";
+import type { CrawlSummary } from "@/lib/crawl-quality";
 import type { CommercePlatform, Finding } from "@/lib/types";
 
 function ScoreGauge({ score, grade }: { score: number; grade: string }) {
@@ -67,18 +69,79 @@ function Scorecard({
   );
 }
 
-function ScoreEvidenceNote() {
+function ScoreEvidenceNote({ scoringModelVersion }: { scoringModelVersion?: string }) {
   return (
-    <p className="flex items-start gap-2 text-sm text-text-secondary">
-      <span
-        className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-card-muted text-xs font-semibold text-text-primary"
-        title={SCORE_EVIDENCE_NOTE}
-        aria-label={SCORE_EVIDENCE_NOTE}
-      >
-        i
-      </span>
-      <span>{SCORE_EVIDENCE_NOTE}</span>
-    </p>
+    <div className="space-y-1 text-sm text-text-secondary">
+      <p className="flex items-start gap-2">
+        <span
+          className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-card-muted text-xs font-semibold text-text-primary"
+          title={SCORE_EVIDENCE_NOTE}
+          aria-label={SCORE_EVIDENCE_NOTE}
+        >
+          i
+        </span>
+        <span>{SCORE_EVIDENCE_NOTE}</span>
+      </p>
+      {scoringModelVersion ? (
+        <p className="pl-7 text-xs text-text-secondary">
+          {scoringModelLabel(scoringModelVersion)}. Historical reports may use a different model.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function AssessmentCoverageStrip({ crawlSummary }: { crawlSummary?: CrawlSummary }) {
+  const coverage = crawlSummary?.coverage;
+  if (!coverage) return null;
+
+  const accessLabel =
+    coverage.storefrontAccess === "unlocked"
+      ? "Authenticated storefront access"
+      : coverage.storefrontAccess === "required_unmet"
+        ? "Password gate blocked access"
+        : "Public crawl";
+
+  return (
+    <div className="rounded-xl border border-card-border bg-card-muted/60 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+        Assessment coverage
+      </p>
+      <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+        <div>
+          <dt className="text-text-secondary">Pages inspected</dt>
+          <dd className="font-semibold tabular-nums text-text-primary">
+            {coverage.urlsSucceeded}/{coverage.urlsFetched}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-text-secondary">Products / collections</dt>
+          <dd className="font-semibold tabular-nums text-text-primary">
+            {coverage.pageClassCounts.product} / {coverage.pageClassCounts.collection}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-text-secondary">Policies</dt>
+          <dd className="font-semibold tabular-nums text-text-primary">
+            {coverage.pageClassCounts.policy}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-text-secondary">Access</dt>
+          <dd className="font-semibold text-text-primary">{accessLabel}</dd>
+        </div>
+      </dl>
+      {coverage.skippedByBudget > 0 || coverage.blockedByPasswordGate > 0 ? (
+        <p className="mt-3 text-xs text-text-secondary">
+          {coverage.skippedByBudget > 0
+            ? `${coverage.skippedByBudget} discovered URL(s) were not fetched due to crawl budget. `
+            : null}
+          {coverage.blockedByPasswordGate > 0
+            ? `${coverage.blockedByPasswordGate} response(s) were password-gated and excluded from evidence.`
+            : null}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -90,6 +153,7 @@ export function ReadinessDashboard({
   detectedCount,
   missingCount,
   needsReviewCount,
+  needsVerificationCount = 0,
   isSharedReport = false,
   reportId,
   shareUrl,
@@ -98,6 +162,7 @@ export function ReadinessDashboard({
   assetCount = 0,
   scanContext,
   grouped,
+  crawlSummary,
 }: {
   report: ReadinessReport;
   merchantName?: string;
@@ -106,6 +171,7 @@ export function ReadinessDashboard({
   detectedCount: number;
   missingCount: number;
   needsReviewCount: number;
+  needsVerificationCount?: number;
   isSharedReport?: boolean;
   reportId?: string;
   shareUrl?: string;
@@ -114,6 +180,7 @@ export function ReadinessDashboard({
   assetCount?: number;
   scanContext?: ScanAnalyticsProperties;
   grouped: GroupedFindings;
+  crawlSummary?: CrawlSummary;
 }) {
   const startingPoint = buildRecommendedStartingPoint({
     grouped,
@@ -190,12 +257,13 @@ export function ReadinessDashboard({
           </div>
         </div>
         <div className="mt-5">
-          <ScoreEvidenceNote />
+          <ScoreEvidenceNote scoringModelVersion={report.scoringModelVersion} />
         </div>
         </div>
       </div>
 
       <div className="space-y-8 px-6 py-8 sm:px-8">
+        <AssessmentCoverageStrip crawlSummary={crawlSummary} />
         <BusinessSummarySection report={report} missingCount={missingCount} />
         <RecommendedStartingPointSection startingPoint={startingPoint} />
 
@@ -218,11 +286,16 @@ export function ReadinessDashboard({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Scorecard label="Detected Signals" value={detectedCount} tone="emerald" />
-          <Scorecard label="Missing Signals" value={missingCount} tone="rose" />
-          <Scorecard label="Needs Review" value={needsReviewCount} tone="amber" />
-          <Scorecard label="Readiness Score" value={report.score} tone="blue" />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <Scorecard label="Verified strengths" value={detectedCount} tone="emerald" />
+          <Scorecard label="Confirmed gaps" value={missingCount} tone="rose" />
+          <Scorecard
+            label="Needs verification"
+            value={needsVerificationCount}
+            tone="blue"
+          />
+          <Scorecard label="Needs review" value={needsReviewCount} tone="amber" />
+          <Scorecard label="Readiness score" value={report.score} tone="blue" />
         </div>
       </div>
     </section>

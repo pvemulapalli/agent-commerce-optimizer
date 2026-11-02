@@ -1,4 +1,12 @@
-import type { CrawlData, Finding, FindingStatus } from "./types";
+import { classifyPage, isCollectionPlpUrl, isCollectionsAllUrl } from "./page-classification";
+import type {
+  CrawlCoverage,
+  CrawlCoverageCounts,
+  CrawlData,
+  Finding,
+  FindingStatus,
+  StorefrontAccessState,
+} from "./types";
 
 export interface CrawlSummary {
   entryStatus: number | null;
@@ -6,15 +14,95 @@ export interface CrawlSummary {
   pages403: number;
   robotsStatus: number | null;
   sitemapStatus: number | null;
+  /** Additive diagnostics for report UX (optional on cached/legacy summaries). */
+  coverage?: CrawlCoverage;
 }
 
 export type DetectionQuality = "good" | "limited" | "blocked";
 export type CrawlQuality = "strong" | "partial" | "weak";
 
-export function buildCrawlSummary(data: CrawlData): CrawlSummary {
+function emptyPageClassCounts(): CrawlCoverageCounts {
+  return { product: 0, collection: 0, policy: 0, other: 0 };
+}
+
+export function classifySucceededPageCounts(
+  pages: CrawlData["pages"],
+): CrawlCoverageCounts {
+  const counts = emptyPageClassCounts();
+
+  for (const page of pages) {
+    if (page.status !== 200 || page.error || page.passwordGated) continue;
+    const cls = classifyPage({ url: page.url, title: page.title });
+    if (cls === "product") counts.product += 1;
+    else if (cls === "collection" || cls === "category" || cls === "catalog") {
+      counts.collection += 1;
+    } else if (cls === "policy") counts.policy += 1;
+    else counts.other += 1;
+  }
+
+  return counts;
+}
+
+export function buildCrawlCoverage(
+  data: CrawlData,
+  storefrontAccess: StorefrontAccessState = "none",
+): CrawlCoverage {
+  const pages = data.pages;
+  const blockedByPasswordGate = pages.filter((page) => page.passwordGated).length;
+  const redirectedToPassword = pages.filter((page) =>
+    /\/password(?:\?|$)/i.test(page.url),
+  ).length;
+  const fetchFailed = pages.filter(
+    (page) =>
+      page.status === null ||
+      (page.status !== 200 && !page.passwordGated) ||
+      (Boolean(page.error) && !page.passwordGated),
+  ).length;
+  const urlsSucceeded = pages.filter(
+    (page) => page.status === 200 && !page.error && !page.passwordGated,
+  ).length;
+
+  const discovered = data.sitemap.urlsDiscovered;
+  const selected = data.sitemap.urlsSelected.length;
+  const skippedByBudget =
+    data.sitemap.urlsSkippedByBudget?.length ??
+    Math.max(0, discovered - selected);
+
+  const collectionDiscovered = data.sitemap.collectionUrlsDiscovered?.length ?? 0;
+
+  const collectionFetched = pages.filter(
+    (page) =>
+      page.status === 200 &&
+      !page.passwordGated &&
+      !page.error &&
+      (isCollectionPlpUrl(page.url) || isCollectionsAllUrl(page.url)),
+  ).length;
+
+  return {
+    urlsDiscovered: discovered,
+    urlsSelected: selected,
+    urlsFetched: pages.length,
+    urlsSucceeded,
+    blockedByPasswordGate,
+    redirectedToPassword,
+    fetchFailed,
+    skippedByBudget,
+    pageClassCounts: classifySucceededPageCounts(pages),
+    storefrontAccess,
+    collectionUrlsDiscovered: collectionDiscovered,
+    collectionUrlsFetched: collectionFetched,
+  };
+}
+
+export function buildCrawlSummary(
+  data: CrawlData,
+  storefrontAccess: StorefrontAccessState = "none",
+): CrawlSummary {
   const entryPage =
     data.pages.find((page) => page.url.replace(/\/$/, "") === data.entryUrl.replace(/\/$/, "")) ??
     data.pages[0];
+
+  const coverage = data.coverage ?? buildCrawlCoverage(data, storefrontAccess);
 
   return {
     entryStatus: entryPage?.status ?? null,
@@ -22,6 +110,7 @@ export function buildCrawlSummary(data: CrawlData): CrawlSummary {
     pages403: data.pages.filter((page) => page.status === 403).length,
     robotsStatus: data.resources.robotsTxt.status,
     sitemapStatus: data.resources.sitemapXml.status,
+    coverage,
   };
 }
 

@@ -236,6 +236,21 @@ function generateMerchantProfile(context: GenerationContext): string {
   return `${lines.join("\n")}\n`;
 }
 
+function cleanOrganizationName(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null;
+  let name = raw.replace(/\s+/g, " ").trim();
+  // Drop development-store suffix segments before collapsing duplicates.
+  name = name.replace(/\s*[–—-]\s*Development\b/gi, "").trim();
+  const dashParts = name.split(/\s+[–—-]\s+/).map((part) => part.trim()).filter(Boolean);
+  if (dashParts.length >= 2) {
+    const first = dashParts[0];
+    if (dashParts.every((part) => part.toLowerCase() === first.toLowerCase())) {
+      name = first;
+    }
+  }
+  return name || null;
+}
+
 function generateOrganizationSchema(context: GenerationContext): string {
   for (const page of context.pages) {
     const existing = extractJsonLdByType(page.jsonLdBlocks, "Organization");
@@ -244,31 +259,38 @@ function generateOrganizationSchema(context: GenerationContext): string {
     }
   }
 
+  const contactUrl =
+    context.supportLinks.find((link) =>
+      /\/contact\b/i.test(link.href) || /^contact\b/i.test(link.text.trim()),
+    )?.href ?? null;
+
   const template = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: context.homepage?.title?.trim() || "TODO: Organization name",
-    url: context.auditedUrl,
+    name:
+      cleanOrganizationName(context.homepage?.title) ||
+      "TODO: Organization name (human approval required)",
+    url: context.origin || context.auditedUrl,
     description:
       context.homepage?.metaDescription?.trim() ||
-      "TODO: Organization description from verified merchant copy",
-    logo: "TODO: URL to organization logo image",
-    sameAs: ["TODO: Official social profile URLs"],
+      "TODO: Organization description from verified merchant copy (human approval required)",
+    logo: "TODO: URL to organization logo image (human approval required)",
+    sameAs: ["TODO: Official social profile URLs only if verified (human approval required)"],
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",
-      url:
-        context.supportLinks.find((link) => /contact|support|help/i.test(link.text))?.href ||
-        "TODO: Support or contact page URL",
+      url: contactUrl || "TODO: Support or contact page URL (human approval required)",
     },
     _comment:
-      "Template generated from crawl evidence. Replace TODO values with verified facts.",
+      "Illustrative template from crawl evidence. Replace TODO values with verified facts before publishing. Do not invent social profiles or contact details.",
   };
 
   return `${JSON.stringify(template, null, 2)}\n`;
 }
 
 function generateProductSchemaTemplate(context: GenerationContext): string {
+  const productFinding = context.findings.find((finding) => finding.id === "product-schema");
+
   for (const page of context.pages) {
     const existing = extractJsonLdByType(page.jsonLdBlocks, "Product");
     if (existing) {
@@ -276,10 +298,23 @@ function generateProductSchemaTemplate(context: GenerationContext): string {
         ...existing,
         _sourceUrl: page.url,
         _comment:
-          "Extracted from crawled JSON-LD. Review and complete any missing fields before publishing.",
+          "Extracted from crawled JSON-LD. If this storefront already emits valid Product/Offer markup (e.g. Shopify structured_data), do not publish a duplicate block unless correcting specific fields. Review before publishing.",
       };
       return `${JSON.stringify(annotated, null, 2)}\n`;
     }
+  }
+
+  if (productFinding?.status === "detected") {
+    return `${JSON.stringify(
+      {
+        _comment:
+          "Product schema was detected during the crawl. Shopify and similar platforms often already emit Product/Offer JSON-LD. This file is illustrative only — do not add a duplicate Product block unless you are correcting specific fields.",
+        _status: "already_detected",
+        evidenceUrls: productFinding.evidenceUrls,
+      },
+      null,
+      2,
+    )}\n`;
   }
 
   const exampleUrl = context.productPageUrls[0] || "TODO: Product page URL from crawl";
@@ -293,7 +328,9 @@ function generateProductSchemaTemplate(context: GenerationContext): string {
     sku: "TODO: Product SKU or identifier",
     brand: {
       "@type": "Brand",
-      name: context.homepage?.title?.trim() || "TODO: Brand name",
+      name:
+        cleanOrganizationName(context.homepage?.title) ||
+        "TODO: Brand name (human approval required)",
     },
     image: ["TODO: Product image URL"],
     offers: {
@@ -304,7 +341,7 @@ function generateProductSchemaTemplate(context: GenerationContext): string {
       availability: "https://schema.org/TODO_InventoryStatus",
     },
     _comment:
-      "Template generated because Product JSON-LD was not found on crawled product pages.",
+      "Illustrative template because Product JSON-LD was not found on crawled product pages. Human approval required before publishing.",
   };
 
   return `${JSON.stringify(template, null, 2)}\n`;
@@ -324,7 +361,18 @@ function generateFaqSchemaTemplate(context: GenerationContext): string {
     }
   }
 
-  const faqPageUrl = context.faqPages[0]?.url || "TODO: FAQ or help page URL";
+  const faqPageUrl = context.faqPages[0]?.url;
+  if (!faqPageUrl) {
+    return `${JSON.stringify(
+      {
+        _comment:
+          "No dedicated FAQ page was verified in the crawl. Do not invent FAQPage markup from privacy policies or other legal pages. Only add FAQPage schema when real FAQ content exists.",
+        _status: "no_verified_faq_page",
+      },
+      null,
+      2,
+    )}\n`;
+  }
 
   const template = {
     "@context": "https://schema.org",
@@ -332,16 +380,16 @@ function generateFaqSchemaTemplate(context: GenerationContext): string {
     mainEntity: [
       {
         "@type": "Question",
-        name: "TODO: Question text from FAQ page",
+        name: "TODO: Question text from FAQ page (human approval required)",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "TODO: Answer text from FAQ page",
+          text: "TODO: Answer text from FAQ page (human approval required)",
         },
       },
     ],
     _faqPageUrl: faqPageUrl,
     _comment:
-      "Template generated because FAQPage JSON-LD was not found. Add one entry per FAQ item from crawled FAQ content.",
+      "Illustrative template for a verified FAQ URL. Add one entry per real FAQ item. Do not use privacy-policy URLs as FAQ sources.",
   };
 
   return `${JSON.stringify(template, null, 2)}\n`;

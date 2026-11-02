@@ -51,10 +51,10 @@ const GUIDANCE: Record<string, FindingGuidance> = {
   },
   "cart-checkout-pages": {
     businessImpact:
-      "Agents may not understand how shoppers complete a purchase on your site.",
+      "Cart and checkout links are foundational commerce proxies for UCP readiness scoring—not verified protocol handshakes.",
     potentialResult:
-      "Checkout handoff and purchase intent flows may be harder for agents to support.",
-    recommendedAction: "Ensure cart and checkout URLs are discoverable from product pages.",
+      "Agents can discover purchase paths, but this does not prove UCP capability negotiation succeeded.",
+    recommendedAction: "Keep cart and checkout URLs linked from product and navigation pages.",
   },
   "faq-schema": {
     businessImpact:
@@ -86,10 +86,11 @@ const GUIDANCE: Record<string, FindingGuidance> = {
   },
   "api-developer-docs": {
     businessImpact:
-      "Agent commerce integrations may lack programmatic entry points to your catalog.",
+      "On-site developer documentation is optional for most storefronts; ACP readiness here is a documentation proxy, not proof of a live protocol integration.",
     potentialResult:
-      "Future ACP-style agent integrations may require manual discovery work.",
-    recommendedAction: "Document public APIs or developer resources for commerce integrations.",
+      "Absence of merchant API docs does not mean checkout or catalog APIs are unavailable at the platform layer.",
+    recommendedAction:
+      "Only publish developer docs when you offer a merchant-owned API. Do not invent documentation to raise the score.",
   },
 };
 
@@ -104,6 +105,16 @@ function defaultGuidance(finding: Finding): FindingGuidance {
   }
 
   if (finding.status === "needs_review") {
+    if (finding.verificationLimitation) {
+      return {
+        businessImpact: `${finding.label} could not be fully verified because of a crawl or access limitation (${finding.verificationLimitation}).`,
+        potentialResult:
+          "This is not the same as a confirmed gap. Re-scan with broader coverage or authenticated access if needed.",
+        recommendedAction:
+          "Confirm the page is reachable to MerchantSignals, then re-run the scan before treating this as missing.",
+      };
+    }
+
     return {
       businessImpact: `${finding.label} was partially detected and may need manual verification.`,
       potentialResult:

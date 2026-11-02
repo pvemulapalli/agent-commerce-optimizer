@@ -35,6 +35,24 @@ export interface DiscoveredLink {
 /** @deprecated Use discoveredLinks — kept for compatibility during migration */
 export type InternalLink = Pick<DiscoveredLink, "href" | "text">;
 
+/** Why a signal could not be conclusively verified (additive; older clients ignore). */
+export type VerificationLimitation =
+  | "auth"
+  | "crawl_budget"
+  | "fetch_error"
+  | "password_gate"
+  | null;
+
+export type FindingEvidenceKind =
+  | "url"
+  | "content"
+  | "link"
+  | "schema"
+  | "resource"
+  | "sitemap"
+  | "inferred"
+  | "unable_to_verify";
+
 export interface Finding {
   id: string;
   label: string;
@@ -44,6 +62,10 @@ export interface Finding {
   evidenceUrls: string[];
   sourceUrl: string;
   discoveredFromUrl: string | null;
+  /** Optional: how the signal was evidenced. */
+  evidenceKind?: FindingEvidenceKind;
+  /** Optional: crawl/auth limitation that prevented a definitive missing/detected call. */
+  verificationLimitation?: VerificationLimitation;
 }
 
 export interface PlatformAnalysis {
@@ -74,6 +96,9 @@ export interface PageData {
   internalLinks: InternalLink[];
   status: number | null;
   error?: string;
+  /** Set when the response is a Shopify storefront password gate. */
+  passwordGated?: boolean;
+  verificationLimitation?: VerificationLimitation;
 }
 
 export interface ResourceFetch {
@@ -89,6 +114,35 @@ export interface SitemapCrawlInfo {
   urlsDiscovered: number;
   urlsSelected: string[];
   urlsCrawled: string[];
+  /** Same-origin sitemap URLs not selected due to the fetch budget. */
+  urlsSkippedByBudget?: string[];
+  /** Collection/category PLP URLs discovered in the sitemap (selected or not). */
+  collectionUrlsDiscovered?: string[];
+}
+
+export type StorefrontAccessState = "none" | "unlocked" | "required_unmet";
+
+export interface CrawlCoverageCounts {
+  product: number;
+  collection: number;
+  policy: number;
+  other: number;
+}
+
+/** Public crawl diagnostics — never includes cookies or passwords. */
+export interface CrawlCoverage {
+  urlsDiscovered: number;
+  urlsSelected: number;
+  urlsFetched: number;
+  urlsSucceeded: number;
+  blockedByPasswordGate: number;
+  redirectedToPassword: number;
+  fetchFailed: number;
+  skippedByBudget: number;
+  pageClassCounts: CrawlCoverageCounts;
+  storefrontAccess: StorefrontAccessState;
+  collectionUrlsDiscovered: number;
+  collectionUrlsFetched: number;
 }
 
 export interface RelatedDomainCrawlInfo {
@@ -110,6 +164,7 @@ export interface CrawlData {
   sitemap: SitemapCrawlInfo;
   relatedDomain: RelatedDomainCrawlInfo;
   crawledAt: string;
+  coverage?: CrawlCoverage;
 }
 
 export interface AuditResult {

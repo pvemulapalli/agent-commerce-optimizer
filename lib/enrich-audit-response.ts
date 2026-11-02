@@ -5,6 +5,10 @@ import type { AuditConfidenceReport } from "./audit-confidence";
 import type { AuditReportMetadata } from "./audit-metadata";
 import type { PlatformBenchmark } from "./benchmarking";
 import { buildReadinessReport } from "./readiness-score";
+import {
+  CURRENT_SCORING_MODEL_VERSION,
+  type ScoringModelVersion,
+} from "./scoring-model";
 import type { AuditApiResponse, GenerationContext, TechnologyDetectionResult } from "./types";
 import type { CrawlSummary } from "./crawl-quality";
 
@@ -16,6 +20,8 @@ export interface EnrichedAuditResponse extends AuditApiResponse {
   auditConfidence: AuditConfidenceReport;
   benchmark: PlatformBenchmark | null;
   technologyDetection?: TechnologyDetectionResult;
+  /** Absent on historical reports — treat as legacy when missing. */
+  scoringModelVersion?: ScoringModelVersion;
 }
 
 export async function enrichAuditResponse(input: {
@@ -25,6 +31,7 @@ export async function enrichAuditResponse(input: {
   generationContext?: GenerationContext;
   technologyDetection?: TechnologyDetectionResult;
 }): Promise<EnrichedAuditResponse> {
+  const scoringModelVersion = CURRENT_SCORING_MODEL_VERSION;
   const auditMetadata = buildAuditReportMetadata({
     audit: input.audit,
     crawlSummary: input.crawlSummary,
@@ -34,6 +41,7 @@ export async function enrichAuditResponse(input: {
   const auditConfidence = computeAuditConfidence(auditMetadata);
   const report = buildReadinessReport(input.audit, {
     merchantName: auditMetadata.merchantName,
+    scoringModelVersion,
   });
 
   const benchmark = await getPlatformBenchmark({
@@ -50,5 +58,6 @@ export async function enrichAuditResponse(input: {
     auditConfidence,
     benchmark,
     technologyDetection: input.technologyDetection,
+    scoringModelVersion,
   };
 }
