@@ -46,16 +46,17 @@ import {
 import { scanContextFromAudit, scanContextFromPartialReport } from "@/lib/analytics-properties";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+type FixesResponse = GenerateFixesApiResponse;
 type AuditResponse = EnrichedAuditResponse & {
   scanRecord?: { id: string; hostname: string };
   reportId?: string;
   shareUrl?: string;
   reportType?: "full";
+  fixes?: FixesResponse;
 };
 type PartialAuditResponse = PartialReportResponse & {
   scanRecord?: { id: string; hostname: string };
 };
-type FixesResponse = GenerateFixesApiResponse;
 
 function trackSuccessfulAudit(data: AuditResponse): void {
   const scanContext = scanContextFromAudit(data);
@@ -138,6 +139,10 @@ export default function Home() {
     useState<ScanFailureDiagnostic | null>(null);
   const [storefrontPasswordDiagnostic, setStorefrontPasswordDiagnostic] =
     useState<StorefrontPasswordDiagnostic | null>(null);
+  /** Kept only in-memory for this browser session to regenerate fixes after unlock. */
+  const [sessionStorefrontPassword, setSessionStorefrontPassword] = useState<
+    string | null
+  >(null);
   const [result, setResult] = useState<AuditResponse | null>(null);
   const [partialResult, setPartialResult] = useState<PartialAuditResponse | null>(null);
   const [fixesLoading, setFixesLoading] = useState(false);
@@ -173,13 +178,19 @@ export default function Home() {
     targetUrl: string,
     token: string | null,
     reportId?: string,
+    storefrontPassword?: string | null,
   ) {
     setFixesLoading(true);
     setFixesError(null);
     setFixes(null);
 
     try {
-      const payload: { url: string; turnstileToken?: string; reportId?: string } = {
+      const payload: {
+        url: string;
+        turnstileToken?: string;
+        reportId?: string;
+        storefrontPassword?: string;
+      } = {
         url: targetUrl,
       };
       if (token) {
@@ -187,6 +198,9 @@ export default function Home() {
       }
       if (reportId) {
         payload.reportId = reportId;
+      }
+      if (storefrontPassword?.trim()) {
+        payload.storefrontPassword = storefrontPassword.trim();
       }
 
       const response = await fetch("/api/generate-fixes", {
@@ -199,6 +213,12 @@ export default function Home() {
         response,
         "Fix generation failed",
       );
+
+      if (isStorefrontPasswordScanResponse(data)) {
+        throw new Error(
+          "This storefront requires a password to regenerate fixes. Re-run the assessment with the storefront password.",
+        );
+      }
 
       if (!response.ok) {
         throw new Error(data.error ?? "Fix generation failed");
@@ -380,6 +400,8 @@ export default function Home() {
       return;
     }
 
+    const unlockPassword = options?.storefrontPassword?.trim() || undefined;
+
     setLoading(true);
     setScanStartedAt(Date.now());
     setError(null);
@@ -387,14 +409,15 @@ export default function Home() {
     setDomainReviewNotice(null);
     setBotVerificationDiagnostic(null);
     setScanFailureDiagnostic(null);
-    if (!options?.storefrontPassword) {
+    if (!unlockPassword) {
       setStorefrontPasswordDiagnostic(null);
+      setSessionStorefrontPassword(null);
     }
     setResult(null);
     setPartialResult(null);
     setFixes(null);
     setFixesError(null);
-    if (!options?.storefrontPassword) {
+    if (!unlockPassword) {
       trackHeroScanStarted(targetUrl);
       trackScanStartedFromUrl(targetUrl);
     }
@@ -408,8 +431,8 @@ export default function Home() {
       if (turnstileToken) {
         payload.turnstileToken = turnstileToken;
       }
-      if (options?.storefrontPassword) {
-        payload.storefrontPassword = options.storefrontPassword;
+      if (unlockPassword) {
+        payload.storefrontPassword = unlockPassword;
       }
 
       const response = await fetch("/api/audit", {
@@ -502,8 +525,21 @@ export default function Home() {
       await refresh();
       handleAuditApiResponse(targetUrl, data, response.ok);
       setStorefrontPasswordDiagnostic(null);
-      setResult(data as AuditResponse);
-      await generateFixes(data.url, turnstileToken, data.reportId);
+      if (unlockPassword) {
+        setSessionStorefrontPassword(unlockPassword);
+      }
+      const auditResult = data as AuditResponse;
+      setResult(auditResult);
+      if (auditResult.fixes) {
+        setFixes(auditResult.fixes);
+      } else {
+        await generateFixes(
+          data.url,
+          turnstileToken,
+          data.reportId,
+          unlockPassword ?? sessionStorefrontPassword,
+        );
+      }
       scrollToAuditOverview("instant");
     } catch (submitError) {
       trackScanFailedFromUrl(
@@ -555,6 +591,7 @@ export default function Home() {
               setBotVerificationDiagnostic(null);
               setScanFailureDiagnostic(null);
               setStorefrontPasswordDiagnostic(null);
+              setSessionStorefrontPassword(null);
               setUrl("");
               setResult(null);
               setPartialResult(null);
@@ -598,7 +635,12 @@ export default function Home() {
             fixesLoading={fixesLoading}
             fixesError={fixesError}
             onRegenerateFixes={() =>
-              generateFixes(result.url, turnstileToken, result.reportId)
+              generateFixes(
+                result.url,
+                turnstileToken,
+                result.reportId,
+                sessionStorefrontPassword,
+              )
             }
             reportId={result.reportId}
             shareUrl={result.shareUrl}

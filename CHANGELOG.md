@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Release dates match git commits that bumped `lib/app-version.ts`. See `AGENTS.md` for the release workflow (`release:add` → one commit, or `release:docs` + amend if the version was committed first).
 
+## [3.6.3] - 2026-11-02
+
+### [Fixes]
+- Generated Fixes now reuse evidence from the completed readiness crawl instead of starting a second crawl that failed on password-gated Shopify stores
+- `/api/generate-fixes` accepts the optional storefront password so Regenerate can unlock the same development storefront session
+
+### [UX]
+- Password used to unlock a Shopify storefront is kept in-memory for the browser session so recommendations can be regenerated without re-entering it
+
 ## [3.6.2] - 2026-11-01
 
 ### [Fixes]

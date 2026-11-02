@@ -1,6 +1,22 @@
 {
   "releases": [
     {
+      "version": "3.6.3",
+      "date": "2026-11-02",
+      "title": "Fixes Generation for Password-Unlocked Shopify Stores",
+      "summary": "Generated Fixes now come from the completed unlocked crawl for password-gated Shopify development stores, so recommendations no longer fail by re-crawling without the storefront password.",
+      "categories": [
+        "Fixes",
+        "UX",
+        "API"
+      ],
+      "changes": [
+        "Return Generated Fixes from the audit response using the same crawl evidence",
+        "Accept optional storefrontPassword on /api/generate-fixes for Regenerate",
+        "Keep unlock password in-memory for the browser session to regenerate recommendations"
+      ]
+    },
+    {
       "version": "3.6.2",
       "date": "2026-11-01",
       "title": "Homepage Client Bundle Fix for Shopify Helpers",

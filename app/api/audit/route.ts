@@ -14,6 +14,7 @@ import { recordAuditHistory } from "@/lib/audit-history";
 import { validateScanRequest } from "@/lib/scan-request";
 import { scanUrlSchema } from "@/lib/scan-request-schema";
 import { createScanFailureResponseFromError } from "@/lib/scan-failure-api";
+import { generateFixAssets } from "@/lib/generate-assets";
 import { createStorefrontPasswordResponse } from "@/lib/storefront-password-api";
 import { StorefrontPasswordRequiredError } from "@/lib/storefront-password";
 import {
@@ -23,8 +24,10 @@ import {
 import {
   ensureShareablePartialReport,
   ensureShareableReport,
+  updateShareableReportFixes,
 } from "@/lib/shareable-reports";
 import { runTwoPhaseAudit } from "@/lib/two-phase-audit";
+import type { GenerateFixesApiResponse } from "@/lib/types";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -105,6 +108,19 @@ export async function POST(request: Request) {
     });
     const shareable = await ensureShareableReport(response);
 
+    // Build fixes from this crawl's evidence so password-unlocked scans do not
+    // need a second crawl (which would hit the password gate again).
+    const fixes: GenerateFixesApiResponse = {
+      auditedUrl: auditRun.url,
+      generatedAt: new Date().toISOString(),
+      assets: generateFixAssets(auditRun.generationContext),
+      cacheStatus: auditRun.cacheStatus,
+    };
+
+    if (shareable?.reportId) {
+      await updateShareableReportFixes(shareable.reportId, fixes);
+    }
+
     if (auditRun.cacheStatus !== "HIT") {
       await recordAuditHistory({
         audit: response,
@@ -124,6 +140,7 @@ export async function POST(request: Request) {
       ...response,
       reportType: "full" as const,
       technologyDetection: outcome.technologyDetection,
+      fixes,
       ...(scanRecord ? { scanRecord } : {}),
       ...(shareable
         ? { reportId: shareable.reportId, shareUrl: shareable.shareUrl }

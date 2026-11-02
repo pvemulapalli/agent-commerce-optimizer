@@ -8,6 +8,7 @@ import {
 } from "@/lib/cache";
 import type { CrawlRequestContext } from "@/lib/crawl-request-context";
 import { crawlSite } from "@/lib/crawler";
+import { resolveStorefrontAccess } from "@/lib/storefront-access";
 import { finalizeFindings, groupFindings, runChecks } from "@/lib/checks";
 import { buildCrawlSummary, inferCrawlSummaryFromFindings } from "@/lib/crawl-quality";
 import type { CrawlSummary } from "@/lib/crawl-quality";
@@ -85,17 +86,27 @@ export async function buildCachedAuditRunResult(
   };
 }
 
-export async function runAudit(url: string): Promise<AuditRunResult> {
+export async function runAudit(
+  url: string,
+  options?: { storefrontPassword?: string },
+): Promise<AuditRunResult> {
   const normalizedUrl = normalizeAuditUrl(url);
+  const access = await resolveStorefrontAccess(
+    normalizedUrl,
+    options?.storefrontPassword,
+  );
 
-  if (isCacheEnabled()) {
+  if (isCacheEnabled() && !access.bypassCache) {
     const cached = await readCachedAudit(normalizedUrl);
     if (cached) {
       return buildCachedAuditRunResult(cached);
     }
   }
 
-  return runFullReadinessAudit(normalizedUrl);
+  return runFullReadinessAudit(normalizedUrl, {
+    crawlContext: access.crawlContext,
+    skipCache: access.bypassCache,
+  });
 }
 
 export async function runFullReadinessAudit(

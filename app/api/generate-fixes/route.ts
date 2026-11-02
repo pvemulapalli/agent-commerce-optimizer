@@ -13,6 +13,8 @@ import { runAudit } from "@/lib/run-audit";
 import { validateScanRequest } from "@/lib/scan-request";
 import { scanUrlSchema } from "@/lib/scan-request-schema";
 import { updateShareableReportFixes } from "@/lib/shareable-reports";
+import { createStorefrontPasswordResponse } from "@/lib/storefront-password-api";
+import { StorefrontPasswordRequiredError } from "@/lib/storefront-password";
 import type { GenerateFixesApiResponse } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -56,7 +58,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const audit = await runAudit(parsed.data.url);
+    const audit = await runAudit(parsed.data.url, {
+      storefrontPassword: parsed.data.storefrontPassword,
+    });
     const assets = generateFixAssets(audit.generationContext);
 
     const response: GenerateFixesApiResponse = {
@@ -72,6 +76,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(response);
   } catch (error) {
+    if (error instanceof StorefrontPasswordRequiredError) {
+      return createStorefrontPasswordResponse(error);
+    }
+
     if (error instanceof BotVerificationBlockedError) {
       await recordScanFailureForDomainReview({ url: parsed.data.url, error });
       return createBotVerificationResponse();
